@@ -10,7 +10,7 @@
       <h2 class="text-success">{{ item.title }}</h2><br>
       <h6 class="card-text">橋数：{{ item.span_number }} 橋</h6>
       <div class="mt-3">
-        <a href="{% url 'work_list-infra' item.pk %}" class="card-link">詳細</a>
+        <a href="{% url 'property-infra' item.pk %}" class="card-link">詳細</a>
       </div>
     </div>
   {% endfor %}
