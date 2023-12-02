@@ -14,3 +14,14 @@ class Infra(models.Model):
   
   def __str__(self):
     return self.title
+  
+CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
+class Article(models.Model):
+  title = models.CharField(max_length=100)# 顧客名
+  article_name = models.CharField(max_length=100)# 物件名
+  number = models.IntegerField()# 対象数
+  other = models.CharField(max_length=100)# その他
+  category = models.CharField(max_length=100, choices = CATEGORY)# カテゴリ
+  
+  def __str__(self):
+    return self.title

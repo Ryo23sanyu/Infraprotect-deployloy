@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView, ArticleView
+from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from .models import Infra
+from .models import Article
 from django.contrib.auth.mixins import LoginRequiredMixin
- 
+
 class ListInfraView(LoginRequiredMixin, ListView):
   template_name = 'infra/infra_list.html'
   model = Infra
@@ -34,6 +35,31 @@ def index_view(request):
   object_list = Infra.objects.order_by(order_by)
   return render(request, 'infra/index.html', {'object_list': object_list})
 
-class ArticleInfraView(ArticleView):
-  template_name = 'infra/infra_article.html'
-  model = Infra
+class ListArticleView(LoginRequiredMixin, ListView):
+  template_name = 'infra/article_list.html'
+  model = Article
+  
+class DetailArticleView(LoginRequiredMixin, DetailView):
+  template_name = 'infra/article_detail.html'
+  model = Article
+  
+class CreateArticleView(LoginRequiredMixin, CreateView):
+  template_name = 'infra/article_create.html'
+  model = Article
+  fields = ('title', 'article_name', 'number', 'other')
+  success_url = reverse_lazy('list-article')
+  
+class DeleteArticleView(LoginRequiredMixin, DeleteView):
+  template_name = 'infra/article_confirm_delete.html'
+  model = Article
+  success_url = reverse_lazy('list-article')
+  
+class UpdateArticleView(LoginRequiredMixin, UpdateView):
+  template_name = 'infra/article_update.html'
+  model = Article
+  fields = ('title', 'article_name', 'number', 'other')
+  success_url = reverse_lazy('list-article')
+  
+# class ArticleInfraView(LoginRequiredMixin, DetailView):
+ # template_name = 'infra/infra_article.html'
+ #  model = Article
