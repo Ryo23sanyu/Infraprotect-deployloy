@@ -5,11 +5,11 @@
 
 {% block content %}
   <div class="p-4 m-4 bg-light border border-success rounded">
-    <h2 class="text-success">{{ object.title }}</h2>
-      <p>物件名：{{ object.article_name }}</p>
+    <h2 class="text-success">{{ object.article_name }}</h2>
+      <p>物件名：{{ object.title }}</p>
       <p>対象数：{{ object.number }}</p>
       <p>その他：{{ object.other }}</p>
-      <a href="{% url 'list-article' %}" class="btn btn-primary">一覧</a>
+      <a href="{% url 'list-infra' %}" class="btn btn-primary">対象一覧</a>
       <a href="{% url 'update-article' object.pk %}" class="btn btn-primary">編集</a>
       <a href="{% url 'delete-article' object.pk %}" class="btn btn-primary">削除</a>
       <h6 class="card-title">{{ object.category }}</h6>

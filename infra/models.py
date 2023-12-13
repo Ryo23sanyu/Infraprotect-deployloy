@@ -10,6 +10,8 @@ class Infra(models.Model):
   latitude = models.CharField(max_length=50)# 緯度
   longitude = models.CharField(max_length=50)# 経度
   code = models.CharField(max_length=50)# 橋梁コード
+  top_structure= models.CharField(max_length=100)# 上部構造形式
+  bottom_structure= models.CharField(max_length=100)# 下部構造形式
   category = models.CharField(max_length=100, choices = CATEGORY)# カテゴリ
   
   def __str__(self):

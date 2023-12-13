@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}{{ object.title }}{% endblock title %}
-{% block h1 %}物件詳細{% endblock %}
+{% block h1 %}橋梁緒言{% endblock %}
 
 {% block content %}
   <div class="p-4 m-4 bg-light border border-success rounded">
@@ -12,6 +12,8 @@
       <p>緯度：{{ object.latitude }}</p>
       <p>経度：{{ object.longitude }}</p>
       <p>橋梁コード：{{ object.code }}</p>
+      <p>上部構造形式：{{ object.top_structure }}</p>
+      <p>下部構造形式：{{ object.bottom_structure }}</p>
       <a href="{% url 'list-infra' %}" class="btn btn-primary">一覧</a>
       <a href="{% url 'update-infra' object.pk %}" class="btn btn-primary">編集</a>
       <a href="{% url 'delete-infra' object.pk %}" class="btn btn-primary">削除</a>
