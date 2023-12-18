@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "infra.apps.InfraConfig",
     "excel.apps.ExcelConfig",
-    "outside.apps.OutsideConfig"
 ]
 
 MIDDLEWARE = [
