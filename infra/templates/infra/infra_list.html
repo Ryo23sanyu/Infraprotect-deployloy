@@ -3,6 +3,7 @@
 {% block title %}橋梁一覧{% endblock title %}
 {% block h1 %}橋梁一覧{% endblock %}
 
+<link rel="stylesheet" href="sidebar.css">
 <!-- 並び替え用のプルダウンメニュー -->
 <label for="order_by">並び替え：</label>
 <select id="order_by" name="order_by" onchange="handleOrderChange()">
@@ -10,6 +11,20 @@
   <option value="length">橋長</option>
   <option value="full_width">全幅員</option>
 </select>
+
+<link rel="stylesheet" href='style.css'>
+<div class="sidebar">
+  <ul>
+    <li><a href="1">リンク1</a></li>
+    <li><a href="2">リンク2</a></li>
+    <li><a href="3">リンク3</a></li>
+  </ul>
+</div>
+  <div class="sidebar-toggle">
+</div>
+<div class="sidebar-toggle">
+  <button class="btn btn-primary">Toggle Sidebar</button>
+</div>
 
 {% block content %}
 <div class="d-flex flex-wrap">
@@ -26,15 +41,6 @@
   {% endfor %}
 {% endblock content %}
 
-<link rel="stylesheet" href="style.css">
-<div class="sidebar">
-  <ul>
-    <li><a href="1">リンク1</a></li>
-    <li><a href="2">リンク2</a></li>
-    <li><a href="3">リンク3</a></li>
-  </ul>
-</div>
-
 <script>
   function handleOrderChange() {
     // プルダウンメニューが変更されたときの処理をここに追加
@@ -44,11 +50,10 @@
     // 選択された値を使って何かしらの処理を行う（例：Ajaxでデータを取得するなど）
     console.log("選択された値: ", selectedValue);
   }
-
     var sidebar = document.querySelector('.sidebar');
-  var sidebarToggle = document.querySelector('.sidebar-toggle');
+    var sidebarToggle = document.querySelector('.sidebar-toggle');
 
-  sidebarToggle.addEventListener('click', function() {
+    sidebarToggle.addEventListener('click', function() {
     sidebar.classList.toggle('open');
   });
 </script>

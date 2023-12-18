@@ -4,6 +4,7 @@ from django.views.generic import ListView, DetailView, CreateView, DeleteView, U
 from .models import Infra
 from .models import Article
 from django.contrib.auth.mixins import LoginRequiredMixin
+from .forms import MultiFileUploadForm
 
 class ListInfraView(LoginRequiredMixin, ListView):
   template_name = 'infra/infra_list.html'
@@ -20,7 +21,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
   success_url = reverse_lazy('list-infra')
   
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
-  template_name = 'infra/infra_confirm_delete.html'
+  template_name = 'infra/infra_delete.html'
   model = Infra
   success_url = reverse_lazy('list-infra')
   
@@ -51,7 +52,7 @@ class DetailArticleView(LoginRequiredMixin, DetailView):
 class CreateArticleView(LoginRequiredMixin, CreateView):
   template_name = 'infra/article_create.html'
   model = Article
-  fields = ('title', 'article_name', 'number', 'other')
+  fields = ('title', 'article_name', 'number', 'manager', 'other')
   success_url = reverse_lazy('list-article')
   
 class DeleteArticleView(LoginRequiredMixin, DeleteView):
@@ -62,9 +63,22 @@ class DeleteArticleView(LoginRequiredMixin, DeleteView):
 class UpdateArticleView(LoginRequiredMixin, UpdateView):
   template_name = 'infra/article_update.html'
   model = Article
-  fields = ('title', 'article_name', 'number', 'other')
+  fields = ('title', 'article_name', 'number', 'manager', 'other')
   success_url = reverse_lazy('list-article')
   
 # class ArticleInfraView(LoginRequiredMixin, DetailView):
  # template_name = 'infra/infra_article.html'
  #  model = Article
+ 
+def multi_file_upload(request):
+    if request.method == 'POST':
+        form = MultiFileUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('multi_file_upload_success')
+    else:
+        form = MultiFileUploadForm()
+    return render(request, 'infra/multi_file_upload.html', {'form': form})
+
+def multi_file_upload_success(request):
+    return render(request, 'infra/multi_file_upload_success.html')

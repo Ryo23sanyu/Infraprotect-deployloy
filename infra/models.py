@@ -22,8 +22,15 @@ class Article(models.Model):
   title = models.CharField(max_length=100)# 顧客名
   article_name = models.CharField(max_length=100)# 物件名
   number = models.IntegerField()# 対象数
+  manager = models.CharField(max_length=100)# 担当者名
   other = models.CharField(max_length=100)# その他
   category = models.CharField(max_length=100, choices = CATEGORY)# カテゴリ
   
   def __str__(self):
     return self.title
+    
+class UploadedFile(models.Model):
+    files = models.FileField(upload_to='uploads/', blank=True, null=True, verbose_name='Files', max_length=255)
+
+class MultiUploadedFile(models.Model):
+    files = models.ManyToManyField(UploadedFile)
