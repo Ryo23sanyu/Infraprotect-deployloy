@@ -12,12 +12,24 @@
   <option value="full_width">全幅員</option>
 </select>
 
-<link rel="stylesheet" href='style.css'>
+
+
+{% block content %}
+<div class="d-flex flex-wrap">
+  <link rel="stylesheet" href='style.css'>
 <div class="sidebar">
+  <p>インフラプロジェクト</p>
   <ul>
-    <li><a href="1">リンク1</a></li>
-    <li><a href="2">リンク2</a></li>
-    <li><a href="3">リンク3</a></li>
+    <li><a href="1">橋梁緒言</a></li>
+    <li><a href="2">一般図</a></li>
+    <li><a href="3">全景写真</a></li>
+    <li><a href="3">番号図</a></li>
+    <li><a href="3">所見まとめ</a></li>
+    <li><a href="3">各部材所見</a></li>
+    <li><a href="3">損傷図</a></li>
+    <li><a href="3">損傷写真</a></li>
+    <li><a href="3">アップロード</a></li>
+    <li><a href="3">データ出力</a></li>
   </ul>
 </div>
   <div class="sidebar-toggle">
@@ -25,9 +37,6 @@
 <div class="sidebar-toggle">
   <button class="btn btn-primary">Toggle Sidebar</button>
 </div>
-
-{% block content %}
-<div class="d-flex flex-wrap">
   {% for item in object_list %}
     <div class="p-4 m-4 bg-light border border-success rounded" style="width: 19rem;">
       <h2 class="text-success">{{ item.title }}</h2><br>
