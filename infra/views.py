@@ -76,8 +76,13 @@ def multi_file_upload(request):
     if request.method == 'POST':
         form = MultiFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            return redirect('multi_file_upload_success')
+            # ファイルを保存
+            form.instance.files.save(str(request.FILES['files']), request.FILES['files'])
+            return redirect('multi_file_upload_success')  # 成功時に success ページにリダイレクト
+        else:
+            # エラーメッセージを取得して表示
+            error_message = "アップロード失敗"
+            return render(request, 'infra/multi_file_upload.html', {'form': form, 'error_message': error_message})
     else:
         form = MultiFileUploadForm()
     return render(request, 'infra/multi_file_upload.html', {'form': form})

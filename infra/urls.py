@@ -2,6 +2,8 @@ from django.urls import path
 from .import views
 from .views import multi_file_upload, multi_file_upload_success
 from .views import photo_list, photo_upload, selected_photos
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.index_view, name='index'),
@@ -21,3 +23,6 @@ urlpatterns = [
     path('photos/upload/', photo_upload, name='photo_upload'),
     path('photos/selected/', selected_photos, name='selected_photos'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
