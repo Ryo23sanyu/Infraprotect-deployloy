@@ -34,3 +34,6 @@ class UploadedFile(models.Model):
 
 class MultiUploadedFile(models.Model):
     files = models.ManyToManyField(UploadedFile)
+    
+class Photo(models.Model):
+    image = models.ImageField(upload_to='photos/')

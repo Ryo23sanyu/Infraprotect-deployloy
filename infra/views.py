@@ -1,10 +1,12 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from .models import Infra
 from .models import Article
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .forms import MultiFileUploadForm
+from .forms import PhotoUploadForm
+from .models import Photo
 
 class ListInfraView(LoginRequiredMixin, ListView):
   template_name = 'infra/infra_list.html'
@@ -82,3 +84,22 @@ def multi_file_upload(request):
 
 def multi_file_upload_success(request):
     return render(request, 'infra/multi_file_upload_success.html')
+  
+def photo_list(request):
+    photos = Photo.objects.all()
+    return render(request, 'infra/photo_list.html', {'photos': photos})
+
+def photo_upload(request):
+    if request.method == 'POST':
+        form = PhotoUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('photo_list')
+    else:
+        form = PhotoUploadForm()
+    return render(request, 'infra/photo_upload.html', {'form': form})
+
+def selected_photos(request):
+    selected_photo_ids = request.POST.getlist('selected_photos')
+    selected_photos = Photo.objects.filter(id__in=selected_photo_ids)
+    return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
