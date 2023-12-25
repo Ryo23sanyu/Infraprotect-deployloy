@@ -1,6 +1,6 @@
 from django.urls import path
 from .import views
-from .views import multi_file_upload, multi_file_upload_success
+from .views import file_upload, file_upload_success
 from .views import photo_list, photo_upload, selected_photos
 from django.conf import settings
 from django.conf.urls.static import static
@@ -17,8 +17,8 @@ urlpatterns = [
     path('article/<int:pk>/detail/', views.DetailArticleView.as_view(), name='detail-article'),
     path('article/<int:pk>/delete/', views.DeleteArticleView.as_view(), name='delete-article'),
     path('article/<int:pk>/update/', views.UpdateArticleView.as_view(), name='update-article'),
-    path('upload/multi/', multi_file_upload, name='multi_file_upload'),
-    path('upload/multi/success/', multi_file_upload_success, name='multi_file_upload_success'),
+    path('upload/', file_upload, name='file_upload'),
+    path('upload/success/', file_upload_success, name='file_upload_success'),
     path('photos/', photo_list, name='photo_list'),
     path('photos/upload/', photo_upload, name='photo_upload'),
     path('photos/selected/', selected_photos, name='selected_photos'),

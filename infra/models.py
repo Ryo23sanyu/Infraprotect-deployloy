@@ -30,10 +30,7 @@ class Article(models.Model):
     return self.title
     
 class UploadedFile(models.Model):
-    files = models.FileField(upload_to='uploads/', blank=True, null=True, verbose_name='Files', max_length=255)
-
-class MultiUploadedFile(models.Model):
-    files = models.ManyToManyField(UploadedFile)
+    file = models.FileField(upload_to='uploads/')
     
 class Photo(models.Model):
     image = models.ImageField(upload_to='photos/')

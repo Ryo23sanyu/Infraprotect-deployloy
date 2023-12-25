@@ -1,11 +1,11 @@
 from django import forms
-from .models import UploadedFile, MultiUploadedFile
+from .models import UploadedFile
 from .models import Photo
 
-class MultiFileUploadForm(forms.ModelForm):
+class FileUploadForm(forms.ModelForm):
     class Meta:
-        model = MultiUploadedFile
-        fields = ['files']
+        model = UploadedFile
+        fields = ['file']
         
 class PhotoUploadForm(forms.ModelForm):
     class Meta:

@@ -6,17 +6,59 @@
 {% block content %}
   <div class="p-4 m-4 bg-light border border-success rounded">
     <h2 class="text-success">{{ object.title }}</h2>
-      <p>径間数：{{ object.span_number }}</p>
-      <p>橋長：{{ object.length }}</p>
-      <p>全幅員：{{ object.full_width }}</p>
-      <p>緯度：{{ object.latitude }}</p>
-      <p>経度：{{ object.longitude }}</p>
-      <p>橋梁コード：{{ object.code }}</p>
-      <p>上部構造形式：{{ object.top_structure }}</p>
-      <p>下部構造形式：{{ object.bottom_structure }}</p>
-      <a href="{% url 'list-infra' %}" class="btn btn-primary">一覧</a>
-      <a href="{% url 'update-infra' object.pk %}" class="btn btn-primary">編集</a>
-      <a href="{% url 'delete-infra' object.pk %}" class="btn btn-primary">削除</a>
-      <h6 class="card-title">{{ object.category }}</h6>
+    <p>径間数：{{ object.span_number }}</p>
+    <p>橋長：{{ object.length }}</p>
+    <p>全幅員：{{ object.full_width }}</p>
+    <p>緯度：{{ object.latitude }}</p>
+    <p>経度：{{ object.longitude }}</p>
+    <p>橋梁コード：{{ object.code }}</p>
+    <p>上部構造形式：{{ object.top_structure }}</p>
+    <p>下部構造形式：{{ object.bottom_structure }}</p>
+    
+    <!-- Google Maps表示用のdiv -->
+    <div id="map" style="height: 400px; width: 100%;"></div>
+    
+    <!-- 緯度と経度を表示する要素 -->
+    <div id="result"></div>
+    
+    <!-- Google Maps JavaScript APIの非同期読み込み -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyASpyfsrPZqSHakMucUwlG3qsVC_YpFRHY&callback=initMap" async defer></script>
+
+    <!-- initMap関数の定義 -->
+    <script>
+      function initMap() {
+        var tokyoCoords = {lat: 35.6895, lng: 139.6917};
+        var map = new google.maps.Map(document.getElementById('map'), {
+          center: tokyoCoords,
+          zoom: 12
+        });
+
+        // マーカーを作成
+        var marker = new google.maps.Marker({
+          position: {lat: {{ object.latitude }}, lng: {{ object.longitude }}},
+          map: map,
+          draggable: true
+        });
+
+        // マーカーのドラッグ終了時のイベントリスナー
+        google.maps.event.addListener(marker, 'dragend', function(event) {
+          var lat = event.latLng.lat();
+          var lng = event.latLng.lng();
+          document.getElementById('result').innerHTML = '緯度: ' + lat + '<br>経度: ' + lng;
+        });
+
+        // マップをクリックした時のイベントリスナー
+        google.maps.event.addListener(map, 'click', function(event) {
+          // クリックされた位置にマーカーを移動
+          marker.setPosition(event.latLng);
+
+          // クリックされた位置の緯度経度を取得
+          var lat = event.latLng.lat();
+          var lng = event.latLng.lng();
+          document.getElementById('result').innerHTML = '緯度: ' + lat + '<br>経度: ' + lng;
+        });
+      }
+    </script>
   </div>
+  
 {% endblock content %}

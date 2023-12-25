@@ -4,7 +4,7 @@ from django.views.generic import ListView, DetailView, CreateView, DeleteView, U
 from .models import Infra
 from .models import Article
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .forms import MultiFileUploadForm
+from .forms import FileUploadForm
 from .forms import PhotoUploadForm
 from .models import Photo
 
@@ -72,23 +72,18 @@ class UpdateArticleView(LoginRequiredMixin, UpdateView):
  # template_name = 'infra/infra_article.html'
  #  model = Article
  
-def multi_file_upload(request):
+def file_upload(request):
     if request.method == 'POST':
-        form = MultiFileUploadForm(request.POST, request.FILES)
+        form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            # ファイルを保存
-            form.instance.files.save(str(request.FILES['files']), request.FILES['files'])
-            return redirect('multi_file_upload_success')  # 成功時に success ページにリダイレクト
-        else:
-            # エラーメッセージを取得して表示
-            error_message = "アップロード失敗"
-            return render(request, 'infra/multi_file_upload.html', {'form': form, 'error_message': error_message})
+            form.save()
+            return redirect('file_upload_success')
     else:
-        form = MultiFileUploadForm()
-    return render(request, 'infra/multi_file_upload.html', {'form': form})
+        form = FileUploadForm()
+    return render(request, 'infra/file_upload.html', {'form': form})
 
-def multi_file_upload_success(request):
-    return render(request, 'infra/multi_file_upload_success.html')
+def file_upload_success(request):
+    return render(request, 'infra/file_upload_success.html')
   
 def photo_list(request):
     photos = Photo.objects.all()

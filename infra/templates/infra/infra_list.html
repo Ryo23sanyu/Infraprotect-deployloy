@@ -16,53 +16,56 @@
 
 {% block content %}
 <div class="d-flex flex-wrap">
-  <link rel="stylesheet" href='style.css'>
-<div class="sidebar">
-  <p>インフラプロジェクト</p>
-  <ul>
-    <li><a href="1">橋梁緒言</a></li>
-    <li><a href="2">一般図</a></li>
-    <li><a href="3">全景写真</a></li>
-    <li><a href="3">番号図</a></li>
-    <li><a href="3">所見まとめ</a></li>
-    <li><a href="3">各部材所見</a></li>
-    <li><a href="3">損傷図</a></li>
-    <li><a href="3">損傷写真</a></li>
-    <li><a href="3">アップロード</a></li>
-    <li><a href="3">データ出力</a></li>
-  </ul>
-</div>
-  <div class="sidebar-toggle">
-</div>
-<div class="sidebar-toggle">
-  <button class="btn btn-primary">Toggle Sidebar</button>
-</div>
-  {% for item in object_list %}
-    <div class="p-4 m-4 bg-light border border-success rounded" style="width: 19rem;">
-      <h2 class="text-success">{{ item.title }}</h2><br>
-      <h6 class="card-text">径間数：{{ item.span_number }} 径間</h6>
-      <h6 class="card-text">橋長：{{ item.length }} m</h6>
-      <h6 class="card-text">全幅員：{{ item.full_width }} m</h6>
-      <div class="mt-3">
-        <a href="{% url 'detail-infra' item.pk %}" class="btn btn-primary">詳細</a>
-      </div>
+    {# bodyタグ内にlinkタグは推奨されません。 #}
+    {# <link rel="stylesheet" href='style.css'> #}
+    <div class="sidebar">
+      <p>インフラプロジェクト</p>
+      <ul>
+          <li><a href="1">橋梁緒言</a></li>
+          <li><a href="2">一般図</a></li>
+          <li><a href="3">全景写真</a></li>
+          <li><a href="3">番号図</a></li>
+          <li><a href="3">所見まとめ</a></li>
+          <li><a href="3">各部材所見</a></li>
+          <li><a href="3">損傷図</a></li>
+          <li><a href="3">損傷写真</a></li>
+          <li><a href="3">アップロード</a></li>
+          <li><a href="3">データ出力</a></li>
+      </ul>
+      <div class="sidebar-toggle">
+        <button class="btn btn-primary">sidebar</button>
     </div>
-  {% endfor %}
-{% endblock content %}
+  </div>
+    {# TODO: サイドバーのボタンはサイドバー本体の中に仕込む。#}
+
+    {% for item in object_list %}
+    <div class="p-4 m-4 bg-light border border-success rounded" style="width: 19rem;">
+        <h2 class="text-success">{{ item.title }}</h2><br>
+        <h6 class="card-text">径間数：{{ item.span_number }} 径間</h6>
+        <h6 class="card-text">橋長：{{ item.length }} m</h6>
+        <h6 class="card-text">全幅員：{{ item.full_width }} m</h6>
+        <div class="mt-3">
+            <a href="{% url 'detail-infra' item.pk %}" class="btn btn-primary">詳細</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 
 <script>
   function handleOrderChange() {
-    // プルダウンメニューが変更されたときの処理をここに追加
-    var orderSelect = document.getElementById("order_by");
-    var selectedValue = orderSelect.value;
+              // プルダウンメニューが変更されたときの処理をここに追加
+              var orderSelect = document.getElementById("order_by");
+              var selectedValue = orderSelect.value;
 
-    // 選択された値を使って何かしらの処理を行う（例：Ajaxでデータを取得するなど）
-    console.log("選択された値: ", selectedValue);
-  }
-    var sidebar = document.querySelector('.sidebar');
-    var sidebarToggle = document.querySelector('.sidebar-toggle');
+              // 選択された値を使って何かしらの処理を行う（例：Ajaxでデータを取得するなど）
+              console.log("選択された値: ", selectedValue);
+          }
+  var sidebar = document.querySelector('.sidebar');
+  var sidebarToggle = document.querySelector('.sidebar-toggle');
 
-    sidebarToggle.addEventListener('click', function() {
-    sidebar.classList.toggle('open');
-  });
+  sidebarToggle.addEventListener('click', function() {
+              sidebar.classList.toggle('open');
+          });
 </script>
+
+{% endblock content %}

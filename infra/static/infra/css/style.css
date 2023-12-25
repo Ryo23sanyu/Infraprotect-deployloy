@@ -7,15 +7,22 @@ a {
 }
 
 .sidebar {
-  position: fixed;
+  position: absolute;
   padding-top: 0;
-  left: 0;
+  /* 上部ナビゲーションの高さにあわせる。 */
+  top: 56px;
+  /* 初期状態でleft はwidth 文だけマイナスしておく。*/
+  left: -300px;
   width: 300px;  /* バーの幅を適切な値に指定する */
-  height: 125%; /* バーの高さを画面の高さに合わせる */
+  /* height: 125%; /* バーの高さを画面の高さに合わせる */
+  /* 高さは画面に応じて */
+  height: 100%;
   background-color: #f8f9fa;
   color: #333;
   width: 200px;
   z-index: 1000;
+  /* .openが追加されたとき、アニメーションを発動させる。 */
+  transition:0.2s
 }
 
 .sidebar ul {
@@ -34,4 +41,15 @@ a {
 
 .sidebar ul li a:hover {
   color: #f00;
+}
+
+.sidebar-toggle {
+    position:fixed;
+    bottom:0;
+    left:0;
+    z-index:2000;
+}
+
+.open{
+    left:0;
 }
