@@ -13,7 +13,7 @@ class SignupView(CreateView):
   model = User
   form_class = SignupForm
   template_name ='accounts/signup.html'
-  success_url = reverse_lazy('index')
+  success_url = reverse_lazy('my_page')
 
 def signup(request):
     if request.method == 'POST':
