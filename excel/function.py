@@ -35,4 +35,3 @@ style = NamedStyle(name='formula', number_format='0')
 
 # ファイルを保存
 wb.save('work.xlsx')
-

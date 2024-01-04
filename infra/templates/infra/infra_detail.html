@@ -18,7 +18,7 @@
     <!-- Google Maps表示用のdiv -->
     <div id="map" style="height: 400px; width: 100%;"></div>
     
-    <!-- 緯度と経度を表示する要素 -->
+    <!-- 緯度と経度と住所を表示する要素(result) -->
     <div id="result"></div>
     
     <!-- Google Maps JavaScript APIの非同期読み込み -->
@@ -27,10 +27,10 @@
     <!-- initMap関数の定義 -->
     <script>
       function initMap() {
-        var tokyoCoords = {lat: 35.71178, lng: 140.11757};
+        var tokyoCoords = {lat: 35.6895, lng: 139.6917};
         var map = new google.maps.Map(document.getElementById('map'), {
           center: tokyoCoords,
-          zoom: 11
+          zoom: 12
         });
 
         // マーカーを作成
@@ -55,8 +55,29 @@
           // クリックされた位置の緯度経度を取得
           var lat = event.latLng.lat();
           var lng = event.latLng.lng();
-          document.getElementById('result').innerHTML = '緯度: ' + lat + '<br>経度: ' + lng;
-        });  
+
+          // 逆ジオコーディングを行う関数
+          function geocodeLatLng(lat, lng) {
+            var geocoder = new google.maps.Geocoder();
+            var latlng = {lat: parseFloat(lat), lng: parseFloat(lng)};
+
+            geocoder.geocode({ 'location': latlng }, function(results, status) {
+              if (status === 'OK') {
+                if (results[0]) {
+                  var formattedAddress = results[0].formatted_address; //逆ジオコーディングで住所を求める箇所([0]は戻り値になるため、触れない)
+                  document.getElementById('result').innerHTML = '緯度: ' + lat + '<br>経度: ' + lng + '<br>住所: ' + formattedAddress; //getElement=resultで表示
+                } else {
+                  window.alert('No results found');
+                }
+              } else {
+                window.alert('Geocoder failed due to: ' + status);
+              }
+            });
+          }
+
+          // 逆ジオコーディング関数呼び出し
+          geocodeLatLng(lat, lng);
+        });
       }
     </script>
     <a href="{% url 'list-infra' %}" class="btn btn-primary">一覧</a>
