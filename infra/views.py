@@ -19,7 +19,7 @@ class DetailInfraView(LoginRequiredMixin, DetailView):
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'
   model = Infra
-  fields = ('title', 'span_number', 'length', 'full_width', 'code', 'top_structure', 'bottom_structure', 'category')
+  fields = ('title', 'span_number', 'length', 'full_width', 'code', 'live_load', 'load_grade', 'rule_book', 'top_structure', 'bottom_structure', 'under_structure', 'proximity_method', 'traffic_regulation', 'third_party', 'coastline_distance', 'road_conditions', 'notices', 'category')
   success_url = reverse_lazy('list-infra')
   
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
@@ -30,7 +30,7 @@ class DeleteInfraView(LoginRequiredMixin, DeleteView):
 class UpdateInfraView(LoginRequiredMixin, UpdateView):
   template_name = 'infra/infra_update.html'
   model = Infra
-  fields = ('title', 'span_number', 'length', 'full_width', 'code', 'top_structure', 'bottom_structure', 'category')
+  fields = ('title', 'span_number', 'length', 'full_width', 'code', 'live_load', 'load_grade',  'rule_book','top_structure', 'bottom_structure', 'under_structure', 'proximity_method', 'traffic_regulation', 'third_party', 'coastline_distance', 'road_conditions', 'notices', 'category')
   success_url = reverse_lazy('list-infra')
   
 def index_view(request):

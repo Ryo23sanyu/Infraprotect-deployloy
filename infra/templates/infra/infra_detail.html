@@ -12,8 +12,18 @@
     <!--<p>緯度：{{ object.latitude }}</p>
     <p>経度：{{ object.longitude }}</p> -->
     <p>橋梁コード：{{ object.code }}</p>
+    <p>活荷重：{{ object.live_load }}</p>
+    <p>等級：{{ object.load_grade }}</p>
+    <p>適用示方書：{{ object.rule_book }}</p>
     <p>上部構造形式：{{ object.top_structure }}</p>
     <p>下部構造形式：{{ object.bottom_structure }}</p>
+    <p>基礎形式：{{ object.under_structure }}</p>
+    <p>近接方法：{{ object.proximity_method }}</p>
+    <p>交通規制：{{ object.traffic_regulation }}</p>
+    <p>第三者点検：{{ object.third_party }}</p>
+    <p>海岸線との距離：{{ object.coastline_distance }} m</p>
+    <p>路下条件：{{ object.road_conditions }}</p>
+    <p>特記事項：{{ object.notices }}</p>
     
     <!-- Google Maps表示用のdiv -->
     <div id="map" style="height: 400px; width: 100%;"></div>
