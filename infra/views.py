@@ -35,7 +35,7 @@ class UpdateInfraView(LoginRequiredMixin, UpdateView):
   
 def infra_view(request):
   if request.method == 'POST':
-    load_grade = request.POST.get('load_grade', None)
+    等級 = request.POST.get('等級', None)
     # load_gradeを使って必要な処理を行う
     # 例えば、選択されたload_gradeに基づいてデータをフィルタリングして表示するなど
 
