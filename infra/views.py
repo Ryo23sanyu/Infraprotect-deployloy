@@ -33,6 +33,16 @@ class UpdateInfraView(LoginRequiredMixin, UpdateView):
   fields = ('title', 'span_number', 'length', 'full_width', 'code', 'live_load', 'load_grade',  'rule_book','top_structure', 'bottom_structure', 'under_structure', 'proximity_method', 'traffic_regulation', 'third_party', 'coastline_distance', 'road_conditions', 'notices', 'category')
   success_url = reverse_lazy('list-infra')
   
+def infra_view(request):
+  if request.method == 'POST':
+    load_grade = request.POST.get('load_grade', None)
+    # load_gradeを使って必要な処理を行う
+    # 例えば、選択されたload_gradeに基づいてデータをフィルタリングして表示するなど
+
+  # 通常のビューロジック
+  # ・・・
+  return render(request, 'infra/infra_detail.html')
+
 def index_view(request):
   order_by = request.GET.get('order_by', 'title')
   object_list = Article.objects.order_by(order_by)
@@ -103,3 +113,4 @@ def selected_photos(request):
     selected_photo_ids = request.POST.getlist('selected_photos')
     selected_photos = Photo.objects.filter(id__in=selected_photo_ids)
     return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
+  
