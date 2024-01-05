@@ -6,14 +6,14 @@
 {% block content %}
   <div class="p-4 m-4 bg-light border border-success rounded">
     <h2 class="text-success">{{ object.title }}</h2>
-    <p>径間数：{{ object.span_number }} 径間</p>
-    <p>橋長：{{ object.length }} m</p>
-    <p>全幅員：{{ object.full_width }} m</p>
+    <p>径間数：{{ object.径間数 }} 径間</p>
+    <p>橋長：{{ object.橋長 }} m</p>
+    <p>全幅員：{{ object.全幅員 }} m</p>
     <!--<p>緯度：{{ object.latitude }}</p>
     <p>経度：{{ object.longitude }}</p> -->
-    <p>橋梁コード：{{ object.code }}</p>
-    <p>活荷重：{{ object.live_load }}</p>
-    <p>等級：{{ object.load_grade }}</p>
+    <p>橋梁コード：{{ object.橋梁コード }}</p>
+    <p>活荷重：{{ object.活荷重 }}</p>
+    <p>等級：{{ object.等級 }}</p>
     <form method="POST" action="">
       {% csrf_token %}
       <button type="submit" name="load_grade" value="one">一等橋</button>
@@ -21,16 +21,16 @@
       <button type="submit" name="load_grade" value="three">三等橋</button>
       <button type="submit" name="load_grade" value="unknown">不明</button>
     </form>
-    <p>適用示方書：{{ object.rule_book }}</p>
-    <p>上部構造形式：{{ object.top_structure }}</p>
-    <p>下部構造形式：{{ object.bottom_structure }}</p>
-    <p>基礎形式：{{ object.under_structure }}</p>
-    <p>近接方法：{{ object.proximity_method }}</p>
-    <p>交通規制：{{ object.traffic_regulation }}</p>
-    <p>第三者点検：{{ object.third_party }}</p>
-    <p>海岸線との距離：{{ object.coastline_distance }} m</p>
-    <p>路下条件：{{ object.road_conditions }}</p>
-    <p>特記事項：{{ object.notices }}</p>
+    <p>適用示方書：{{ object.適用示方書 }}</p>
+    <p>上部構造形式：{{ object.上部構造形式 }}</p>
+    <p>下部構造形式：{{ object.下部構造形式 }}</p>
+    <p>基礎構造形式：{{ object.基礎構造形式 }}</p>
+    <p>近接方法：{{ object.近接方法 }}</p>
+    <p>交通規制：{{ object.交通規制 }}</p>
+    <p>第三者点検の有無：{{ object.第三者点検の有無 }}</p>
+    <p>海岸線との距離：{{ object.海岸線との距離 }} m</p>
+    <p>路下条件：{{ object.路下条件 }}</p>
+    <p>特記事項：{{ object.特記事項 }}</p>
     
     <!-- Google Maps表示用のdiv -->
     <div id="map" style="height: 400px; width: 100%;"></div>
