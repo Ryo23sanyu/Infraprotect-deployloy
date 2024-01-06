@@ -13,21 +13,52 @@
     <p>経度：{{ object.longitude }}</p> -->
     <p>橋梁コード：{{ object.橋梁コード }}</p>
     <p>活荷重：{{ object.活荷重 }}</p>
-    <p>等級：{{ object.等級 }}</p>
-    <form method="POST" action="">
+    <form method="POST" action="{% url 'detail-infra' object.pk %}">
       {% csrf_token %}
-      <button type="submit" name="load_grade" value="one">一等橋</button>
-      <button type="submit" name="load_grade" value="two">二等橋</button>
-      <button type="submit" name="load_grade" value="three">三等橋</button>
-      <button type="submit" name="load_grade" value="unknown">不明</button>
+      <button type="submit" name="活荷重" value="live_load_a">A活荷重</button>
+      <button type="submit" name="活荷重" value="live_load_b">B活荷重</button>
+      <button type="submit" name="活荷重" value="tl20">TL-20</button>
+      <button type="submit" name="活荷重" value="tl12">TL-12</button>
+      <button type="submit" name="活荷重" value="tl6">TL-6</button>
+    </form>
+    <p>等級：{{ object.等級 }}</p>
+    <form method="POST" action="{% url 'detail-infra' object.pk %}">
+      {% csrf_token %}
+      <button type="submit" name="等級" value="one">一等橋</button>
+      <button type="submit" name="等級" value="two">二等橋</button>
+      <button type="submit" name="等級" value="three">三等橋</button>
+      <button type="submit" name="等級" value="unknown">不明</button>
     </form>
     <p>適用示方書：{{ object.適用示方書 }}</p>
     <p>上部構造形式：{{ object.上部構造形式 }}</p>
     <p>下部構造形式：{{ object.下部構造形式 }}</p>
     <p>基礎構造形式：{{ object.基礎構造形式 }}</p>
     <p>近接方法：{{ object.近接方法 }}</p>
+    <form method="POST" action="{% url 'detail-infra' object.pk %}">
+      {% csrf_token %}
+      <button type="submit" name="近接方法" value="ground">地上</button>
+      <button type="submit" name="近接方法" value="ladder">梯子・脚立</button>
+      <button type="submit" name="近接方法" value="work_heights">高所作業車</button>
+      <button type="submit" name="近接方法" value="bridge_inspection">橋梁点検車</button>
+      <button type="submit" name="近接方法" value="rail_lnd">軌陸車</button>
+      <button type="submit" name="近接方法" value="boat">ボート・船舶</button>
+    </form>
     <p>交通規制：{{ object.交通規制 }}</p>
+    <form method="POST" action="{% url 'detail-infra' object.pk %}">
+      {% csrf_token %}
+      <button type="submit" name="交通規制" value="none">無し</button>
+      <button type="submit" name="交通規制" value="one_side">片側交互通行</button>
+      <button type="submit" name="交通規制" value="decrease">車線減少</button>
+      <button type="submit" name="交通規制" value="sidewalk">歩道規制</button>
+      <button type="submit" name="交通規制" value="road_side">路肩規制</button>
+      <button type="submit" name="交通規制" value="stop">通行止め</button>
+    </form>
     <p>第三者点検の有無：{{ object.第三者点検の有無 }}</p>
+    <form method="POST" action="{% url 'detail-infra' object.pk %}">
+      {% csrf_token %}
+      <button type="submit" name="第三者点検の有無" value="yes">対象</button>
+      <button type="submit" name="第三者点検の有無" value="no">対象外</button>
+    </form>
     <p>海岸線との距離：{{ object.海岸線との距離 }} m</p>
     <p>路下条件：{{ object.路下条件 }}</p>
     <p>特記事項：{{ object.特記事項 }}</p>

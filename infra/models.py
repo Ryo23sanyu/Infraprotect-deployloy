@@ -22,7 +22,7 @@ class Infra(models.Model):
   第三者点検の有無 = models.CharField(max_length=100)# 第三者点検の有無
   海岸線との距離 = models.CharField(max_length=100)# 海岸線の距離
   路下条件 = models.CharField(max_length=100)# 路下条件
-  特記事項 = models.CharField(max_length=100)# 特記事項
+  特記事項 = models.CharField(max_length=100, blank=True)# 特記事項
   カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
   
   def __str__(self):

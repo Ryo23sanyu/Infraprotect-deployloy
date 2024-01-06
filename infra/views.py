@@ -19,7 +19,7 @@ class DetailInfraView(LoginRequiredMixin, DetailView):
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'
   model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー')
+  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー')
   success_url = reverse_lazy('list-infra')
   
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
@@ -30,8 +30,8 @@ class DeleteInfraView(LoginRequiredMixin, DeleteView):
 class UpdateInfraView(LoginRequiredMixin, UpdateView):
   template_name = 'infra/infra_update.html'
   model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー')
-  success_url = reverse_lazy('list-infra')
+  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー')
+  success_url = reverse_lazy('detail-infra')
   
 def infra_view(request):
   if request.method == 'POST':
