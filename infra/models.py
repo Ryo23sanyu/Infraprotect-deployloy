@@ -5,8 +5,8 @@ LOADGRADE = (('one', '一等橋'),('two', '二等橋'),('three', '三等橋'),('
 class Infra(models.Model):
   title = models.CharField(max_length=100)# 橋名
   径間数 = models.IntegerField()# 径間数
-  橋長 = models.IntegerField()# 橋長
-  全幅員 = models.IntegerField()# 全幅員
+  橋長 = models.DecimalField(max_digits=10, decimal_places=2)# 橋長(最大桁数10桁、小数点以下2桁)
+  全幅員 = models.DecimalField(max_digits=10, decimal_places=2)# 全幅員(最大桁数10桁、小数点以下2桁)
   路線名 = models.CharField(max_length=50)# 路線名
   latitude = models.CharField(max_length=50)# 緯度
   longitude = models.CharField(max_length=50)# 経度
