@@ -4,22 +4,40 @@ import ezdxf
 import openpyxl
 from ezdxf.entities.mtext import MText
 from ezdxf.entities.text import Text
+from prettytable import PrettyTable
 
-dxf = ezdxf.readfile('5_大久保歩道橋.dxf') # ファイルにアップロードしたdxfファイル名
+dxf = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\5_大久保歩道橋.dxf') # ファイルにアップロードしたdxfファイル名
 
 for entity in dxf.entities:
     if type(entity) is MText: # or type(entity) is Text: MTextとTextが文字列を表す(https://ymt-lab.com/post/2021/ezdxf-read-dxf-file/)
-        print( entity.plain_text() ) # GoogleColaboratory上に出力
+        cad =  entity.plain_text() # GoogleColaboratory上に出力 .splitlines():改行を,に置換しリスト化
+        cad_read = []
+        cad_read.append(cad)
+        #for i in range(len(cad)):
+           # cad[i] = cad[i].replace('\']', '\'],', len(cad))  # 各要素に対して置換を行う
+        print( cad_read )
+        # table = PrettyTable(["列1", "列2", "列3", "列4", "列5"])
+        
+        # if len(cad_read) < 10:
+        #     cad_read.extend([''] * (10 - len(cad_read)))
 
-workbook = openpyxl.Workbook() # 新規ファイルの作成
-sheet = workbook.active # アクティブなシートの選択
+        # for row in cad_read:
+        #     row_str = ",".join(row)
+        #     row = row_str.split(",") # データを`,`で区切ってリストに変換
+            
+        #     table.add_row(row)
 
-row = 1  # 出力する行数
+        # print(table)
 
-for entity in dxf.entities: # 上と同じ
-    if type(entity) is MText: # 上と同じ
-        text = entity.plain_text() # textに格納
-        sheet.cell(row=row, column=1).value = text #sheet.cell():セルの選択、row:行、column:列 → A列を1行ずつ選択
-        row += 1 # 一段下げる
+# workbook = openpyxl.Workbook() # 新規ファイルの作成
+# sheet = workbook.active # アクティブなシートの選択
 
-workbook.save('歩道橋.xlsx')# 保存するエクセル名
+# row = 1  # 出力する行数
+
+# for entity in dxf.entities: # 上と同じ
+#     if type(entity) is MText: # 上と同じ
+#         text = entity.plain_text() # textに格納
+#         sheet.cell(row=row, column=1).value = text #sheet.cell():セルの選択、row:行、column:列 → A列を1行ずつ選択
+#         row += 1 # 一段下げる
+
+# workbook.save('歩道橋.xlsx')# 保存するエクセル名

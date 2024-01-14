@@ -21,8 +21,16 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
   model = Infra
   fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー')
   success_url = reverse_lazy('detail-infra')
+  # def get_success_url(self):
+    # return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
   def get_success_url(self):
-    return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
+    pk = self.kwargs.get("pk")  # キーが存在しない場合はNoneを返す
+    if pk is not None:
+        return reverse_lazy('detail-infra', kwargs={'pk': pk})
+    else:
+        # pkが存在しない場合の処理を記述する
+        # 例えば該当するURLがない場合にはトップページにリダイレクトするなど
+        return reverse_lazy('list-infra')
   
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
   template_name = 'infra/infra_delete.html'

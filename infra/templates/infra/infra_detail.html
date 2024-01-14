@@ -75,7 +75,7 @@
     <!-- initMap関数の定義 -->
     <script>
       function initMap() {
-        var tokyoCoords = {lat: 35.6895, lng: 139.6917};
+        var tokyoCoords = {lat: 35.6812, lng: 139.7670};
         var map = new google.maps.Map(document.getElementById('map'), {
           center: tokyoCoords,
           zoom: 12
@@ -83,7 +83,8 @@
 
         // マーカーを作成
         var marker = new google.maps.Marker({
-          position: {lat: {{ object.latitude }}, lng: {{ object.longitude }}},
+          //position: {lat: {{ object.latitude }}, lng: {{ object.longitude }}},
+          position: {lat: 35.6812, lng: 139.7670}, // 東京駅の座標
           map: map,
           draggable: true
         });
@@ -92,6 +93,13 @@
         google.maps.event.addListener(marker, 'dragend', function(event) {
           var lat = event.latLng.lat();
           var lng = event.latLng.lng();
+
+          // 東京駅の座標を設定
+        if (!lat || !lng) {
+          lat = 35.6812;
+          lng = 139.7670;
+        }
+
           document.getElementById('result').innerHTML = '緯度: ' + lat + '<br>経度: ' + lng;
         });
 

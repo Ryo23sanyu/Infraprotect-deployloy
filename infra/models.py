@@ -8,8 +8,8 @@ class Infra(models.Model):
   橋長 = models.DecimalField(max_digits=10, decimal_places=2)# 橋長(最大桁数10桁、小数点以下2桁)
   全幅員 = models.DecimalField(max_digits=10, decimal_places=2)# 全幅員(最大桁数10桁、小数点以下2桁)
   路線名 = models.CharField(max_length=50)# 路線名
-  latitude = models.CharField(max_length=50)# 緯度
-  longitude = models.CharField(max_length=50)# 経度
+  latitude = models.CharField(max_length=50, blank=True)# 緯度
+  longitude = models.CharField(max_length=50, blank=True)# 経度
   橋梁コード = models.CharField(max_length=50, blank=True)# 橋梁コード
   活荷重 = models.CharField(max_length=50, blank=True)# 活荷重
   等級 = models.CharField(max_length=50, blank=True, choices = LOADGRADE)# 等級

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.18.3/bootstrap-table.min.css" integrity="sha512-..." crossorigin="anonymous">
+    <title>Bootstrap Table Example</title>
+</head>
+<body>
+
+<div class="container mt-5">
+    <table id="data-table" data-toggle="table" data-url="{{ url_for('get_data') }}" data-pagination="true" data-side-pagination="server" data-page-size="5" data-show-columns="true" data-search="true" data-show-export="true" data-export-types="['csv', 'excel']">
+        <thead>
+            <tr>
+                <th data-field="id" data-sortable="true">ID</th>
+                <th data-field="name" data-sortable="true">Name</th>
+                <th data-field="description" data-sortable="true">Description</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.18.3/bootstrap-table.min.js" integrity="sha512-..." crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.18.3/locale/bootstrap-table-ja-JP.min.js" integrity="sha512-..." crossorigin="anonymous"></script>
+
+<script>
+    $(document).ready(function () {
+        $('#data-table').bootstrapTable();
+    });
+</script>
+
+</body>
+</html>
