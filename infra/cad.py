@@ -20,7 +20,7 @@ for entity in dxf.entities:
 df = pd.DataFrame( cad_read )
 html = df.to_html(index=False)
 
-with open("pandas_table01.html", "a", encoding="utf-8") as file:
+with open("pandas_table01.html", "a", encoding="utf-8") as file:# "a":末尾に追記
     file.write(html)
 
 # workbook = openpyxl.Workbook() # 新規ファイルの作成

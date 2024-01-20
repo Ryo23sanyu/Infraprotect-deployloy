@@ -45,6 +45,3 @@ class UploadedFile(models.Model):
     
 class Photo(models.Model):
     image = models.ImageField(upload_to='photos/')
-    
-class Company(models.Model):
-    name = models.CharField(max_length=100)

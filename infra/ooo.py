@@ -10,7 +10,7 @@ chrome_service = sv.Service(executable_path=executable_path)
 
 # Chrome WebDriverのオプションを指定します
 options = webdriver.ChromeOptions()
-# options.add_argument("--headless")  # ブラウザを表示しない場合はコメントアウトしてください
+options.add_argument("--headless")  # ブラウザを表示しない場合はコメントアウトしてください
 
 # WebDriverを起動します
 driver = webdriver.Chrome(service=chrome_service, options=options)
