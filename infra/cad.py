@@ -4,30 +4,24 @@ import ezdxf
 import openpyxl
 from ezdxf.entities.mtext import MText
 from ezdxf.entities.text import Text
-from prettytable import PrettyTable
+import pandas as pd
 
 dxf = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\5_大久保歩道橋.dxf') # ファイルにアップロードしたdxfファイル名
 
+cad_read = []
 for entity in dxf.entities:
     if type(entity) is MText: # or type(entity) is Text: MTextとTextが文字列を表す(https://ymt-lab.com/post/2021/ezdxf-read-dxf-file/)
-        cad =  entity.plain_text() # GoogleColaboratory上に出力 .splitlines():改行を,に置換しリスト化
-        cad_read = []
-        cad_read.append(cad)
-        #for i in range(len(cad)):
-           # cad[i] = cad[i].replace('\']', '\'],', len(cad))  # 各要素に対して置換を行う
-        print( cad_read )
-        # table = PrettyTable(["列1", "列2", "列3", "列4", "列5"])
-        
-        # if len(cad_read) < 10:
-        #     cad_read.extend([''] * (10 - len(cad_read)))
+        cad =  entity.plain_text() # plain_text(読める文字)に変換
+        cad_data = cad.split("\n") if len(cad) > 0 else [] # .split():\nの箇所で改行
+        if len(cad_data) > 0:
+            cad_read.append(cad_data)
+# print( cad_read )
 
-        # for row in cad_read:
-        #     row_str = ",".join(row)
-        #     row = row_str.split(",") # データを`,`で区切ってリストに変換
-            
-        #     table.add_row(row)
+df = pd.DataFrame( cad_read )
+html = df.to_html(index=False)
 
-        # print(table)
+with open("pandas_table01.html", "a", encoding="utf-8") as file:
+    file.write(html)
 
 # workbook = openpyxl.Workbook() # 新規ファイルの作成
 # sheet = workbook.active # アクティブなシートの選択
