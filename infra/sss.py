@@ -1,5 +1,8 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+import os
+import signal
+import time
 
 # ブラウザのインスタンスを作成
 driver = webdriver.Chrome()
@@ -34,4 +37,6 @@ actions.click()
 actions.perform()
 
 # ブラウザを終了
-driver.quit()
+# driver.quit()
+
+os.kill(driver.service.process.pid,signal.SIGTERM)

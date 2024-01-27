@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from .models import Infra
@@ -8,15 +8,14 @@ from .forms import FileUploadForm
 from .forms import PhotoUploadForm
 from .models import Photo
 import os
-from django.contrib.auth.decorators import login_required
 
 class ListInfraView(LoginRequiredMixin, ListView):
-    template_name = 'infra/infra_list.html'
-    model = Infra
+  template_name = 'infra/infra_list.html'
+  model = Infra
 
 class DetailInfraView(LoginRequiredMixin, DetailView):
-    template_name = 'infra/infra_detail.html'
-    model = Infra
+  template_name = 'infra/infra_detail.html'
+  model = Infra
   
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'
@@ -137,13 +136,3 @@ def image_list(request):
 
     # テンプレートに画像ファイルの一覧を渡してレンダリングする
     return render(request, 'image_list.html', {'image_files': image_files})
-
-# 会社別に表示
-
-@login_required
-def my_view(request):
-    user = request.user
-    # 会社情報を使ってコンテンツをフィルタリングする処理
-    filtered_data = Data.objects.filter(company=user.company)
-    return render(request, 'template.html', {'filtered_data': filtered_data})
-
