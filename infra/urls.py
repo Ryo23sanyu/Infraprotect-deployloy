@@ -22,6 +22,7 @@ urlpatterns = [
     path('photos/', photo_list, name='photo_list'),
     path('photos/upload/', photo_upload, name='photo_upload'),
     path('photos/selected/', selected_photos, name='selected_photos'),
+    path('images/', views.image_list, name='image_list'),
 ]
 
 if settings.DEBUG:

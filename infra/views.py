@@ -7,6 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from .forms import FileUploadForm
 from .forms import PhotoUploadForm
 from .models import Photo
+import os
 
 class ListInfraView(LoginRequiredMixin, ListView):
   template_name = 'infra/infra_list.html'
@@ -126,3 +127,12 @@ def selected_photos(request):
     selected_photos = Photo.objects.filter(id__in=selected_photo_ids)
     return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
   
+def image_list(request):
+    # 写真フォルダのパスを指定する
+    photo_folder = R'C:\Users\dobokuka4\Desktop\写真'
+
+    # 写真フォルダ内の画像ファイルを取得する
+    image_files = os.listdir(photo_folder)
+
+    # テンプレートに画像ファイルの一覧を渡してレンダリングする
+    return render(request, 'image_list.html', {'image_files': image_files})

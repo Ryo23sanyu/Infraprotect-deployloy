@@ -1,0 +1,10 @@
+<!-- image_list.html -->
+<h1>画像一覧</h1>
+<ul>
+   {% for image_file in image_files %}
+       <li>
+           <!--<img src="R'C:\Users\dobokuka4\Desktop\写真'{{ image_file }}" alt="{{ image_file }}"> -->
+           <img src=R"C:\Users\dobokuka4\Desktop\写真{{ image_file }}" alt="{{ image_file }}">
+       </li>
+   {% endfor %}
+</ul>
