@@ -1,6 +1,6 @@
 from django import forms
-from .models import UploadedFile
-from .models import Photo, User, Company
+from .models import CustomUser, UploadedFile
+from .models import Photo, Company
 
 class FileUploadForm(forms.ModelForm):
     class Meta:
@@ -18,6 +18,6 @@ class UserCreationForm(forms.ModelForm):
     company = forms.ModelChoiceField(queryset=Company.objects.all())
 
     class Meta:
-        model = User
+        model = CustomUser
         fields = ('username', 'password', 'company')
 

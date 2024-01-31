@@ -15,7 +15,7 @@ for entity in dxf.entities:
         cad_data = cad.split("\n") if len(cad) > 0 else [] # .split():\nの箇所で改行
         if len(cad_data) > 0:
             cad_read.append(cad_data)
-# print( cad_read )
+print( cad_read )
 
 df = pd.DataFrame( cad_read )
 html = df.to_html(index=False)

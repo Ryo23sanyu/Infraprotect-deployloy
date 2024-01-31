@@ -146,4 +146,3 @@ def my_view(request):
     # 会社情報を使ってコンテンツをフィルタリングする処理
     filtered_data = Data.objects.filter(company=user.company)
     return render(request, 'template.html', {'filtered_data': filtered_data})
-

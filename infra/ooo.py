@@ -1,47 +1,29 @@
 from selenium import webdriver
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome import service as sv
-import math
+from selenium.webdriver.common.keys import Keys
+import os
+import signal
+import webbrowser
 
-# Chrome WebDriverのパスを指定します
-# executable_path = "chromedriver.exe"
-executable_path = R"C:\work\django\myproject\myvenv\Infraproject\infraproject\chromedriver-win64\chromedriver.exe"
-chrome_service = sv.Service(executable_path=executable_path)
+try:  
+  url = 'https://www.google.co.jp/maps/@35.8803435,140.5045137,13'
+  google = webbrowser.open(url, new=0, autoraise=True)
 
-# Chrome WebDriverのオプションを指定します
-options = webdriver.ChromeOptions()
-options.add_argument("--headless")  # ブラウザを表示しない場合はコメントアウトしてください
+  # 要素のサイズを取得
+  element = google.find_element_by_tag_name('body')
+  size = element.size
 
-# WebDriverを起動します
-driver = webdriver.Chrome(service=chrome_service, options=options)
+  # 要素の位置を取得
+  location = element.location
 
-# URLを指定してページを開きます
-url = "https://www.mlit.go.jp/road/ir/ir-data/census_visualizationR3/index.html#13/35.7486/140.1799"
-driver.get(url)
+  # 要素の中心点を計算
+  center_x = location['x'] + size['width'] / 2
+  center_y = location['y'] + size['height'] / 2
 
-# セレクターを使用して要素を取得
-element = driver.find_element_by_css_selector("#json_dlg > table > tbody > tr:nth-child(16) > td:nth-child(2)")
+  # 中心点をクリック
+  actions = webdriver.ActionChains(google)
+  actions.move_to_element_with_offset(element, center_x, center_y)
+  actions.click()
+  actions.perform()
 
-# 要素の位置とサイズを取得
-element_location = element.location
-element_size = element.size
-
-# 要素の中央の座標を計算
-center_x = element_location['x'] + math.floor(element_size['width'] / 2)
-center_y = element_location['y'] + math.floor(element_size['height'] / 2)
-
-# クリックする処理
-actions = ActionChains(driver)
-actions.move_by_offset(center_x, center_y).click().perform()
-
-# クリックをシミュレートします（必要な場合）
-# driver.find_element_by_css_selector("body > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-draggable.ui-resizable").click()
-
-# 指定したCSSセレクタの要素を取得します
-element = driver.find_element_by_css_selector("#json_dlg > table > tbody > tr:nth-child(16) > td:nth-child(2)")
-
-# 要素のテキストを表示します
-print(element.text)
-
-# WebDriverを終了します
-driver.quit()
+finally:
+  os.kill(google.service.process.pid,signal.SIGTERM)

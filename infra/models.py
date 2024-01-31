@@ -49,9 +49,8 @@ class Photo(models.Model):
     
 # 会社別に表示
 
-class User(AbstractUser):
+class CustomUser(AbstractUser):
     company = models.CharField(max_length=100)
 
 class Company(models.Model):
     name = models.CharField(max_length=100)
-
