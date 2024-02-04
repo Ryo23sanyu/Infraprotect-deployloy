@@ -130,7 +130,7 @@ def selected_photos(request):
   
 def image_list(request):
     # 写真フォルダのパスを指定する
-    photo_folder = R'C:\Users\dobokuka4\Desktop\写真'
+    photo_folder = R'C:\Users\dobokuka4\Desktop\picture'
 
     # 写真フォルダ内の画像ファイルを取得する
     image_files = os.listdir(photo_folder)
@@ -149,9 +149,25 @@ def image_list(request):
   
 # 全景写真
 
+# def panorama_list(request):
+#     panorama = Panorama.objects.all()
+#     return render(request, 'panorama_list.html', {'panorama': panorama})
+
 def panorama_list(request):
     panoramas = Panorama.objects.all()
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('selected_panoramas')
+        for panorama in panoramas:
+            if str(panorama.id) in selected_ids:
+                panorama.checked = True
+            else:
+                panorama.checked = False
+            panorama.save()
+        return redirect('panorama_list')  # 再描画のためにリダイレクト
+
     return render(request, 'panorama_list.html', {'panoramas': panoramas})
+
+
 
 def panorama_upload(request):
     if request.method == 'POST':

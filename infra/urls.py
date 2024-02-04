@@ -1,7 +1,7 @@
 from django.urls import path
 from .import views
 from .views import file_upload, file_upload_success
-from .views import photo_list, photo_upload, selected_photos
+from .views import photo_list, photo_upload, selected_photos, panorama_list, panorama_upload
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -23,7 +23,9 @@ urlpatterns = [
     path('photos/upload/', photo_upload, name='photo_upload'),
     path('photos/selected/', selected_photos, name='selected_photos'),
     path('images/', views.image_list, name='image_list'),
-    path('panoramas/', views.image_list, name='panorama_list'),
+    # path('panorama/list/', panorama_list, name='panorama_list'),
+    # path('panorama/upload/', panorama_upload, name='panorama_upload'),
+    path('panorama/', views.image_list, name='panorama_list'),
 ]
 
 if settings.DEBUG:
