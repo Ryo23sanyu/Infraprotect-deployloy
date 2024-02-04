@@ -54,3 +54,9 @@ class CustomUser(AbstractUser):
 
 class Company(models.Model):
     name = models.CharField(max_length=100)
+    
+# 写真シート
+    
+class Panorama(models.Model):
+    image = models.ImageField(upload_to='panoramas/')
+    checked = models.BooleanField(default=False)

@@ -1,0 +1,6 @@
+{% for panorama in panoramas %}
+    <div>
+        <img src="{{ panorama.image.url }}" alt="">
+        <input type="checkbox" {% if panorama.checked %}checked{% endif %}>
+    </div>
+{% endfor %}

@@ -6,7 +6,7 @@ from .models import Article
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .forms import FileUploadForm
 from .forms import PhotoUploadForm
-from .models import Photo
+from .models import Photo, Panorama
 import os
 from django.contrib.auth.decorators import login_required
 
@@ -140,9 +140,23 @@ def image_list(request):
 
 # 会社別に表示
 
-@login_required
-def my_view(request):
-    user = request.user
+#@login_required
+#def my_view(request):
+    #user = request.user
     # 会社情報を使ってコンテンツをフィルタリングする処理
-    filtered_data = Data.objects.filter(company=user.company)
-    return render(request, 'template.html', {'filtered_data': filtered_data})
+    #filtered_data = Data.objects.filter(company=user.company)
+    #return render(request, 'template.html', {'filtered_data': filtered_data})
+  
+# 全景写真
+
+def panorama_list(request):
+    panoramas = Panorama.objects.all()
+    return render(request, 'panorama_list.html', {'panoramas': panoramas})
+
+def panorama_upload(request):
+    if request.method == 'POST':
+        image = request.FILES['image']
+        checked = request.POST.get('checked', False)
+        panorama = Panorama.objects.create(image=image, checked=checked)
+        return redirect('panorama_list')
+    return render(request, 'panorama_upload.html')
