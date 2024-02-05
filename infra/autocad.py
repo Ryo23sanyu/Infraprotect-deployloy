@@ -21,14 +21,34 @@ df = pd.read_csv('output.csv').iloc[:100, :]  # 保存したCSVファイルを�
 
 def write_html(df, output):
     scripts = """
-    <link href="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.css" rel="stylesheet"/>
-    <script src="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.js"></script>
-    <script>$(document).ready(function() {$('.my-table').DataTable({});})</script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/css/foundation.min.css" rel="stylesheet"/>
+    <link href="https://cdn.datatables.net/v/zf/jq-3.6.0/dt-1.13.4/b-2.3.6/b-html5-2.3.6/date-1.4.1/fh-3.3.2/sb-1.4.2/datatables.min.css" rel="stylesheet"/>
+    <script src="https://cdn.datatables.net/v/zf/jq-3.6.0/dt-1.13.4/b-2.3.6/b-html5-2.3.6/date-1.4.1/fh-3.3.2/sb-1.4.2/datatables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/js/foundation.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        $.extend( $.fn.dataTable.defaults, { 
+            language: {
+                url: "https://cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/Japanese.json"
+            } 
+        });
+    
+        $('.my-table').DataTable({
+            select: true,
+            displayLength: 25,
+            buttons: ['copy'],
+            fixedHeader: true,
+            dom: 'iQrtBlp',
+        });
+    });
+    </script>
     """
 
     html = df.to_html(classes='my-table')
     html = scripts + html
-    with open(output, mode='a', encoding="utf-8") as file:# "a":末尾に追記
+    with open(output, mode='w', encoding="utf-8") as file:# "w":上書き
+    # with open(output, mode='a', encoding="utf-8") as file:# "a":末尾に追記
         file.write(html)
 
 write_html(df, 'future.html')

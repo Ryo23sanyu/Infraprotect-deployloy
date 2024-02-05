@@ -3,14 +3,14 @@ from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from .forms import SignupForm
-from .models import Company
+from .models import Company, CustomUser# CustomUserの追加
 from django.contrib.auth import get_user_model
 from django.views import generic
 from django.contrib.auth.mixins import UserPassesTestMixin
 
 
 class SignupView(CreateView):
-  model = User
+  model = CustomUser# UserからCustomUserに変更
   form_class = SignupForm
   template_name ='accounts/signup.html'
   success_url = reverse_lazy('my_page')
@@ -42,6 +42,6 @@ class OnlyYouMixin(UserPassesTestMixin):
 
 '''マイページ'''
 class MyPage(OnlyYouMixin, generic.DetailView):
-    model = User
+    model = CustomUser# UserからCustomUserに変更
     template_name = 'accounts/my_page.html'
     # モデル名小文字(user)でモデルインスタンスがテンプレートファイルに渡される
