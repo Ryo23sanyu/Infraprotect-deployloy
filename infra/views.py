@@ -130,7 +130,7 @@ def selected_photos(request):
   
 def image_list(request):
     # 写真フォルダのパスを指定する
-    photo_folder = R'C:\Users\dobokuka4\Desktop\picture'
+    photo_folder = R'C:\work\django\myproject\myvenv\Infraproject\uploads'
 
     # 写真フォルダ内の画像ファイルを取得する
     image_files = os.listdir(photo_folder)

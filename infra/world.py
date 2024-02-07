@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 # フォルダ内の画像ファイルのパスを取得
-image_folder_path = R'C:\\Users\\dobokuka4\\Desktop\\new'  # 画像が格納されているフォルダのパスを指定
+image_folder_path = R'C:\work\django\myproject\myvenv\Infraproject\uploads'  # 画像が格納されているフォルダのパスを指定
 image_files = [f for f in os.listdir(image_folder_path) if f.endswith(('.jpg', '.png'))]# pdfを追加する場合は末尾に.pdfを追加
 
 # 画像URLが格納された列を用意

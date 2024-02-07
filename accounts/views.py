@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from .forms import SignupForm
-from .models import Company, CustomUser# CustomUserの追加
+from infra.models import Company, CustomUser# CustomUserの追加
 from django.contrib.auth import get_user_model
 from django.views import generic
 from django.contrib.auth.mixins import UserPassesTestMixin

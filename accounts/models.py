@@ -1,4 +1,5 @@
 from django.db import models
+from infra.models import models
 
 class Company(models.Model):
     name = models.CharField(max_length=100)
