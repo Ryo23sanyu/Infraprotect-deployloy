@@ -61,3 +61,10 @@ class Company(models.Model):
 class Panorama(models.Model):
     image = models.ImageField(upload_to='panorama/')
     checked = models.BooleanField(default=False)
+    
+# 番号登録
+    
+class Number(models.Model):
+    single_number = models.CharField(max_length=5)
+    double_number_one = models.CharField(max_length=5)
+    double_number_two = models.CharField(max_length=5)

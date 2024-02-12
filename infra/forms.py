@@ -1,6 +1,6 @@
 from django import forms
 from .models import CustomUser, UploadedFile
-from .models import Photo, Company
+from .models import Photo, Company, Number
 
 class FileUploadForm(forms.ModelForm):
     class Meta:
@@ -20,4 +20,12 @@ class UserCreationForm(forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ('username', 'password', 'company')
+        
+# 番号登録
+
+class NumberForm(forms.ModelForm):
+    class Meta:
+        model = Number
+        fields = '__all__'
+        labels = {'name': '名前', 'age': '年齢'}
 

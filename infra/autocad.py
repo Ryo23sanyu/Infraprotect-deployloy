@@ -4,7 +4,7 @@ import ezdxf
 from ezdxf.entities.mtext import MText
 import pandas as pd
 
-dxf = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\5_大久保歩道橋.dxf') # ファイルにアップロードしたdxfファイル名
+dxf = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\12_細握橋.dxf') # ファイルにアップロードしたdxfファイル名
 
 cad_read = []
 for entity in dxf.entities:
@@ -14,7 +14,7 @@ for entity in dxf.entities:
         if len(cad_data) > 0:
             cad_read.append(cad_data)
 
-dix = pd.DataFrame( cad_read, columns=['部材名', '損傷名1', '損傷名2', '損傷名3', '損傷名4', '損傷名5'] ) # 列のタイトルの設定
+dix = pd.DataFrame( cad_read, columns=['部材名', '損傷名1', '損傷名2', '損傷名3', '損傷名4'] ) # 列のタイトルの設定
 dix.insert(2, '余白', "") # 列の追加
 
 dix.to_csv('output.csv', index=False)  # dixをCSVファイルとして保存
