@@ -119,10 +119,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "infra/static/"
 
 STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, "C:\work\django\myproject\myvenv\Infraproject\uploads"),
+    os.path.join(BASE_DIR, "infra/static/"),
 )
 
 MEDIA_URL = '/media/'
