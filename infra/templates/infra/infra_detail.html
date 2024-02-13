@@ -4,6 +4,24 @@
 {% block h1 %}橋梁緒言{% endblock %}
 
 {% block content %}
+<div class="sidebar">
+  <p>インフラプロジェクト</p>
+  <ul>
+      <li><a href="1">橋梁緒言</a></li>
+      <li><a href="2">一般図</a></li>
+      <li><a href="3">全景写真</a></li>
+      <li><a href="3">番号図</a></li>
+      <li><a href="3">所見まとめ</a></li>
+      <li><a href="3">各部材所見</a></li>
+      <li><a href="3">損傷図</a></li>
+      <li><a href="3">損傷写真</a></li>
+      <li><a href="3">アップロード</a></li>
+      <li><a href="3">データ出力</a></li>
+  </ul>
+  <div class="sidebar-toggle">
+    <button class="btn btn-primary">sidebar</button>
+  </div>
+</div>
   <div class="p-4 m-4 bg-light border border-success rounded">
     <h2 class="text-success">{{ object.title }}</h2>
     <p>径間数：{{ object.径間数 }} 径間</p>
@@ -136,7 +154,43 @@
         });
       }
     </script>
-    <a href="{% url 'list-infra' %}" class="btn btn-primary">一覧</a>
+    <script>
+      function handleOrderChange() {
+                  // プルダウンメニューが変更されたときの処理をここに追加
+                  var orderSelect = document.getElementById("order_by");
+                  var selectedValue = orderSelect.value;
+    
+                  // 選択された値を使って何かしらの処理を行う（例：Ajaxでデータを取得するなど）
+                  console.log("選択された値: ", selectedValue);
+              }
+      var sidebar = document.querySelector('.sidebar');
+      var sidebarToggle = document.querySelector('.sidebar-toggle');
+    
+      sidebarToggle.addEventListener('click', function() {
+                  sidebar.classList.toggle('open');
+              });
+              
+              function stickySidebar() {
+                var sidebar = document.querySelector('.sidebar');
+                var sidebarTop = sidebar.getBoundingClientRect().top;
+                var windowTop = window.pageYOffset || document.documentElement.scrollTop;
+              
+                if (windowTop > sidebarTop) {
+                  sidebar.style.position = 'fixed';
+                  // サイドバーの位置やスタイルを調整する必要がある場合は、適宜追加の処理を行ってください
+                } else {
+                  sidebar.style.position = 'static';
+                  // サイドバーの位置やスタイルを調整する必要がある場合は、適宜追加の処理を行ってください
+                }
+              }
+              
+              // スクロールイベントを監視して、サイドバーの位置を動的に変更する
+              window.addEventListener('scroll', function() {
+                stickySidebar();
+              });
+              
+    </script>
+    <a href="{% url 'list-infra' object.pk %}" class="btn btn-primary">一覧</a>
     <a href="{% url 'update-infra' object.pk %}" class="btn btn-primary">編集</a>
     <a href="{% url 'delete-infra' object.pk %}" class="btn btn-primary">削除</a>
     <h6 class="card-title">{{ object.カテゴリー }}</h6>

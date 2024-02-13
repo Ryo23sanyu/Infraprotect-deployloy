@@ -10,7 +10,7 @@ cad_read = []
 for entity in dxf.entities:
     if type(entity) is MText: # or type(entity) is Text: MTextとTextが文字列を表す(https://ymt-lab.com/post/2021/ezdxf-read-dxf-file/)
         cad =  entity.plain_text() # plain_text(読める文字)に変換
-        cad_data = cad.split("\n") if len(cad) > 0 else [] # .split():\nの箇所で改行
+        cad_data = cad.split("\n") if len(cad) > 0 else [] # .split():\nの箇所で配列に分配
         if len(cad_data) > 0:
             cad_read.append(cad_data)
 
