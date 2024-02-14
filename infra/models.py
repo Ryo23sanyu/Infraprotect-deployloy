@@ -32,11 +32,11 @@ class Infra(models.Model):
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 class Article(models.Model):
   title = models.CharField(max_length=100)# 顧客名
-  article_name = models.CharField(max_length=100)# 物件名
-  number = models.IntegerField()# 対象数
-  manager = models.CharField(max_length=100)# 担当者名
-  other = models.CharField(max_length=100)# その他
-  category = models.CharField(max_length=100, choices = CATEGORY)# カテゴリ
+  物件名 = models.CharField(max_length=100)# 物件名 article_name
+  対象数 = models.IntegerField()# 対象数 number
+  担当者名 = models.CharField(max_length=100)# 担当者名 namager
+  その他 = models.CharField(max_length=100)# その他 other
+  カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
   
   def __str__(self):
     return self.title

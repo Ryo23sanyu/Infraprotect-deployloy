@@ -78,7 +78,7 @@ class DetailArticleView(LoginRequiredMixin, DetailView):
 class CreateArticleView(LoginRequiredMixin, CreateView):
   template_name = 'infra/article_create.html'
   model = Article
-  fields = ('title', 'article_name', 'number', 'manager', 'other')
+  fields = ('title', '物件名', '対象数', '担当者名', 'その他')
   success_url = reverse_lazy('list-article')
   
 class DeleteArticleView(LoginRequiredMixin, DeleteView):
@@ -89,7 +89,7 @@ class DeleteArticleView(LoginRequiredMixin, DeleteView):
 class UpdateArticleView(LoginRequiredMixin, UpdateView):
   template_name = 'infra/article_update.html'
   model = Article
-  fields = ('title', 'article_name', 'number', 'manager', 'other')
+  fields = ('title', '物件名', '対象数', '担当者名', 'その他')
   success_url = reverse_lazy('list-article')
   
 # class ArticleInfraView(LoginRequiredMixin, DetailView):
