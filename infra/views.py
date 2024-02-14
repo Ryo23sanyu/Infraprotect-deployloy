@@ -129,11 +129,25 @@ def selected_photos(request):
     return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
   
 def image_list(request):
+
+    """ 
     # 写真フォルダのパスを指定する
     photo_folder = R'C:\work\django\myproject\myvenv\Infraproject\infra\static\infra\img'
 
     # 写真フォルダ内の画像ファイルを取得する
     image_files = os.listdir(photo_folder)
+    """
+    
+    # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。    
+    import glob
+
+    files = glob.glob( "infra/static/infra/img/*"  )
+
+    # ページに表示する際、"infra/static/" を削除する。
+    image_files = []
+    for file in files:
+        image_files.append( file.replace("infra/static/", "") )
+
 
     # テンプレートに画像ファイルの一覧を渡してレンダリングする
     return render(request, 'image_list.html', {'image_files': image_files})

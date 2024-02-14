@@ -53,3 +53,7 @@ a {
 .open{
     left:0;
 }
+
+.picture img {
+  width: 50px;
+}

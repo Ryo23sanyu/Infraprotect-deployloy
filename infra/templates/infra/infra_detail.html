@@ -175,11 +175,11 @@
                 var sidebarTop = sidebar.getBoundingClientRect().top;
                 var windowTop = window.pageYOffset || document.documentElement.scrollTop;
               
-                if (windowTop > sidebarTop) {
+                if (windowTop > sidebarTop && windowTop > 0) {
                   sidebar.style.position = 'fixed';
                   // サイドバーの位置やスタイルを調整する必要がある場合は、適宜追加の処理を行ってください
                 } else {
-                  sidebar.style.position = 'static';
+                  // sidebar.style.position = 'static';
                   // サイドバーの位置やスタイルを調整する必要がある場合は、適宜追加の処理を行ってください
                 }
               }
