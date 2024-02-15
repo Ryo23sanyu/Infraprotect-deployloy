@@ -32,7 +32,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
     else:
         # pkが存在しない場合の処理を記述する
         # 例えば該当するURLがない場合にはトップページにリダイレクトするなど
-        return reverse_lazy('list-infra')
+        return reverse_lazy('list-infra', kwargs={'pk': pk})
   
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
   template_name = 'infra/infra_delete.html'

@@ -21,7 +21,7 @@
       <h6 class="card-text">担当者名：{{ item.担当者名 }}</h6>
       <h6 class="card-text">その他：{{ item.その他 }}</h6>
       <div class="mt-3">
-        <a href="{% url 'list-infra' item.pk %}" class="btn btn-primary">対象一覧</a>
+        <a href="{% url 'list-infra' pk=item.pk %}" class="btn btn-primary">対象一覧</a>
         <a href="{% url 'detail-article' item.pk %}" class="btn btn-primary">詳細</a>
       </div>
     </div>

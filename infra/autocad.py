@@ -15,7 +15,7 @@ for entity in dxf.entities:
             cad_read.append(cad_data)
 
 dix = pd.DataFrame( cad_read, columns=['部材名', '損傷名1', '損傷名2', '損傷名3', '損傷名4'] ) # 列のタイトルの設定
-dix.insert(2, '余白', "") # 列の追加
+# dix.insert(2, '余白', "") # 列の追加
 
 dix.to_csv('output.csv', index=False)  # dixをCSVファイルとして保存
 df = pd.read_csv('output.csv')  # 保存したCSVファイルを読み込み
