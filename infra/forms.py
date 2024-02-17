@@ -27,5 +27,4 @@ class NumberForm(forms.ModelForm):
     class Meta:
         model = Number
         fields = '__all__'
-        labels = {'name': '名前', 'age': '年齢'}
-
+        labels = {'single_number': '単独番号', 'double_number_one': '連続する始番', 'double_number_two': '連続する末番'}

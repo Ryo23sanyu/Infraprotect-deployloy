@@ -27,6 +27,8 @@ urlpatterns = [
     # path('panorama/list/', panorama_list, name='panorama_list'),
     # path('panorama/upload/', panorama_upload, name='panorama_upload'),
     path('panorama/', views.image_list, name='panorama_list'),
+    path('my_table/', views.my_view, name='my_table'),
+    path('number/', views.number_view, name='number'),
 ]
 
 if settings.DEBUG:

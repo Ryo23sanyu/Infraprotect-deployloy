@@ -1,6 +1,10 @@
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
+import pandas as pd
+
+from infra.autocad import write_html
 from .models import Infra
 from .models import Article
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -13,6 +17,9 @@ from django.contrib.auth.decorators import login_required
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
     model = Infra
+    success_url = reverse_lazy('list-infra')
+    def get_success_url(self):
+      return reverse_lazy('list-infra', kwargs={'pk': self.kwargs["pk"]})
 
 class DetailInfraView(LoginRequiredMixin, DetailView):
     template_name = 'infra/infra_detail.html'
@@ -190,3 +197,34 @@ def panorama_upload(request):
         panorama = Panorama.objects.create(image=image, checked=checked)
         return redirect('panorama_list')
     return render(request, 'panorama_upload.html')
+  
+# Django上にテーブルを作成
+  
+def my_view(request):
+    df = pd.read_csv("C:\work\django\myproject\myvenv\Infraproject\output.csv")  # 保存したCSVファイルを読み込む
+
+    html = write_html(df, 'future.html')  # HTMLコードを生成
+
+    return HttpResponse(html)
+  
+# 番号表示
+  
+from django.http import HttpResponse
+
+def number_view(request):
+    start = "0101"
+    end = "0206"
+
+    # 最初の2桁と最後の2桁を取得
+    start_prefix = start[:2]
+    start_suffix = start[2:]
+    end_prefix = end[:2]
+    end_suffix = end[2:]
+
+    # 抽出した数字を文字列として結合
+    result = ""
+    for prefix in range(int(start_prefix), int(end_prefix)+1):
+        for suffix in range(int(start_suffix), int(end_suffix)+1):
+            result += "{:02d}{:02d}\n".format(prefix, suffix)
+
+    return HttpResponse(result)
