@@ -3,7 +3,6 @@ from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 import pandas as pd
-
 from infra.autocad import write_html
 from .models import Infra
 from .models import Article
@@ -17,9 +16,15 @@ from django.contrib.auth.decorators import login_required
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
     model = Infra
-    success_url = reverse_lazy('list-infra')
-    def get_success_url(self):
-      return reverse_lazy('list-infra', kwargs={'pk': self.kwargs["pk"]})
+    def get_queryset(self, **kwargs):
+        queryset = super().get_queryset(**kwargs) # Article.objects.all() と同じ結果
+
+        # GETリクエストパラメータにkeywordがあれば、それでフィルタする
+        keyword = self.request.GET.get( object.pk )
+        if keyword is not None:
+            queryset = queryset.filter(title__contains=keyword)
+
+        return queryset
 
 class DetailInfraView(LoginRequiredMixin, DetailView):
     template_name = 'infra/infra_detail.html'
@@ -135,6 +140,8 @@ def selected_photos(request):
     selected_photos = Photo.objects.filter(id__in=selected_photo_ids)
     return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
   
+# 写真の表示
+  
 def image_list(request):
 
     """ 
@@ -154,7 +161,6 @@ def image_list(request):
     image_files = []
     for file in files:
         image_files.append( file.replace("infra/static/", "") )
-
 
     # テンプレートに画像ファイルの一覧を渡してレンダリングする
     return render(request, 'image_list.html', {'image_files': image_files})
@@ -228,3 +234,14 @@ def number_view(request):
             result += "{:02d}{:02d}\n".format(prefix, suffix)
 
     return HttpResponse(result)
+
+from django.shortcuts import render
+
+def table_view(request):
+    people = [
+        {'name': 'Alice', 'age': 25},
+        {'name': 'Bob', 'age': 30},
+        {'name': 'Charlie', 'age': 35}
+    ]
+    context = {'people': people}  # テンプレートに渡すデータ
+    return render(request, 'table.html', context)

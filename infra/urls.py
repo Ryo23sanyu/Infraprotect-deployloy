@@ -20,15 +20,16 @@ urlpatterns = [
     path('article/<int:pk>/update/', views.UpdateArticleView.as_view(), name='update-article'),
     path('upload/', file_upload, name='file_upload'),
     path('upload/success/', file_upload_success, name='file_upload_success'),
-    path('photos/', photo_list, name='photo_list'),
-    path('photos/upload/', photo_upload, name='photo_upload'),
-    path('photos/selected/', selected_photos, name='selected_photos'),
+    # path('photos/', photo_list, name='photo_list'),
+    # path('photos/upload/', photo_upload, name='photo_upload'),
+    # path('photos/selected/', selected_photos, name='selected_photos'),
     path('images/', views.image_list, name='image_list'),
     # path('panorama/list/', panorama_list, name='panorama_list'),
     # path('panorama/upload/', panorama_upload, name='panorama_upload'),
     path('panorama/', views.image_list, name='panorama_list'),
     path('my_table/', views.my_view, name='my_table'),
     path('number/', views.number_view, name='number'),
+    path('table/', views.table_view, name='table'),
 ]
 
 if settings.DEBUG:

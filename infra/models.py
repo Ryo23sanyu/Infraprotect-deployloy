@@ -2,6 +2,18 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
+class Article(models.Model):
+  title = models.CharField(max_length=100)# 顧客名
+  物件名 = models.CharField(max_length=100)# 物件名 article_name
+  対象数 = models.IntegerField()# 対象数 number
+  担当者名 = models.CharField(max_length=100)# 担当者名 namager
+  その他 = models.CharField(max_length=100)# その他 other
+  カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
+  
+  def __str__(self):
+    return self.title
+    
+CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 LOADGRADE = (('one', '一等橋'),('two', '二等橋'),('three', '三等橋'),('unknown', '不明'))
 class Infra(models.Model):
   title = models.CharField(max_length=100)# 橋名
@@ -25,22 +37,11 @@ class Infra(models.Model):
   路下条件 = models.CharField(max_length=100)# 路下条件
   特記事項 = models.CharField(max_length=100, blank=True)# 特記事項
   カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
+  article = models.ForeignKey(Article, on_delete=models.CASCADE)
   
   def __str__(self):
     return self.title
-  
-CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
-class Article(models.Model):
-  title = models.CharField(max_length=100)# 顧客名
-  物件名 = models.CharField(max_length=100)# 物件名 article_name
-  対象数 = models.IntegerField()# 対象数 number
-  担当者名 = models.CharField(max_length=100)# 担当者名 namager
-  その他 = models.CharField(max_length=100)# その他 other
-  カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
-  
-  def __str__(self):
-    return self.title
-    
+
 class UploadedFile(models.Model):
     file = models.FileField(upload_to='uploads/')
     
@@ -61,6 +62,9 @@ class Company(models.Model):
 class Panorama(models.Model):
     image = models.ImageField(upload_to='panorama/')
     checked = models.BooleanField(default=False)
+    # チェックボックスの状態を保存するフィールド
+    # is_checked = models.BooleanField(default=False)
+
     
 # 番号登録
     
