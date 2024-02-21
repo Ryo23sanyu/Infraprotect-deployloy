@@ -9,7 +9,7 @@ urlpatterns = [
     path('', views.index_view, name='index'),
     #path('infra/', views.ListInfraView.as_view(), name='list-infra'),
     path('article/<int:pk>/infra/', views.ListInfraView.as_view(), name='list-infra'),
-    path('infra/<int:pk>/create/', views.CreateInfraView.as_view(), name='create-infra'),
+    path('infra/create/', views.CreateInfraView.as_view(), name='create-infra'),
     path('infra/<int:pk>/detail/', views.DetailInfraView.as_view(), name='detail-infra'),
     path('infra/<int:pk>/delete/', views.DeleteInfraView.as_view(), name='delete-infra'),
     path('infra/<int:pk>/update/', views.UpdateInfraView.as_view(), name='update-infra'),
@@ -28,7 +28,7 @@ urlpatterns = [
     # path('panorama/upload/', panorama_upload, name='panorama_upload'),
     path('panorama/', views.image_list, name='panorama_list'),
     path('my_table/', views.my_view, name='my_table'),
-    path('number/', views.number_view, name='number'),
+    path('number/', views.sample_view, name='number'),
     path('table/', views.table_view, name='table'),
 ]
 

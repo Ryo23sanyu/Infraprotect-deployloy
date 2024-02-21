@@ -18,13 +18,18 @@ class ListInfraView(LoginRequiredMixin, ListView):
     model = Infra
     def get_queryset(self, **kwargs):
         queryset = super().get_queryset(**kwargs) # Article.objects.all() と同じ結果
-
+    
         # GETリクエストパラメータにkeywordがあれば、それでフィルタする
-        keyword = self.request.GET.get( object.pk )
+        #keyword = self.request.GET.get( object.pk )            
+        #keyword = Infra.objects.filter(article__id = self.kwargs["pk"] )
+        keyword = self.request.GET.get( self.kwargs["pk"] )
+
         if keyword is not None:
             queryset = queryset.filter(title__contains=keyword)
 
         return queryset
+    
+
 
 class DetailInfraView(LoginRequiredMixin, DetailView):
     template_name = 'infra/infra_detail.html'
@@ -245,3 +250,23 @@ def table_view(request):
     ]
     context = {'people': people}  # テンプレートに渡すデータ
     return render(request, 'table.html', context)
+
+# 番号表示
+
+def sample_view(request):# 追加
+    start = "0101"
+    end = "0206"
+
+# 最初の2桁と最後の2桁を取得
+    start_prefix = start[:2]
+    start_suffix = start[2:]
+    end_prefix = end[:2]
+    end_suffix = end[2:]
+
+# 抽出した数字を表示
+    result = ""# 追加
+    for prefix in range(int(start_prefix), int(end_prefix)+1):
+        for suffix in range(int(start_suffix), int(end_suffix)+1):
+            result += "{:02d}{:02d}".format(prefix, suffix)
+        
+    return HttpResponse(result)# 追加

@@ -1,9 +1,10 @@
 <!-- table.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Table Example</title>
-</head>
+{% extends "base.html" %}
+
+{% block title %}Table Example{% endblock title %}
+{% block h1 %}Table Example{% endblock %}
+
+{% block content %}
 <body>
     <table>
         <thead>
@@ -21,5 +22,4 @@
             {% endfor %}
         </tbody>
     </table>
-</body>
-</html>
+{% endblock %}

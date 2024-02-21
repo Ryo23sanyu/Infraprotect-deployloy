@@ -48,11 +48,6 @@ def write_html(df, output):
     html = df.to_html(classes='my-table')
     html = scripts + html
     return html
-
-with open(R"C:\work\django\myproject\myvenv\Infraproject\future.html", "a") as f:
-    f.write("{% extends 'base.html' %}\n\n")
-    f.write("{% block title %}サンプル{% endblock title %}\n\n")
-    f.write("{% block h1 %}サンプル{% endblock %}\n")
     
     # with open(output, mode='w', encoding="utf-8") as file:# "w":上書き
     # with open(output, mode='a', encoding="utf-8") as file:# "a":末尾に追記

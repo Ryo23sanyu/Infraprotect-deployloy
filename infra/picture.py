@@ -21,16 +21,17 @@ images = {}
 
 ### 関数
 def func():
-
-    ### ファイルダイアログ
-    name = tkinter.filedialog.askopenfilename(title="ファイル選択", initialdir=os.getcwd(), filetypes=[("Image File","*.jpg")])
-
-    ### 画像ロード
-    img = Image.open(name)
-    img = img.resize((WIDTH, HEIGHT))
-    image = ImageTk.PhotoImage(img)
     
-    images[name] = image
+    # ファイルダイアログ
+    names = tkinter.filedialog.askopenfilenames(title="ファイル選択", initialdir=os.getcwd(), filetypes=[("Image File","*.jpg")])
+    
+    # 画像ロード
+    for name in names:
+        img = Image.open(name)
+        img = img.resize((WIDTH, HEIGHT))
+        image = ImageTk.PhotoImage(img)
+    
+        images[name] = image
     
     # ## 表示済み画像の消去(一覧を変更する機能を追加した場合有効化)
     # for name in images.keys():
