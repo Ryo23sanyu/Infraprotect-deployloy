@@ -2,14 +2,15 @@ import ast
 import ezdxf
 from ezdxf.entities.mtext import MText
 import pandas as pd
+import ezdxf
 
-def extract_inner_entities(entities, boundaries):
-    inner_entities = []
-    for entity in entities:
-        for boundary in boundaries:
-            if is_inside_boundary(entity, boundary):
-                inner_entities.append(entity)
-    return inner_entities
+def extract_entities(filename):
+    doc = ezdxf.readfile(filename)
+    modelspace = doc.modelspace()
+    entities = []
+    for entity in modelspace:
+        entities.append(entity)
+    return entities
 
 def find_boundaries(entities):
     boundaries = []
@@ -35,6 +36,8 @@ def is_inside_boundary(entity, boundary):
     return inside
 
 filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\12_細握橋.dxf'
-entities = extract_entities_below(filename)
+entities = extract_entities(filename)
 boundaries = find_boundaries(entities)
 inner_entities = extract_inner_entities(entities, boundaries)
+
+print(inner_entities)

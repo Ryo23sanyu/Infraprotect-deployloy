@@ -5,21 +5,33 @@
 {% block h1 %}Table Example{% endblock %}
 
 {% block content %}
+<head>
+    <link href="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.css" rel="stylesheet"/>
+    <script src="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.js"></script>
+</head>
 <body>
-    <table>
+    <table class="my-table">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Age</th>
+                <th>損傷箇所</th>
+                <th>損傷種類</th>
+                <th>写真番号</th>
             </tr>
         </thead>
         <tbody>
-            {% for person in people %}
+            {% for bridge in damage_table %}
             <tr>
-                <td>{{ person.name }}</td>
-                <td>{{ person.age }}</td>
+                <td>{{ bridge.first }}</td>
+                <td>{{ bridge.second }}</td>
+                <td>{{ bridge.third }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    <script>
+        $(document).ready(function() {
+            $('.my-table').DataTable({});
+        })
+    </script>
+</body>
 {% endblock %}

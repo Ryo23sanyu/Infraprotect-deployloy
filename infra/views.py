@@ -241,14 +241,37 @@ def number_view(request):
     return HttpResponse(result)
 
 from django.shortcuts import render
+import ezdxf
+from ezdxf.entities.mtext import MText
 
 def table_view(request):
-    people = [
-        {'name': 'Alice', 'age': 25},
-        {'name': 'Bob', 'age': 30},
-        {'name': 'Charlie', 'age': 35}
-    ]
-    context = {'people': people}  # テンプレートに渡すデータ
+
+    dxf = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\12_損傷橋.dxf') # ファイルにアップロードしたdxfファイル名
+
+    cad_read = []
+    for entity in dxf.entities:
+        if type(entity) is MText: # or type(entity) is Text: MTextとTextが文字列を表す(https://ymt-lab.com/post/2021/ezdxf-read-dxf-file/)
+            cad =  entity.plain_text() # plain_text(読める文字)に変換
+            cad_data = cad.split("\n") if len(cad) > 0 else [] # .split():\nの箇所で配列に分配
+            if len(cad_data) > 0 and "\n" in cad and not cad.startswith("※") and not any(keyword in cad for keyword in ["×", "."]):
+             # 改行を含むかどうかをチェックする:# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
+                    cad_read.append(cad_data)
+
+# 先頭の要素を抽出
+    first_item = [sub_list[0] for sub_list in cad_read]
+# それ以外の要素を抽出
+    other_items = [sub_list[1:-1] for sub_list in cad_read]
+# 最後の要素を抽出
+    last_item = [sub_list[-1] for sub_list in cad_read]
+
+    damage_table = []  # 空のリストを作成
+
+# ループで各要素を辞書型に変換し、空のリストに追加
+    for i in range(len(first_item)):
+        item = {'first': first_item[i], 'second': other_items[i], 'third': last_item[i]}
+        damage_table.append(item)
+        
+    context = {'damage_table': damage_table}  # テンプレートに渡すデータ
     return render(request, 'table.html', context)
 
 # 番号表示

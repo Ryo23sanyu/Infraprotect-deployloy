@@ -20,7 +20,7 @@ def extract_entities(filename):
 def find_boundaries(entities):
     boundaries = []
     for entity in entities:
-        if entity.dxftype() == 'Defpoints':
+        if entity.dxftype() == '枠':
             # ここでは特定の条件(例: レイヤー名が'BOUNDARY'など)でポリラインを判別することができます
             # 特定のポリラインを見つけた場合、そのポリラインの頂点情報を取得します
             vertices = entity.get_points()
@@ -55,4 +55,4 @@ entities = extract_entities(filename)
 boundaries = find_boundaries(entities)
 inner_entities = extract_inner_entities(entities, boundaries)
 
-print(entities)
+print(inner_entities)
