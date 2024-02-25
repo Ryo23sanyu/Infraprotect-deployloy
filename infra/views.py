@@ -3,32 +3,39 @@ from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 import pandas as pd
-from infra.autocad import write_html
 from .models import Infra
 from .models import Article
+from django.db import models
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .forms import FileUploadForm
+from .forms import FileUploadForm, UploadForm
 from .forms import PhotoUploadForm
 from .models import Photo, Panorama
 import os
 from django.contrib.auth.decorators import login_required
+import ezdxf
+from ezdxf.entities.mtext import MText
+import tkinter
+import tkinter.filedialog
+from PIL import Image, ImageTk
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
-    model = Infra
+    model = Infra # 使用するモデル「infra」
     def get_queryset(self, **kwargs):
-        queryset = super().get_queryset(**kwargs) # Article.objects.all() と同じ結果
-    
-        # GETリクエストパラメータにkeywordがあれば、それでフィルタする
-        #keyword = self.request.GET.get( object.pk )            
-        #keyword = Infra.objects.filter(article__id = self.kwargs["pk"] )
-        keyword = self.request.GET.get( self.kwargs["pk"] )
-
-        if keyword is not None:
-            queryset = queryset.filter(title__contains=keyword)
-
+        # モデル検索のクエリー。Infra.objects.all() と同じ結果で全ての Infra
+        queryset = super().get_queryset(**kwargs)
+        # パスパラメータpkによりarticleを求める
+        article = Article.objects.get(id = self.kwargs["pk"] )
+        # 求めたarticleを元にモデル検索のクエリーを絞り込む
+        queryset = queryset.filter(article=article)
+        # 絞り込んだクエリーをDjangoに返却し表示データとしてもらう
         return queryset
-    
+
+    def get_context_data(self, **kwargs):
+        # HTMLテンプレートでの表示変数として「article_id」を追加。
+        # 値はパスパラメータpkの値→取り扱うarticle.idとなる
+        kwargs["article_id"] = self.kwargs["pk"]
+        return super().get_context_data(**kwargs)
 
 
 class DetailInfraView(LoginRequiredMixin, DetailView):
@@ -43,7 +50,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
   # def get_success_url(self):
     # return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
   def get_success_url(self):
-    pk = self.kwargs.get("pk")  # キーが存在しない場合はNoneを返す
+    pk = self.kwargs["pk"]  # キーが存在しない場合はNoneを返す
     if pk is not None:
         return reverse_lazy('detail-infra', kwargs={'pk': pk})
     else:
@@ -208,17 +215,8 @@ def panorama_upload(request):
         panorama = Panorama.objects.create(image=image, checked=checked)
         return redirect('panorama_list')
     return render(request, 'panorama_upload.html')
-  
-# Django上にテーブルを作成
-  
-def my_view(request):
-    df = pd.read_csv("C:\work\django\myproject\myvenv\Infraproject\output.csv")  # 保存したCSVファイルを読み込む
-
-    html = write_html(df, 'future.html')  # HTMLコードを生成
-
-    return HttpResponse(html)
-  
-# 番号表示
+   
+# 番号表示  
   
 from django.http import HttpResponse
 
@@ -240,9 +238,7 @@ def number_view(request):
 
     return HttpResponse(result)
 
-from django.shortcuts import render
-import ezdxf
-from ezdxf.entities.mtext import MText
+# <<テーブルの作成>>
 
 def table_view(request):
 
@@ -260,7 +256,19 @@ def table_view(request):
 # 先頭の要素を抽出
     first_item = [sub_list[0] for sub_list in cad_read]
 # それ以外の要素を抽出
+    # リストの各要素から記号を削除する
+    def remove_symbols(other_items):
+        symbols = ['!', '[', ']', "'"]
+
+        processed_other_items = []
+        for item in other_items:
+            processed_item = ''.join(c for c in item if c not in symbols)
+            processed_other_items.append(processed_item)
+    
+        return processed_other_items
     other_items = [sub_list[1:-1] for sub_list in cad_read]
+    middle_items = remove_symbols(other_items)
+    
 # 最後の要素を抽出
     last_item = [sub_list[-1] for sub_list in cad_read]
 
@@ -268,7 +276,7 @@ def table_view(request):
 
 # ループで各要素を辞書型に変換し、空のリストに追加
     for i in range(len(first_item)):
-        item = {'first': first_item[i], 'second': other_items[i], 'third': last_item[i]}
+        item = {'first': first_item[i], 'second': middle_items[i], 'third': last_item[i]}
         damage_table.append(item)
         
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ
@@ -293,3 +301,28 @@ def sample_view(request):# 追加
             result += "{:02d}{:02d}".format(prefix, suffix)
         
     return HttpResponse(result)# 追加
+
+# <<ファイルアップロード(プライマリーキーで分類分け)>>
+
+def upload_directory_path(instance, filename):
+    # プライマリーキーを取得する
+    primary_key = instance.pk
+    # 'documents/プライマリーキー/filename' のパスを返す
+    return 'uploads/{}/{}'.format(primary_key, filename)
+
+class Upload(models.Model):
+    file = models.FileField(upload_to=upload_directory_path)
+
+# <<写真表示>>
+
+def display_photo(request):
+    if request.method == 'POST':
+        form = UploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # フォームが有効な場合は、選択された写真を保存して表示します
+            photo = form.cleaned_data['photo']
+            # ここで写真の保存や表示のための処理を行います
+            return render(request, 'image_list.html', {'photo': photo})
+    else:
+        form = UploadForm()
+    return render(request, 'upload_photo.html', {'form': form})

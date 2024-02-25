@@ -16,15 +16,15 @@ for entity in dxf.entities:
 
 # 先頭の要素を抽出
 first_item = [sub_list[0] for sub_list in cad_read]
-print(f"先頭の要素: {first_item}")
-print()#改行用
+# print(f"先頭の要素: {first_item}")
+# print()#改行用
 # それ以外の要素を抽出
 other_items = [sub_list[1:-1] for sub_list in cad_read]
-print(f"それ以外の要素: {other_items}")
-print()#改行用
+# print(f"それ以外の要素: {other_items}")
+# print()#改行用
 # 最後の要素を抽出
 last_item = [sub_list[-1] for sub_list in cad_read]
-print(f"最後の要素: {last_item}")
+# print(f"最後の要素: {last_item}")
 
 # first = ['横桁 Cr0803', '主桁 Mg0901', '横桁 Cr0801']
 # second = [['⑦-d'], ['⑰-e'], ['⑦-d']]

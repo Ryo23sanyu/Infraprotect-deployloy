@@ -65,10 +65,13 @@ class Panorama(models.Model):
     # チェックボックスの状態を保存するフィールド
     # is_checked = models.BooleanField(default=False)
 
-    
 # 番号登録
-    
 class Number(models.Model):
     single_number = models.CharField(max_length=5)
     double_number_one = models.CharField(max_length=5)
     double_number_two = models.CharField(max_length=5)
+
+# ファイルアップロード(プライマリーキーで分類分け)
+class Uploads(models.Model):
+    primary_key = models.AutoField(primary_key=True)
+    file = models.FileField(upload_to='uploads/')

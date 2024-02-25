@@ -9,10 +9,10 @@ urlpatterns = [
     path('', views.index_view, name='index'),
     #path('infra/', views.ListInfraView.as_view(), name='list-infra'),
     path('article/<int:pk>/infra/', views.ListInfraView.as_view(), name='list-infra'),
-    path('infra/create/', views.CreateInfraView.as_view(), name='create-infra'),
-    path('infra/<int:pk>/detail/', views.DetailInfraView.as_view(), name='detail-infra'),
-    path('infra/<int:pk>/delete/', views.DeleteInfraView.as_view(), name='delete-infra'),
-    path('infra/<int:pk>/update/', views.UpdateInfraView.as_view(), name='update-infra'),
+    path('article/<int:pk>/infra/create/', views.CreateInfraView.as_view(), name='create-infra'),
+    path('article/infra/<int:pk>/detail/', views.DetailInfraView.as_view(), name='detail-infra'),
+    path('article/infra/<int:pk>/delete/', views.DeleteInfraView.as_view(), name='delete-infra'),
+    path('article/infra/<int:pk>/update/', views.UpdateInfraView.as_view(), name='update-infra'),
     path('article/', views.ListArticleView.as_view(), name='list-article'),
     path('article/create/', views.CreateArticleView.as_view(), name='create-article'),
     path('article/<int:pk>/detail/', views.DetailArticleView.as_view(), name='detail-article'),
@@ -27,9 +27,9 @@ urlpatterns = [
     # path('panorama/list/', panorama_list, name='panorama_list'),
     # path('panorama/upload/', panorama_upload, name='panorama_upload'),
     path('panorama/', views.image_list, name='panorama_list'),
-    path('my_table/', views.my_view, name='my_table'),
     path('number/', views.sample_view, name='number'),
     path('table/', views.table_view, name='table'),
+    path('photo/', views.display_photo, name='photo'),
 ]
 
 if settings.DEBUG:
