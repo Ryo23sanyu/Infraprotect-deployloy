@@ -41,6 +41,8 @@ class ListInfraView(LoginRequiredMixin, ListView):
 class DetailInfraView(LoginRequiredMixin, DetailView):
     template_name = 'infra/infra_detail.html'
     model = Infra
+    def get_success_url(self):
+        return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
   
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'
