@@ -19,7 +19,7 @@ def extract_entities_below(entities, target_text):
     
     return below_entities
 
-doc = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\12_損傷橋.dxf')
+doc = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf')
 msp = doc.modelspace()
 entities = list(msp)
 

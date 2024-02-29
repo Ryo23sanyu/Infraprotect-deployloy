@@ -50,7 +50,7 @@ def entity_extension(mtext, neighbor):
 
 
 # AutoCADファイル名を指定してテキストを抽出する
-filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\12_損傷橋.dxf'
+filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
 extracted_text = extract_text(filename)
 
 for index, data in enumerate(extracted_text):
@@ -64,26 +64,25 @@ for index, data in enumerate(extracted_text):
             data.extend(next_data)
             # 次の位置の要素を削除
             extracted_text.remove(next_data)
-print(extracted_text)
+# print(extracted_text)
 
-# # 先頭の要素を抽出
-# first_item = [sub_list[0] for sub_list in extracted_text]
-# # print(f"先頭の要素: {first_item}")
-# # print()#改行用
-# # それ以外の要素を抽出
-# other_items = [sub_list[1:-1] for sub_list in extracted_text]
-# # print(f"それ以外の要素: {other_items}")
-# # print()#改行用
-# # 最後の要素を抽出
-# last_item = [sub_list[-1] for sub_list in extracted_text]
-# # print(f"最後の要素: {last_item}")
+# 先頭の要素を抽出
+first_item = [sub_list[0] for sub_list in extracted_text]
+# print(f"先頭の要素: {first_item}")
+# それ以外の要素を抽出
+second_items = [sub_list[1:-2] for sub_list in extracted_text]
+# print(f"それ以外の要素: {other_items}")
+third_items = [sub_list[-2] for sub_list in extracted_text]
+# 最後の要素を抽出
+last_item = [sub_list[-1] for sub_list in extracted_text]
+# print(f"最後の要素: {last_item}")
 
-# table = []  # 空のリストを作成
+table = []  # 空のリストを作成
 
-# # ループで各要素を辞書型に変換し、空のリストに追加
-# for i in range(len(first_item)):
-#     item = {'first': first_item[i], 'second': other_items[i], 'third': last_item[i]}
-#     table.append(item)
+# ループで各要素を辞書型に変換し、空のリストに追加
+for i in range(len(first_item)):
+    item = {'first': first_item[i], 'second': second_items[i], 'third': third_items[i], 'last': last_item[i]}
+    table.append(item)
 
-# # 結果を表示
-# print(table)
+# 結果を表示
+print(table)

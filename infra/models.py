@@ -11,7 +11,7 @@ class Article(models.Model):
   カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
   
   def __str__(self):
-    return self.title
+    return self.案件名
     
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 LOADGRADE = (('one', '一等橋'),('two', '二等橋'),('three', '三等橋'),('unknown', '不明'))
