@@ -3,8 +3,8 @@ from django.contrib.auth.models import AbstractUser
 
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 class Article(models.Model):
-  title = models.CharField(max_length=100)# 顧客名
-  物件名 = models.CharField(max_length=100)# 物件名 article_name
+  案件名 = models.CharField(max_length=100)# 顧客名
+  土木事務所 = models.CharField(max_length=100)# 土木事務所 article_name
   対象数 = models.IntegerField()# 対象数 number
   担当者名 = models.CharField(max_length=100)# 担当者名 namager
   その他 = models.CharField(max_length=100)# その他 other

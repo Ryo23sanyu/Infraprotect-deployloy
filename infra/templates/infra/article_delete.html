@@ -5,6 +5,6 @@
 {% block content %}
   <form method='POST'>
     {% csrf_token %}
-    <input type='submit'>{{ object.title }}を削除する</button>
+    <input type='submit'>{{ object.案件名 }}を削除する</button>
   </form>
 {% endblock content %}

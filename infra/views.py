@@ -25,7 +25,7 @@ class ListInfraView(LoginRequiredMixin, ListView):
         # モデル検索のクエリー。Infra.objects.all() と同じ結果で全ての Infra
         queryset = super().get_queryset(**kwargs)
         # パスパラメータpkによりarticleを求める
-        article = Article.objects.get(id = self.kwargs["pk"] )
+        article = Article.objects.get(id = self.kwargs["pk"])
         # 求めたarticleを元にモデル検索のクエリーを絞り込む
         queryset = queryset.filter(article=article)
         # 絞り込んだクエリーをDjangoに返却し表示データとしてもらう
@@ -45,19 +45,35 @@ class DetailInfraView(LoginRequiredMixin, DetailView):
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'
   model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー')
+  fields = ('title', '径間数', '橋長', '全幅員', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー', 'article')
   success_url = reverse_lazy('detail-infra')
   # def get_success_url(self):
     # return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
+  def form_valid(self, form):
+    #ここのobjectはデータベースに登録を行うmodelつまりInfraの１レコードです。
+    #formはModelFormと呼ばれるフォームの仕組みで、saveを実行すると関連付いているモデルとして登録を行う動きをします。
+    object = form.save(commit=False)
+    #ここでのobjectは登録対象のInfraモデル１件です。登録処理を行いPKが払い出された情報がobjectです
+    #今回はarticle_id、つまりarticleオブジェクトが無いのでこれをobjectに設定します。
+    #articleオブジェクトを検索しobjectに代入する事で登録できます。
+    article = Article.objects.get( id = self.kwargs["pk"] )
+    # id = 1 のarticleを検索
+        # article = Article.objects.get(id = 1 )
+    object.案件名 = article
+    # titleの項目に「A」を設定
+        # article.title = "A"
+    #設定したのちsaveを実行し更新します。
+    object.save()
+    return super().form_valid(form)
   def get_success_url(self):
-    pk = self.kwargs["pk"]  # キーが存在しない場合はNoneを返す
+    pk = self.kwargs.get("pk")  # キーが存在しない場合はNoneを返す
     if pk is not None:
         return reverse_lazy('detail-infra', kwargs={'pk': pk})
     else:
         # pkが存在しない場合の処理を記述する
         # 例えば該当するURLがない場合にはトップページにリダイレクトするなど
         return reverse_lazy('list-infra', kwargs={'pk': pk})
-  
+
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
   template_name = 'infra/infra_delete.html'
   model = Infra
@@ -66,7 +82,7 @@ class DeleteInfraView(LoginRequiredMixin, DeleteView):
 class UpdateInfraView(LoginRequiredMixin, UpdateView):
   template_name = 'infra/infra_update.html'
   model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー')
+  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー', 'article')
   success_url = reverse_lazy('detail-infra')
   def get_success_url(self):
     return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
@@ -82,7 +98,7 @@ def infra_view(request):
   return render(request, 'infra/infra_detail.html')
 
 def index_view(request):
-  order_by = request.GET.get('order_by', 'title')
+  order_by = request.GET.get('order_by', '案件名')
   object_list = Article.objects.order_by(order_by)
   return render(request, 'infra/index.html', {'object_list': object_list})
 
@@ -102,18 +118,18 @@ class DetailArticleView(LoginRequiredMixin, DetailView):
 class CreateArticleView(LoginRequiredMixin, CreateView):
   template_name = 'infra/article_create.html'
   model = Article
-  fields = ('title', '物件名', '対象数', '担当者名', 'その他')
+  fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
   success_url = reverse_lazy('list-article')
   
 class DeleteArticleView(LoginRequiredMixin, DeleteView):
-  template_name = 'infra/article_confirm_delete.html'
+  template_name = 'infra/article_delete.html'
   model = Article
   success_url = reverse_lazy('list-article')
   
 class UpdateArticleView(LoginRequiredMixin, UpdateView):
   template_name = 'infra/article_update.html'
   model = Article
-  fields = ('title', '物件名', '対象数', '担当者名', 'その他')
+  fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
   success_url = reverse_lazy('list-article')
   
 # class ArticleInfraView(LoginRequiredMixin, DetailView):
@@ -314,15 +330,21 @@ class Upload(models.Model):
     file = models.FileField(upload_to=upload_directory_path)
 
 # <<写真表示>>
-
+save_path = "C:\work\django\myproject\myvenv\Infraproject\infra\static\infra\img"
 def display_photo(request):
     if request.method == 'POST':
         form = UploadForm(request.POST, request.FILES)
         if form.is_valid():
-            # フォームが有効な場合は、選択された写真を保存して表示します
+    # フォームが有効な場合は、選択された写真を特定のフォルダに保存します
             photo = form.cleaned_data['photo']
-            # ここで写真の保存や表示のための処理を行います
-            return render(request, 'image_list.html', {'photo': photo})
+            file_name = photo.name  # 写真のファイル名を取得します
+            file_path = os.path.join(save_path, file_name)  # ファイルの保存先のパスを作成します
+
+            with open(file_path, 'wb') as f:
+                for chunk in photo.chunks():
+                    f.write(chunk)  # 写真のデータをファイルに書き込みます
+
+        return render(request, 'image_list.html', {'photo': photo})
     else:
         form = UploadForm()
     return render(request, 'upload_photo.html', {'form': form})

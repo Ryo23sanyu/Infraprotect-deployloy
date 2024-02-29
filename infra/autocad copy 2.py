@@ -14,6 +14,7 @@ for entity in dxf.entities:
              # 改行を含むかどうかをチェックする:# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
                 cad_read.append(cad_data)
 
+print(cad_read)
 # 先頭の要素を抽出
 first_item = [sub_list[0] for sub_list in cad_read]
 # print(f"先頭の要素: {first_item}")

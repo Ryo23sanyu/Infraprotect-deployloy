@@ -1,49 +1,89 @@
+import re
 import ezdxf
-import openpyxl
+from ezdxf.entities.mtext import MText
+import pandas as pd
 
-def extract_text_from_dxf(file_path):
-    text_data = []
-    doc = ezdxf.readfile(file_path)
+def extract_text(filename):
+    doc = ezdxf.readfile(filename)
     msp = doc.modelspace()
+    
+    extracted_text = []
+    for entity in msp:
+        if entity.dxftype() == 'MTEXT':
+            # MTextのテキストを抽出する
+            text = entity.plain_text()
+            cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
+            if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
+             # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
+                extracted_text.append(cad_data)
+            
+            # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す
+            for neighbor in msp.query('TEXT[layer=="Defpoints"]'):
+                # MTextの挿入位置と特定のプロパティで描かれた文字の位置を比較する
+                if entity_extension(entity, neighbor):
+                    # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
+                    neighbor_text = neighbor.plain_text()
+                    extracted_text.append(neighbor_text)
+    
+    return extracted_text
 
-    # DXFファイルからテキストデータを抽出
-    for text in msp.query('MTEXT'):
-        text_data.append(text.dxf.text)
+def entity_extension(mtext, neighbor):
+    # MTextの挿入点
+    mtext_insertion = mtext.dxf.insert
+    
+    # 特定のプロパティ(Defpoints)で描かれた文字の挿入点
+    neighbor_insertion = neighbor.dxf.insert
+    
+    # MTextの下、もしくは右に特定のプロパティで描かれた文字が存在するかどうかを判定する
+    if (
+        neighbor_insertion[0] >= mtext_insertion[0]
+        and neighbor_insertion[0] <= mtext_insertion[0]
+    ):
+        if (
+            neighbor_insertion[1] >= mtext_insertion[1]
+            and neighbor_insertion[1] <= mtext_insertion[1]
+        ):
+            return True
+    
+    return False
 
-    return text_data
 
-def display_data_with_keywords(text_data, excel_file):
-    # Excelファイルを開く
-    wb = openpyxl.load_workbook(excel_file)
-    sheet = wb['リスト']
 
-    # キーワードを取得
-    keywords = []
-    for row in sheet.iter_rows(min_row=5, max_row=72, min_col=24, max_col=24, values_only=True):
-        for cell in row:
-            if cell:
-                keywords.append(cell)
+# AutoCADファイル名を指定してテキストを抽出する
+filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\12_損傷橋.dxf'
+extracted_text = extract_text(filename)
 
-    # 各キーワードに対応するデータを保持する辞書を初期化
-    data_for_keywords = {keyword: [] for keyword in keywords}
+for index, data in enumerate(extracted_text):
+    # 最終項目-1まで評価
+    if index < (len(extracted_text) -1):
+        # 次の位置の要素を取得
+        next_data = extracted_text[index + 1]
+        # 特定の条件(以下例だと、１要素目が文字s1,s2,s3から始まる）に合致するかチェック
+        if ("月" in next_data[0] and "日" in next_data[0]) or ("/" in next_data[0]) and (re.search(r"[A-Z]", next_data[0], re.IGNORECASE) and re.search(r"[0-9]", next_data[0])):
+            # 合致する場合現在の位置に次の要素を併合 and "\n" in cad
+            data.extend(next_data)
+            # 次の位置の要素を削除
+            extracted_text.remove(next_data)
+print(extracted_text)
 
-    # DXFファイルから取得したテキストデータを元に各キーワードに対応するデータを抽出
-    for keyword in keywords:
-        for text in text_data:
-            if str(keyword) in text:
-                data_for_keywords[keyword].append(text)
+# # 先頭の要素を抽出
+# first_item = [sub_list[0] for sub_list in extracted_text]
+# # print(f"先頭の要素: {first_item}")
+# # print()#改行用
+# # それ以外の要素を抽出
+# other_items = [sub_list[1:-1] for sub_list in extracted_text]
+# # print(f"それ以外の要素: {other_items}")
+# # print()#改行用
+# # 最後の要素を抽出
+# last_item = [sub_list[-1] for sub_list in extracted_text]
+# # print(f"最後の要素: {last_item}")
 
-    # 各キーワードに対応するデータを表示
-    for keyword, data in data_for_keywords.items():
-        print(f"キーワード '{keyword}' を含むデータ:")
-        for item in data:
-            print(item)
-        print()
+# table = []  # 空のリストを作成
 
-# DXFファイルからテキストデータを抽出
-dxf_file_path = r'C:\work\django\myproject\myvenv\Infraproject\uploads\12_損傷橋.dxf'
-text_data = extract_text_from_dxf(dxf_file_path)
+# # ループで各要素を辞書型に変換し、空のリストに追加
+# for i in range(len(first_item)):
+#     item = {'first': first_item[i], 'second': other_items[i], 'third': last_item[i]}
+#     table.append(item)
 
-# Excelファイルからデータを読み込んで、キーワードごとにデータを表示
-excel_file_path = r'C:\Users\dobokuka4\Desktop\macro.xlsx'
-display_data_with_keywords(text_data, excel_file_path)
+# # 結果を表示
+# print(table)

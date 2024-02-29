@@ -14,11 +14,11 @@
         {% if user.is_authenticated %}
         <a class="nav-link mx-3" href="{% url 'accounts:my_page' user.pk %}">マイページ</a>
         {% endif %}
-        <a class="nav-link mx-3" href="{% url 'list-article' %}">顧客一覧</a>
-        <a class="nav-link mx-3" href="{% url 'create-article' %}">顧客登録</a>
+        <a class="nav-link mx-3" href="{% url 'list-article' %}">案件一覧</a>
+        <a class="nav-link mx-3" href="{% url 'create-article' %}">案件登録</a>
         <a class="nav-link mx-3" href="{% url 'file_upload' %}">アップロード</a>
-        <a class="nav-link mx-3" href="{% url 'panorama_list' %}">写真選択</a>
-        <a class="nav-link mx-3" href="{% url 'number' %}">番号登録</a>
+        <a class="nav-link mx-3" href="{% url 'image_list' %}">写真選択</a>
+        <a class="nav-link mx-3" href="{% url 'number' %}"> </a>
         <a class="nav-link mx-3" href="{% url 'table' %}">サンプル</a>
         <a class="nav-link mx-3" href="{% url 'photo' %}">写真</a>
       </div>
