@@ -41,8 +41,11 @@ class ListInfraView(LoginRequiredMixin, ListView):
 class DetailInfraView(LoginRequiredMixin, DetailView):
     template_name = 'infra/infra_detail.html'
     model = Infra
-    def get_success_url(self):
-        return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
+    def get_context_data(self, **kwargs):
+        # HTMLテンプレートでの表示変数として「article_id」を追加。
+        # 値はパスパラメータpkの値→取り扱うarticle.idとなる
+        kwargs["article_id"] = self.kwargs["pk"]
+        return super().get_context_data(**kwargs)
   
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'

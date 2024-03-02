@@ -190,7 +190,7 @@
               });
               
     </script>
-    <a href="{% url 'list-infra' pk=article.pk %}" class="btn btn-primary">一覧</a>
+    <a href="{% url 'list-infra' object.pk %}" class="btn btn-primary">一覧</a>
     <a href="{% url 'update-infra' object.pk %}" class="btn btn-primary">編集</a>
     <a href="{% url 'delete-infra' object.pk %}" class="btn btn-primary">削除</a>
     <h6 class="card-title">{{ object.カテゴリー }}</h6>
