@@ -8,26 +8,22 @@ def extract_text(filename):
     msp = doc.modelspace()
     
     extracted_text = []
-    for entity in msp:
-        if entity.dxftype() == 'MTEXT':
+    for mtext in msp:
+        if mtext.dxftype() == 'MTEXT':
             # MTextのテキストを抽出する
-            text = entity.plain_text()
+            text = mtext.plain_text()
             cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
             if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
              # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
-                extracted_text.append(cad_data)
             
             # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す
                 for neighbor in msp.query('TEXT[layer=="Defpoints"]'):
                 # MTextの挿入位置と特定のプロパティで描かれた文字の位置を比較する
-                    if entity_extension(entity, neighbor):
+                    if entity_extension(mtext, neighbor):
                     # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
                         neighbor_text = neighbor.plain_text()
-                        extracted_text.append(neighbor_text)
-    
-    return extracted_text
-
-
+                        extracted_text.append([mtext.text, neighbor.text])
+            
 def entity_extension(mtext, neighbor):
     # MTextの挿入点
     mtext_insertion = mtext.dxf.insert
@@ -44,19 +40,11 @@ def entity_extension(mtext, neighbor):
     x_end  = mtext_insertion[0] + mtext.dxf.width # X終了位置= 開始位置＋幅
     y_start = mtext_insertion[1] + mtext.dxf.char_height * text_lines_count # Y開始位置
     y_end  = mtext_insertion[1] - mtext.dxf.char_height * (text_lines_count + 1) # 文字の高さ×(行数+1)
-    
-    # MTextの下、もしくは右に特定のプロパティで描かれた文字が存在するかどうかを判定する(座標：右が大きく、上が大きい)
-    if (
-        neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end
-    ):
-        if ( #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
-            neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start
-        ):
+                
+    if (neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end):
+        if (neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start):
             return True
-    
     return False
-
-
 
 # AutoCADファイル名を指定してテキストを抽出する
 filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'

@@ -154,7 +154,9 @@
         });
       }
     </script>
-    <script>
+      <iframe src="https://www.mlit.go.jp/road/ir/ir-data/census_visualizationR3/index.html#13/35.6823/139.7550" width="1000" height="300"></iframe>
+      <h5>国交省:令和3年度道路交通センサス</h5>
+      <script>
       function handleOrderChange() {
                   // プルダウンメニューが変更されたときの処理をここに追加
                   var orderSelect = document.getElementById("order_by");
@@ -190,7 +192,7 @@
               });
               
     </script>
-    <a href="{% url 'list-infra' object.pk %}" class="btn btn-primary">一覧</a>
+    <a href="{% url 'list-infra' pk=article_id %}" class="btn btn-primary">一覧</a>
     <a href="{% url 'update-infra' object.pk %}" class="btn btn-primary">編集</a>
     <a href="{% url 'delete-infra' object.pk %}" class="btn btn-primary">削除</a>
     <h6 class="card-title">{{ object.カテゴリー }}</h6>
