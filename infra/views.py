@@ -1,3 +1,4 @@
+import re
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
@@ -8,7 +9,7 @@ from .models import Article
 from django.db import models
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .forms import FileUploadForm, UploadForm
-from .forms import PhotoUploadForm
+from .forms import PhotoUploadForm, NameForm
 from .models import Photo, Panorama
 import os
 from django.contrib.auth.decorators import login_required
@@ -17,6 +18,7 @@ from ezdxf.entities.mtext import MText
 import tkinter
 import tkinter.filedialog
 from PIL import Image, ImageTk
+
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -71,13 +73,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
     object.save()
     return super().form_valid(form)
   def get_success_url(self):
-    pk = self.kwargs.get("pk")  # キーが存在しない場合はNoneを返す
-    if pk is not None:
-        return reverse_lazy('detail-infra', kwargs={'pk': pk})
-    else:
-        # pkが存在しない場合の処理を記述する
-        # 例えば該当するURLがない場合にはトップページにリダイレクトするなど
-        return reverse_lazy('list-infra', kwargs={'pk': pk})
+    return reverse_lazy('list-infra', kwargs={'pk': self.kwargs["pk"]})
 
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
   template_name = 'infra/infra_delete.html'
@@ -196,7 +192,7 @@ def image_list(request):
         image_files.append( file.replace("infra/static/", "") )
 
     # テンプレートに画像ファイルの一覧を渡してレンダリングする
-    return render(request, 'image_list.html', {'image_files': image_files})
+        return render(request, 'image_list.html', {'image_files': image_files})
 
 # 会社別に表示
 
@@ -261,23 +257,89 @@ def number_view(request):
 
 # <<テーブルの作成>>
 
-def table_view(request):
+def extract_text(filename):
+    doc = ezdxf.readfile(filename)
+    msp = doc.modelspace()
+    
+    extracted_text = []
+    for entity in msp:
+        if entity.dxftype() == 'MTEXT':
+            if entity.dxf.layer != 'Defpoints':
+            # MTextのテキストを抽出する
+                text = entity.plain_text()
+                cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
+                if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
+             # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
+                    related_text = "" # 見つけたMTextと関連するDefpointsレイヤの文字列を代入する変数
+            # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す
+                    for neighbor in msp.query('MTEXT[layer=="Defpoints"]'): # DefpointsレイヤーのMTextを抽出
+                    # MTextの挿入位置と特定のプロパティで描かれた文字の位置を比較する
+                        if entity_extension(entity, neighbor):
+                        # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
+                            related_text = neighbor.plain_text()
+                        #extracted_text.append(neighbor_text)
+                            break # 文字列が見つかったらbreakにょりforループを終了する
 
-    dxf = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\12_損傷橋.dxf') # ファイルにアップロードしたdxfファイル名
+                    if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
+                        cad_data.append(related_text) # 見つかった文字列を追加する
+                #最後にまとめてcad_dataをextracted_textに追加する
+                    extracted_text.append(cad_data)
+    
+    return extracted_text
 
-    cad_read = []
-    for entity in dxf.entities:
-        if type(entity) is MText: # or type(entity) is Text: MTextとTextが文字列を表す(https://ymt-lab.com/post/2021/ezdxf-read-dxf-file/)
-            cad =  entity.plain_text() # plain_text(読める文字)に変換
-            cad_data = cad.split("\n") if len(cad) > 0 else [] # .split():\nの箇所で配列に分配
-            if len(cad_data) > 0 and "\n" in cad and not cad.startswith("※") and not any(keyword in cad for keyword in ["×", "."]):
-             # 改行を含むかどうかをチェックする:# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
-                    cad_read.append(cad_data)
+
+def entity_extension(mtext, neighbor):
+    # MTextの挿入点
+    mtext_insertion = mtext.dxf.insert
+    # 特定のプロパティ(Defpoints)で描かれた文字の挿入点
+    neighbor_insertion = neighbor.dxf.insert
+    #テキストの行数を求める
+    text = mtext.plain_text()
+    text_lines = text.split("\n") if len(text) > 0 else []
+    # 改行で区切ったリスト数→行数
+    text_lines_count = len(text_lines)
+    
+    # Defpointsを範囲内とするX座標範囲
+    x_start = mtext_insertion[0]  # X開始位置
+    x_end  = mtext_insertion[0] + mtext.dxf.width # X終了位置= 開始位置＋幅
+    y_start = mtext_insertion[1] + mtext.dxf.char_height # Y開始位置
+    y_end  = mtext_insertion[1] - mtext.dxf.char_height * (text_lines_count + 1) # 文字の高さ×(行数+1)
+    
+    # MTextの下、もしくは右に特定のプロパティで描かれた文字が存在するかどうかを判定する(座標：右が大きく、上が大きい)
+    if (
+        neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end
+    ):
+        if ( #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
+            neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start
+        ):
+            return True
+    
+    return False
+
+
+
+# AutoCADファイル名を指定してテキストを抽出する
+filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
+extracted_text = extract_text(filename)
+
+# print(extracted_text)
+
+for index, data in enumerate(extracted_text):
+    # 最終項目-1まで評価
+    if index < (len(extracted_text) -1):
+        # 次の位置の要素を取得
+        next_data = extracted_text[index + 1]
+        # 特定の条件(以下例だと、１要素目が文字s1,s2,s3から始まる）に合致するかチェック
+        if ("月" in next_data[0] and "日" in next_data[0]) or ("/" in next_data[0]) and (re.search(r"[A-Z]", next_data[0], re.IGNORECASE) and re.search(r"[0-9]", next_data[0])):
+            # 合致する場合現在の位置に次の要素を併合 and "\n" in cad
+            data.extend(next_data)
+            # 次の位置の要素を削除
+            extracted_text.remove(next_data)
 
 # 先頭の要素を抽出
-    first_item = [sub_list[0] for sub_list in cad_read]
-# それ以外の要素を抽出
-    # リストの各要素から記号を削除する
+    first_item = [sub_list[0] for sub_list in extracted_text]
+
+# リストの各要素から記号を削除する
     def remove_symbols(other_items):
         symbols = ['!', '[', ']', "'"]
 
@@ -285,23 +347,33 @@ def table_view(request):
         for item in other_items:
             processed_item = ''.join(c for c in item if c not in symbols)
             processed_other_items.append(processed_item)
-    
+   
         return processed_other_items
-    other_items = [sub_list[1:-1] for sub_list in cad_read]
-    middle_items = remove_symbols(other_items)
-    
+# それ以外の要素を抽出
+    other_items = [sub_list[1:-2] for sub_list in extracted_text]
+    second_items = remove_symbols(other_items)
+
+# 最後から2番目の要素を抽出
+    third_items = [sub_list[-2] for sub_list in extracted_text if len(sub_list) >= 3]
+
 # 最後の要素を抽出
-    last_item = [sub_list[-1] for sub_list in cad_read]
+    last_item = [sub_list[-1] for sub_list in extracted_text]
 
     damage_table = []  # 空のリストを作成
 
 # ループで各要素を辞書型に変換し、空のリストに追加
     for i in range(len(first_item)):
-        item = {'first': first_item[i], 'second': middle_items[i], 'third': last_item[i]}
+        try:
+            third = third_items[i]
+        except IndexError:
+            third = None
+        item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item[i]}
         damage_table.append(item)
         
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ
     return render(request, 'table.html', context)
+
+
 
 # 番号表示
 
@@ -353,3 +425,27 @@ def display_photo(request):
     else:
         form = UploadForm()
     return render(request, 'upload_photo.html', {'form': form})
+
+# <<損傷写真表示>>
+
+def your_view(request):
+    if request.method == 'POST':
+        form = NameForm(request.POST)
+        if form.is_valid():
+            initial = form.cleaned_data['initial']
+            name = form.cleaned_data['name']
+            folder_path = form.cleaned_data['folder_path']
+            
+            converted_name = name.replace(initial, '')
+            
+            file_name = '9月6日　' + converted_name
+            file_list = os.listdir(folder_path)
+            
+            for file in file_list:
+                if file.endswith('63.png'):
+                    # 画像の表示コードを書く
+                    break
+    else:
+        form = NameForm()
+    
+    return render(request, 'your_template.html', {'form': form})

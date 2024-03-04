@@ -33,3 +33,10 @@ class NumberForm(forms.ModelForm):
 
 class UploadForm(forms.Form):
     photo = forms.ImageField()
+    
+# <<損傷写真表示>>
+
+class NameForm(forms.Form):
+    initial = forms.CharField(label='イニシャル')
+    name = forms.CharField(label='名前')
+    folder_path = forms.CharField(label='フォルダパス')
