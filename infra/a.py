@@ -83,7 +83,7 @@ for index, data in enumerate(extracted_text):
             extracted_text.remove(next_data)
 
 # 先頭の要素を抽出
-    first_item = [sub_list[0] for sub_list in extracted_text]
+    first_item = [sub_list[0].replace(",", "\n") for sub_list in extracted_text]
 
 # リストの各要素から記号を削除する
     def remove_symbols(other_items):
