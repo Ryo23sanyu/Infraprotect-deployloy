@@ -10,11 +10,18 @@
     <script src="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.js"></script>
 </head>
 <body>
-    <table class="my-table">
+    <Style>
+        .my-table th, .my-table td {
+            border: 3px double dimgray; /* ボーダースタイルを設定 */
+            padding: 8px; /* セルの内側の余白を設定 */
+        }
+    </style>
+    <table class="my-table" border="1">
         <thead>
             <tr>
                 <th>損傷箇所</th>
                 <th>損傷種類</th>
+                <th>損傷番号</th>
                 <th>損傷写真</th>
             </tr>
         </thead>
@@ -24,6 +31,7 @@
                 <td>{{ bridge.first }}</td>
                 <td>{{ bridge.second }}</td>
                 <td>{{ bridge.last }}</td>
+                <td><img src={{ bridge.picture }}></td>
             </tr>
             {% endfor %}
         </tbody>

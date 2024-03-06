@@ -340,8 +340,7 @@ def table_view(request):
                 extracted_text.remove(next_data)
 
     # 先頭の要素を抽出
-        top_item = [sub_list[0] for sub_list in extracted_text]
-        first_item = Markup(top_item.replace(',', '<br>'))
+        first_item = [Markup(sub_list[0].replace(",", "<br /><br />")) for sub_list in extracted_text]
 
     # リストの各要素から記号を削除する
         def remove_symbols(other_items):
@@ -371,7 +370,7 @@ def table_view(request):
                 third = third_items[i]
             except IndexError:
                 third = None
-            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item[i]}
+            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item[i], 'picture': "{% static 'infra/img/0293/image.jpg' %}"}
             damage_table.append(item)
         
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ
