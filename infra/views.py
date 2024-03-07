@@ -370,7 +370,7 @@ def table_view(request):
                 third = third_items[i]
             except IndexError:
                 third = None
-            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item[i], 'picture': "{% static 'infra/img/0293/image.jpg' %}"}
+            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item[i], 'picture': 'infra/img/0293/image.jpg'}
             damage_table.append(item)
         
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ

@@ -1,5 +1,6 @@
 <!-- table.html -->
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}損傷一覧{% endblock title %}
 {% block h1 %}損傷一覧{% endblock %}
@@ -31,7 +32,7 @@
                 <td>{{ bridge.first }}</td>
                 <td>{{ bridge.second }}</td>
                 <td>{{ bridge.last }}</td>
-                <td><img src={{ bridge.picture }}></td>
+                <td><img src="{% static '{{ bridge.picture }}' %}"></td>
             </tr>
             {% endfor %}
         </tbody>
