@@ -360,7 +360,7 @@ def table_view(request):
         third_items = [sub_list[-2] for sub_list in extracted_text if len(sub_list) >= 3]
 
     # 最後の要素を抽出（Defpoints）
-        bottom_item = [sub_list[-1] for sub_list in extracted_text]
+        last_item = [sub_list[-1] for sub_list in extracted_text]
 
         damage_table = []  # 空のリストを作成
 
@@ -370,18 +370,11 @@ def table_view(request):
                 third = third_items[i]
             except IndexError:
                 third = None
-            
-            result = ""
-            for k in range(len(bottom_item)-1):
-                if str(bottom_item[k]).isnumeric() and str(bottom_item[k+1]).isnumeric():
-                    result = bottom_item[:k+1]
-                    break
                 
-            last_item_replaced = []
-            for j in range(len(bottom_item)):
-                last_item_replaced.append(bottom_item[j].replace("S", "佐藤"))
+            for j in range(len(last_item)):
+                last_item[j] = last_item[j].replace("S", "佐藤").replace("H", "濵田")
                 
-            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item_replaced[i], 'picture': 'infra/img/0293.jpg'}
+            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item[i], 'picture': 'infra/img/0293.jpg'}
             damage_table.append(item)
         
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ
