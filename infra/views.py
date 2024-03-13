@@ -222,7 +222,7 @@ def panorama_list(request):
             panorama.save()
         return redirect('panorama_list')  # 再描画のためにリダイレクト
 
-    return render(request, 'panorama_list.html', {'panoramas': panoramas})
+    return render(request, 'image_list.html', {'panoramas': panoramas})
 
 
 
@@ -325,8 +325,6 @@ def table_view(request):
     filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
     extracted_text = extract_text(filename)
 
-    # print(extracted_text)
-
     for index, data in enumerate(extracted_text):
         # 最終項目-1まで評価
         if index < (len(extracted_text) -1):
@@ -340,6 +338,20 @@ def table_view(request):
                 extracted_text.remove(next_data)
 
     # 先頭の要素を抽出
+        top_item = [sub_list[0] for sub_list in extracted_text]
+        
+        new_text = []
+        for item in top_item:
+            if "," in item:
+                for j in range(len(item)-1):
+                    if item[j] == "," and item[j+1].isnumeric():
+                        for s in range(len(item)-1):
+                            if item[s].isalpha() and item[s+1].isnumeric():
+                                new_text.append(item[:item.find(",")+1] + item[:s+1] + item[item.find(",")+1:])
+                                break
+            else:
+                new_text.append(item)
+                
         first_item = [Markup(sub_list[0].replace(",", "<br /><br />")) for sub_list in extracted_text]
 
     # リストの各要素から記号を削除する
@@ -353,12 +365,12 @@ def table_view(request):
     
             return processed_other_items
     # それ以外の要素を抽出
-        other_items = [sub_list[1:-2] for sub_list in extracted_text]
+        other_items = [sub_list[1:-2] for sub_list in extracted_text]          
         second_items = remove_symbols(other_items)
 
     # 最後から2番目の要素を抽出（写真番号-00）
         third_items = [sub_list[-2] for sub_list in extracted_text if len(sub_list) >= 3]
-
+        
     # 最後の要素を抽出（Defpoints）
         bottom_item = [sub_list[-1] for sub_list in extracted_text]
 
@@ -371,19 +383,44 @@ def table_view(request):
             except IndexError:
                 third = None
             
-            result = ""
-            for k in range(len(bottom_item)-1):
-                if str(bottom_item[k]).isnumeric() and str(bottom_item[k+1]).isnumeric():
-                    result = bottom_item[:k+1]
-                    break
-                
+            result_items = []# 配列を作成
+            for item in bottom_item:# text_itemsの要素を1つずつitem変数に入れてforループする
+                if ',' in item:# 要素の中にカンマが含まれている場合に実行
+                    sub_items = item.split(',')# カンマが含まれている場合カンマで分割
+                    extracted_item = []# 配列を作成
+                    for item in sub_items:# bottom_itemの要素を1つずつitem変数に入れてforループする
+                        for i in range(len(item)):#itemの文字数をiに代入
+                            if "A" <= item[i].upper() <= "Z" and i < len(item) - 1 and item[i+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
+                                extracted_item.append(item[:i+1]+"*/*"+item[i+1:])# アルファベットと数字の間に*/*を入れてextracted_itemに代入
+                                break
+                    join = ",".join(extracted_item)# 加工した内容をカンマ区切りの１つの文字列に戻す
+                    print(join)
+                    result_items.append(join)# result_itemsに格納
+
+                else:# ifがfalseの場合(カンマが含まれていない場合)
+                    non_extracted_item = ''
+                    for j in range(len(item)):
+                        if item[j].isalpha() and j < len(item) - 1 and item[j+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
+                            non_extracted_item = item[:j+1]+"*/*"+item[j+1:]#アルファベットまでをextracted_itemに代入
+                        elif non_extracted_item == '':
+                            non_extracted_item = item
+                    result_items.append(non_extracted_item)
+
+            def remove_parentheses_from_list(last):
+                pattern = re.compile(r"\([^()]*\)")
+                result = [pattern.sub("", string) for string in last]
+                return result
+
+            last = result_items
+            last_item = remove_parentheses_from_list(last)
+                                           
             last_item_replaced = []
-            for j in range(len(bottom_item)):
-                last_item_replaced.append(bottom_item[j].replace("S", "佐藤"))
+            for j in range(len(last_item)):
+                last_item_replaced.append(last_item[j].replace("S", "佐藤").replace("H", "濵田"))
                 
             item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item_replaced[i], 'picture': 'infra/img/0293.jpg'}
             damage_table.append(item)
-        
+
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ
     return render(request, 'table.html', context)
 

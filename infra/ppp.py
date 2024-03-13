@@ -21,3 +21,6 @@ print(picture_name[picture_name.find("　")+1:picture_name.find("　", picture_n
 
 print(picture[0:picture.find(" ")+2].replace("S", "佐藤"))
 print(picture[picture.find(" ")+2:picture.find(" ", picture.find(" ") + 1)])
+
+
+

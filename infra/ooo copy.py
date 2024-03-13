@@ -1,21 +1,17 @@
-from selenium import webdriver
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome import service as sv
-import math
+def process_string(input_string):
+    # 文字列をスペースで分割して、各要素を配列に格納する
+    elements = input_string.split(" ")
 
-# Chrome WebDriverのパスを指定します
-# executable_path = "chromedriver.exe"
-executable_path = R"C:\work\django\myproject\myvenv\Infraproject\infraproject\chromedriver-win64\chromedriver.exe"
-chrome_service = sv.Service(executable_path=executable_path)
+    # 要素の数だけループする
+    for i in range(len(elements)):
+        # アルファベットが含まれているかどうかを判定する
+        if any(c.isalpha() for c in elements[i]):
+            # アルファベットが含まれている場合は、",”の直前までの文字列に置き換える
+            elements[i] = input_string[:input_string.find(",")+1]
+        else:
+            # アルファベットが含まれていない場合は、",”の直後の文字列に置き換える
+            elements[i] = input_string[input_string.find(",")+1:]
 
-# Chrome WebDriverのオプションを指定します
-options = webdriver.ChromeOptions()
-options.add_argument("--headless")  # ブラウザを表示しない場合はコメントアウトしてください
-
-# WebDriverを起動します
-driver = webdriver.Chrome(service=chrome_service, options=options)
-
-# URLを指定してページを開きます
-url = "https://www.google.co.jp/maps"
-driver.get(url)
-
+    # 結果を結合して返す
+    result = " ".join(elements)
+    return result
