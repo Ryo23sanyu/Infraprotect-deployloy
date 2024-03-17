@@ -1,3 +1,4 @@
+import glob
 import re
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
@@ -389,12 +390,11 @@ def table_view(request):
                     sub_items = item.split(',')# カンマが含まれている場合カンマで分割
                     extracted_item = []# 配列を作成
                     for item in sub_items:# bottom_itemの要素を1つずつitem変数に入れてforループする
-                        for i in range(len(item)):#itemの文字数をiに代入
-                            if "A" <= item[i].upper() <= "Z" and i < len(item) - 1 and item[i+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
-                                extracted_item.append(item[:i+1]+"*/*"+item[i+1:])# アルファベットと数字の間に*/*を入れてextracted_itemに代入
+                        for p in range(len(item)):#itemの文字数をiに代入
+                            if "A" <= item[p].upper() <= "Z" and p < len(item) - 1 and item[p+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
+                                extracted_item.append(item[:p+1]+"*/*"+item[p+1:])# アルファベットと数字の間に*/*を入れてextracted_itemに代入
                                 break
                     join = ",".join(extracted_item)# 加工した内容をカンマ区切りの１つの文字列に戻す
-                    print(join)
                     result_items.append(join)# result_itemsに格納
 
                 else:# ifがfalseの場合(カンマが含まれていない場合)
@@ -415,10 +415,17 @@ def table_view(request):
             last_item = remove_parentheses_from_list(last)
                                            
             last_item_replaced = []
-            for j in range(len(last_item)):
-                last_item_replaced.append(last_item[j].replace("S", "佐藤").replace("H", "濵田"))
-                
-            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': last_item_replaced[i], 'picture': 'infra/img/0293.jpg'}
+            for k in range(len(last_item)):
+                last_item_replaced.append(last_item[k].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　"))
+            
+            picture_table = []
+            for picture in last_item_replaced:
+                # ワイルドカードを含む写真パスを取得
+                target_file = picture + '.jpg'
+                photo_paths = glob.glob(target_file)
+                picture_table.append(''.join(photo_paths))
+        
+            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_table[i], 'picture': 'infra/img/0293.jpg'}
             damage_table.append(item)
 
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ

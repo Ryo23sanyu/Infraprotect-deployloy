@@ -31,7 +31,7 @@
             <tr>
                 <td>{{ bridge.first }}</td>
                 <td>{{ bridge.second }}</td>
-                <td>{{ bridge.last }}</td>
+                <td><img src="{% static bridge.last %}" width="200" height="150"></td>
                 <td><img src="{% static bridge.picture %}" width="200" height="150"></td>
             </tr>
             {% endfor %}

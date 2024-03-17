@@ -1,7 +1,9 @@
+import glob
 import re
 
 
-text_items = ['NON-a', '9月7日 S404(前-1)', '9月7日 S537', '9月8日 S117(前-3),9月8日 Sa253']
+text_items = ['NON-a', '9月7日 S404(前-1)', '9月7日 S537', '9月8日 S117(前-3),9月8日 S253']
+damage_table = []
 
 result_items = []# 配列を作成
 for item in text_items:# text_itemsの要素を1つずつitem変数に入れてforループする
@@ -14,7 +16,6 @@ for item in text_items:# text_itemsの要素を1つずつitem変数に入れてf
                     extracted_item.append(item[:i+1]+"*/*"+item[i+1:])# アルファベットと数字の間に*/*を入れてextracted_itemに代入
                     break
         join = ",".join(extracted_item)# 加工した内容をカンマ区切りの１つの文字列に戻す
-        print(join)
         result_items.append(join)# result_itemsに格納
 
     else:# ifがfalseの場合(カンマが含まれていない場合)
@@ -27,16 +28,24 @@ for item in text_items:# text_itemsの要素を1つずつitem変数に入れてf
         result_items.append(non_extracted_item)
 
 def remove_parentheses_from_list(last):
-    pattern = re.compile(r"\([^()]*\)")
-    result = [pattern.sub("", string) for string in last]
+    pattern = re.compile(r"\([^()]*\)")# ()で囲まれた文字を抽出
+    result = [pattern.sub("", string) for string in last]# 抽出した文字を空文字に置換
     return result
 
 last = result_items
 last_item = remove_parentheses_from_list(last)
-print(last_item)
 
 last_item_replaced = []
-for j in range(len(last_item)):
-    last_item_replaced.append(last_item[j].replace("S", "佐藤").replace("H", "濵田"))
+for item in last_item:
+    if item == "NON-a":
+        last_item_replaced.append(item.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　"))
+    elif "," in item: # 「9月8日 S*/*117,9月8日 S*/*253」
+        #last_item_replaced.append(item.replace("S", "佐藤").replace("H", "濵田") + ".jpg")
+        dis_items = item.split(',') # 「9月8日 S*/*117」,「9月8日 S*/*253」
+        sub_dis_items = [dis_item + ".jpg" for dis_item in dis_items] # リスト型に文字を追加する方法
+        join_dis_items = ",".join(sub_dis_items)# 加工した内容をカンマ区切りの１つの文字列に戻す
+        last_item_replaced.append(join_dis_items.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　"))# result_itemsに格納
+    else:
+        last_item_replaced.append(item.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　") + ".jpg")
     
 print(last_item_replaced)
