@@ -35,17 +35,18 @@ def remove_parentheses_from_list(last):
 last = result_items
 last_item = remove_parentheses_from_list(last)
 
-last_item_replaced = []
-for item in last_item:
-    if item == "NON-a":
-        last_item_replaced.append(item.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　"))
-    elif "," in item: # 「9月8日 S*/*117,9月8日 S*/*253」
-        #last_item_replaced.append(item.replace("S", "佐藤").replace("H", "濵田") + ".jpg")
-        dis_items = item.split(',') # 「9月8日 S*/*117」,「9月8日 S*/*253」
-        sub_dis_items = [dis_item + ".jpg" for dis_item in dis_items] # リスト型に文字を追加する方法
-        join_dis_items = ",".join(sub_dis_items)# 加工した内容をカンマ区切りの１つの文字列に戻す
-        last_item_replaced.append(join_dis_items.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　"))# result_itemsに格納
-    else:
-        last_item_replaced.append(item.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　") + ".jpg")
+name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
+if "," in name_item:
+    dis_items = name_item.split(',') # 「9月8日 S*/*117」,「9月8日 S*/*253」
+    sub_dis_items = ['infra/static/infra/img/' + dis_item + ".jpg" for dis_item in dis_items] # リスト型に文字を追加する方法
+    join_dis_items = ",".join(sub_dis_items)
+    new_name_item = join_dis_items.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
+    photo_paths = glob.glob(new_name_item + '.jpg')
+else:
+    photo_paths = glob.glob('infra/static/infra/img/' + name_item + '.jpg')
     
-print(last_item_replaced)
+#lst_items = []
+#for item in new_name_item:
+#    lst_items.append([item])# [['None'], ['9月7日\u3000佐藤*/*537.jpg'], ['9月8日\u3000佐藤*/*117.jpg,9月8日\u3000佐藤*/*253.jpg']]
+
+print(photo_paths)

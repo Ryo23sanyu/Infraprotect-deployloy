@@ -75,3 +75,6 @@ class Number(models.Model):
 class Uploads(models.Model):
     primary_key = models.AutoField(primary_key=True)
     file = models.FileField(upload_to='uploads/')
+
+class Damage(models.Model):
+    notes = models.TextField(blank=True, null=True)

@@ -186,7 +186,7 @@ def image_list(request):
     # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。    
     import glob
 
-    files = glob.glob( "infra/static/infra/img/*"  )
+    files = glob.glob( "infra/static/infra/img/*.jpg" )
 
     # ページに表示する際、"infra/static/" を削除する。
     image_files = []
@@ -412,20 +412,29 @@ def table_view(request):
                 return result
 
             last = result_items
+            # ['NON-a', '9月7日 S404(前-1)', '9月7日 S537', '9月8日 S117(前-3),9月8日 S253']
             last_item = remove_parentheses_from_list(last)
-                                           
-            last_item_replaced = []
-            for k in range(len(last_item)):
-                last_item_replaced.append(last_item[k].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　"))
-            
-            picture_table = []
-            for picture in last_item_replaced:
-                # ワイルドカードを含む写真パスを取得
-                target_file = picture + '.jpg'
-                photo_paths = glob.glob(target_file)
-                picture_table.append(''.join(photo_paths))
-        
-            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_table[i], 'picture': 'infra/img/0293.jpg'}
+            # ['NON-a', '9月7日 S404', '9月7日 S537', '9月8日 S117,9月8日 S253']
+            name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
+            # ['NON-a', '9月7日 佐藤404', '9月7日 佐藤537', '9月8日 佐藤117,9月8日 佐藤253']
+
+            target_file = name_item
+            if "," in target_file:
+                dis_items = name_item.split(',') # 「9月8日 S*/*117」,「9月8日 S*/*253」
+                sub_dis_items = ['infra/static/infra/img/' + dis_items.strip() + ".jpg" for dis_items in dis_items] # リスト型に文字を追加する方法
+                join_dis_items = ",".join(sub_dis_items)
+                new_name_item = join_dis_items.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
+                photo_paths = glob.glob(new_name_item)
+            else:
+                photo_paths = glob.glob('infra/static/infra/img/' + target_file + '.jpg')
+                # ['infra~img/NON-a.jpg', 'infra~img/9月7日 佐藤404.jpg', 'infra~img/9月7日 佐藤537.jpg', 'infra~img/9月8日 佐藤117,infra~img/9月8日 佐藤253.jpg']
+                
+            if len(photo_paths) > 0:
+                picture_urls = [''.join(photo_path).replace('infra/static/', '') for photo_path in photo_paths]
+            else:
+                picture_urls = [None]
+
+            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls[0], 'picture': 'infra/img/noImage.png'}
             damage_table.append(item)
 
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ

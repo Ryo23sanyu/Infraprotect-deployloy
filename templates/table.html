@@ -24,16 +24,37 @@
                 <th>損傷種類</th>
                 <th>損傷番号</th>
                 <th>損傷写真</th>
+                <th>写真メモ</th>
             </tr>
         </thead>
         <tbody>
             {% for bridge in damage_table %}
-            <tr>
-                <td>{{ bridge.first }}</td>
-                <td>{{ bridge.second }}</td>
-                <td><img src="{% static bridge.last %}" width="200" height="150"></td>
-                <td><img src="{% static bridge.picture %}" width="200" height="150"></td>
-            </tr>
+            <form>
+                <tr>
+                    <td>{{ bridge.first }}</td>
+                    <td>{{ bridge.second }}</td>
+                    <td>
+                    {% if bridge.last is not None %}
+                        {% if bridge.last|length == 1 %}<!-- 要素が1つの場合 -->
+                        <img src="{% static bridge.last %}" width="200" height="150">
+                        {% elif bridge.last|length == 2 %}
+                        <img src="{% static bridge.last.0 %}" width="200" height="150">
+                        <img src="{% static bridge.last.1 %}" width="200" height="150">
+                        {% elif bridge.last|length == 2 %}
+                        <img src="{% static bridge.last.0 %}" width="200" height="150">
+                        <img src="{% static bridge.last.1 %}" width="200" height="150">
+                        <img src="{% static bridge.last.2 %}" width="200" height="150">
+                        {% else %}<!-- それ以外の場合の処理 -->
+                        <img src="{% static bridge.picture %}" width="200" height="150">
+                        {% endif %}
+                    {% endif %}
+                    </td>
+                    <td><img src="{% static bridge.picture %}" width="200" height="150"></td>
+                    <td>
+                        <input type="text" name="notes" placeholder="自由記述">
+                    </td>
+                </tr>
+            </form>
             {% endfor %}
         </tbody>
     </table>

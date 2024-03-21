@@ -24,3 +24,18 @@ print(picture[picture.find(" ")+2:picture.find(" ", picture.find(" ") + 1)])
 
 
 
+last_item = ['NON-a', '9月7日 S*/*404', '9月7日 S*/*537', '9月8日 S*/*117,9月8日 S*/*253']
+
+for index, value in enumerate(last_item):
+    if value == 5:
+        last_item[index] = 9
+
+target_file = [last_item + '.jpg' for last_item in last_item]
+
+print(target_file)
+
+s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+print(s[5])
+print(s[:-1])
+
