@@ -421,7 +421,7 @@ def table_view(request):
             target_file = name_item
             if "," in target_file:
                 dis_items = name_item.split(',') # 「9月8日 S*/*117」,「9月8日 S*/*253」
-                sub_dis_items = ['infra/static/infra/img/' + dis_items.strip() + ".jpg" for dis_items in dis_items] # リスト型に文字を追加する方法
+                sub_dis_items = ['infra/static/infra/img/' + dis_items + ".jpg" for dis_items in dis_items] # リスト型に文字を追加する方法
                 join_dis_items = ",".join(sub_dis_items)
                 new_name_item = join_dis_items.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
                 photo_paths = glob.glob(new_name_item)
