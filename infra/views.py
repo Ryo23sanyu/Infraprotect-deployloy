@@ -161,28 +161,20 @@ def photo_upload(request):
         form = PhotoUploadForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            return redirect('photo_list')
+            return redirect('image_list')
     else:
         form = PhotoUploadForm()
-    return render(request, 'infra/photo_upload.html', {'form': form})
+    return render(request, 'image_list.html', {'form': form})
 
 def selected_photos(request):
     selected_photo_ids = request.POST.getlist('selected_photos')
     selected_photos = Photo.objects.filter(id__in=selected_photo_ids)
     return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
   
-# 写真の表示
+# <<写真の表示>>
   
 def image_list(request):
-
-    """ 
-    # 写真フォルダのパスを指定する
-    photo_folder = R'C:\work\django\myproject\myvenv\Infraproject\infra\static\infra\img'
-
-    # 写真フォルダ内の画像ファイルを取得する
-    image_files = os.listdir(photo_folder)
-    """
-    
+   
     # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。    
     import glob
 
@@ -194,7 +186,7 @@ def image_list(request):
         image_files.append( file.replace("infra/static/", "") )
 
     # テンプレートに画像ファイルの一覧を渡してレンダリングする
-        return render(request, 'image_list.html', {'image_files': image_files})
+    return render(request, 'image_list.html', {'image_files': image_files})
 
 # 会社別に表示
 
@@ -416,25 +408,32 @@ def table_view(request):
             last_item = remove_parentheses_from_list(last)
             # ['NON-a', '9月7日 S404', '9月7日 S537', '9月8日 S117,9月8日 S253']
             name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
-            # ['NON-a', '9月7日 佐藤404', '9月7日 佐藤537', '9月8日 佐藤117,9月8日 佐藤253']
+            # ['NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253']
 
-            target_file = name_item
-            if "," in target_file:
-                dis_items = name_item.split(',') # 「9月8日 S*/*117」,「9月8日 S*/*253」
-                sub_dis_items = ['infra/static/infra/img/' + dis_items + ".jpg" for dis_items in dis_items] # リスト型に文字を追加する方法
-                join_dis_items = ",".join(sub_dis_items)
-                new_name_item = join_dis_items.replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
-                photo_paths = glob.glob(new_name_item)
-            else:
-                photo_paths = glob.glob('infra/static/infra/img/' + target_file + '.jpg')
-                # ['infra~img/NON-a.jpg', 'infra~img/9月7日 佐藤404.jpg', 'infra~img/9月7日 佐藤537.jpg', 'infra~img/9月8日 佐藤117,infra~img/9月8日 佐藤253.jpg']
-                
-            if len(photo_paths) > 0:
+            target_file = name_item[i]
+            # target_fileにname_itemの[i]番目の要素を代入
+            dis_items = target_file.split(',') #「9月8日 S*/*117」,「9月8日 S*/*253」
+            # コンマが付いていたら分割
+            sub_dis_items = ['infra/static/infra/img/' + item + ".jpg" for item in dis_items]
+            # dis_itemsの要素の数だけ、分割した各文字の先頭に「infra/static/infra/img/」各文字の後ろに「.jpg」を追加
+            # ['infra/static/infra/img/9月8日 S*/*117.jpg', 'infra/static/infra/img/9月8日 S*/*253.jpg']
+            for item in sub_dis_items:
+                sub_photo_paths = glob.glob(item)
+                # ワイルドカードを含んだ検索ができるようにする
+            join_dis_items = ",".join(sub_photo_paths)
+            # globの後に文字の結合
+            photo_paths = join_dis_items
+         
+            if len(photo_paths) > 0:# photo_pathにはリストが入るため、[i]番目の要素が0より大きい場合
                 picture_urls = [''.join(photo_path).replace('infra/static/', '') for photo_path in photo_paths]
-            else:
-                picture_urls = [None]
+                # photo_pathsの要素の数だけphoto_pathという変数に代入し、forループを実行
+                # photo_pathという1つの要素の'infra/static/'を空白''に置換し、中間文字なしで結合する。
+                # picture_urlsという新規配列に格納する。
+            else:# それ以外の場合
+                picture_urls = None
+                #picture_urlsの値は[None]とする。
 
-            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls[0], 'picture': 'infra/img/noImage.png'}
+            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/img/noImage.png'}
             damage_table.append(item)
 
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ
