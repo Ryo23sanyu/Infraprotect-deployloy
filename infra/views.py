@@ -312,8 +312,6 @@ def table_view(request):
         
         return False
 
-
-
     # AutoCADファイル名を指定してテキストを抽出する
     filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
     extracted_text = extract_text(filename)
@@ -331,21 +329,11 @@ def table_view(request):
                 extracted_text.remove(next_data)
 
     # 先頭の要素を抽出
-        top_item = [sub_list[0] for sub_list in extracted_text]
-        
-        new_text = []
-        for item in top_item:
-            if "," in item:
-                for j in range(len(item)-1):
-                    if item[j] == "," and item[j+1].isnumeric():
-                        for s in range(len(item)-1):
-                            if item[s].isalpha() and item[s+1].isnumeric():
-                                new_text.append(item[:item.find(",")+1] + item[:s+1] + item[item.find(",")+1:])
-                                break
-            else:
-                new_text.append(item)
-                
-        first_item = [Markup(sub_list[0].replace(",", "<br /><br />")) for sub_list in extracted_text]
+        # 正規表現を使って、コンマの直後に数字以外の文字が続く場所を見つけます。
+        pattern = re.compile(r',(?![0-9])')
+        # リスト内包表記で各要素をチェックして、条件に合致する場合は置き換えを行います。
+        first_item = [Markup(pattern.sub(",</br>", sub_list[0])) for sub_list in extracted_text]
+        #first_item = [Markup(sub_list[0].replace(",", ",")) for sub_list in extracted_text]
 
     # リストの各要素から記号を削除する
         def remove_symbols(other_items):
@@ -366,6 +354,35 @@ def table_view(request):
         
     # 最後の要素を抽出（Defpoints）
         bottom_item = [sub_list[-1] for sub_list in extracted_text]
+        
+        result_items = []# 配列を作成
+        for item in bottom_item:# text_itemsの要素を1つずつitem変数に入れてforループする
+            if ',' in item:# 要素の中にカンマが含まれている場合に実行
+                sub_items = item.split(',')# カンマが含まれている場合カンマで分割
+                extracted_item = []# 配列を作成
+                for item in sub_items:# bottom_itemの要素を1つずつitem変数に入れてforループする
+                    for p in range(len(item)):#itemの文字数をiに代入
+                        if "A" <= item[p].upper() <= "Z" and p < len(item) - 1 and item[p+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
+                            extracted_item.append(item[:p+1]+"*/*"+item[p+1:])# アルファベットと数字の間に*/*を入れてextracted_itemに代入
+                            break
+                join = ",".join(extracted_item)# 加工した内容をカンマ区切りの１つの文字列に戻す
+                result_items.append(join)# result_itemsに格納
+
+            else:# ifがfalseの場合(カンマが含まれていない場合)
+                non_extracted_item = ''
+                for j in range(len(item)):
+                    if item[j].isalpha() and j < len(item) - 1 and item[j+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
+                        non_extracted_item = item[:j+1]+"*/*"+item[j+1:]#アルファベットまでをextracted_itemに代入
+                    elif non_extracted_item == '':
+                        non_extracted_item = item
+                result_items.append(non_extracted_item)
+
+        def remove_parentheses_from_list(last):
+            pattern = re.compile(r"\([^()]*\)")
+            result = [pattern.sub("", string) for string in last]
+            return result
+
+        last = result_items
 
         damage_table = []  # 空のリストを作成
 
@@ -376,53 +393,22 @@ def table_view(request):
             except IndexError:
                 third = None
             
-            result_items = []# 配列を作成
-            for item in bottom_item:# text_itemsの要素を1つずつitem変数に入れてforループする
-                if ',' in item:# 要素の中にカンマが含まれている場合に実行
-                    sub_items = item.split(',')# カンマが含まれている場合カンマで分割
-                    extracted_item = []# 配列を作成
-                    for item in sub_items:# bottom_itemの要素を1つずつitem変数に入れてforループする
-                        for p in range(len(item)):#itemの文字数をiに代入
-                            if "A" <= item[p].upper() <= "Z" and p < len(item) - 1 and item[p+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
-                                extracted_item.append(item[:p+1]+"*/*"+item[p+1:])# アルファベットと数字の間に*/*を入れてextracted_itemに代入
-                                break
-                    join = ",".join(extracted_item)# 加工した内容をカンマ区切りの１つの文字列に戻す
-                    result_items.append(join)# result_itemsに格納
-
-                else:# ifがfalseの場合(カンマが含まれていない場合)
-                    non_extracted_item = ''
-                    for j in range(len(item)):
-                        if item[j].isalpha() and j < len(item) - 1 and item[j+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
-                            non_extracted_item = item[:j+1]+"*/*"+item[j+1:]#アルファベットまでをextracted_itemに代入
-                        elif non_extracted_item == '':
-                            non_extracted_item = item
-                    result_items.append(non_extracted_item)
-
-            def remove_parentheses_from_list(last):
-                pattern = re.compile(r"\([^()]*\)")
-                result = [pattern.sub("", string) for string in last]
-                return result
-
-            last = result_items
-            # ['NON-a', '9月7日 S404(前-1)', '9月7日 S537', '9月8日 S117(前-3),9月8日 S253']
             last_item = remove_parentheses_from_list(last)
             # ['NON-a', '9月7日 S404', '9月7日 S537', '9月8日 S117,9月8日 S253']
             name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
-            # ['NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253']
+            # name_item に格納されるのは 'NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253'のいずれかです。リストのi番目の文字列になります。
 
-            target_file = name_item[i]
-            # target_fileにname_itemの[i]番目の要素を代入
-            dis_items = target_file.split(',') #「9月8日 S*/*117」,「9月8日 S*/*253」
+            dis_items = name_item.split(',') #「9月8日 S*/*117」,「9月8日 S*/*253」
             # コンマが付いていたら分割
             sub_dis_items = ['infra/static/infra/img/' + item + ".jpg" for item in dis_items]
             # dis_itemsの要素の数だけ、分割した各文字の先頭に「infra/static/infra/img/」各文字の後ろに「.jpg」を追加
             # ['infra/static/infra/img/9月8日 S*/*117.jpg', 'infra/static/infra/img/9月8日 S*/*253.jpg']
+            photo_paths = []
+            # photo_pathsリストを作成
             for item in sub_dis_items:
                 sub_photo_paths = glob.glob(item)
-                # ワイルドカードを含んだ検索ができるようにする
-            join_dis_items = ",".join(sub_photo_paths)
-            # globの後に文字の結合
-            photo_paths = join_dis_items
+                photo_paths.extend(sub_photo_paths)
+                # photo_pathsリストにsub_photo_pathsを追加
          
             if len(photo_paths) > 0:# photo_pathにはリストが入るため、[i]番目の要素が0より大きい場合
                 picture_urls = [''.join(photo_path).replace('infra/static/', '') for photo_path in photo_paths]

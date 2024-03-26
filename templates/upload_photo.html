@@ -1,5 +1,13 @@
+<!-- upload_photo.html -->
+{% extends "base.html" %}
+
+{% block title %}画像アップロード{% endblock title %}
+{% block h1 %}画像アップロード{% endblock %}
+
+{% block content %}
 <form method="POST" enctype="multipart/form-data">
   {% csrf_token %}
   {{ form.as_p }}
   <button type="submit">写真をアップロードする</button>
 </form>
+{% endblock %}
