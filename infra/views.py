@@ -400,7 +400,18 @@ def table_view(request):
 
             dis_items = name_item.split(',') #「9月8日 S*/*117」,「9月8日 S*/*253」
             # コンマが付いていたら分割
-            sub_dis_items = ['infra/static/infra/img/' + item + ".jpg" for item in dis_items]
+            
+            time_item = []
+            current_date = ''  # 現在の日付を保持する変数
+            # 先頭が数字で始まるかチェック（日付として扱えるか）
+            if re.match(r'^\d', dis_items):
+                current_date = re.match(r'^\d+月\d+日', dis_items).group(0)  # 日付を更新
+                time_item.extend(dis_items)  # 日付がある項目はそのまま追加
+            else:
+                # 日付がない項目は、現在の日付を先頭に追加
+                time_item.extend(''.join([current_date, ' ', dis_items]))
+
+            sub_dis_items = ['infra/static/infra/img/' + item + ".jpg" for item in time_item]
             # dis_itemsの要素の数だけ、分割した各文字の先頭に「infra/static/infra/img/」各文字の後ろに「.jpg」を追加
             # ['infra/static/infra/img/9月8日 S*/*117.jpg', 'infra/static/infra/img/9月8日 S*/*253.jpg']
             photo_paths = []
