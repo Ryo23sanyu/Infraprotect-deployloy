@@ -7,7 +7,35 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <title>{% block title %}{% endblock title %}| インフラアプリ</title>
     <link rel="stylesheet" type="text/css" href="{% static 'infra/css/style.css' %}">
+    <!--<link href="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.css" rel="stylesheet"/>
+    <script src="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>-->
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdn.datatables.net/fixedcolumns/5.0.0/js/dataTables.fixedColumns.js"></script>
+    <script src="https://cdn.datatables.net/fixedcolumns/5.0.0/js/fixedColumns.dataTables.js"></script>
+    <script src="https://cdn.datatables.net/rowreorder/1.5.0/js/dataTables.rowReorder.js"></script>
+    <script src="https://cdn.datatables.net/rowreorder/1.5.0/js/rowReorder.dataTables.js"></script>
+    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css" rel="stylesheet"/>
+    <link href="https://cdn.datatables.net/fixedcolumns/5.0.0/css/fixedColumns.dataTables.css" rel="stylesheet"/>
+    <link href="https://cdn.datatables.net/rowreorder/1.5.0/css/rowReorder.dataTables.css" rel="stylesheet"/>
   </head>
+  <Style>
+      .my-table th, .my-table td {
+          border: 3px double dimgray; /* ボーダースタイルを設定 */
+          padding: 8px; /* セルの内側の余白を設定 */
+      }
+      .center-align {
+          text-align: center;
+      }
+      .center-align img,
+      .center-align textarea {
+          margin: auto; /* 水平中央寄せ */
+          display: block; /* ブロックレベル要素として扱う */
+      }
+  </style>
   <body>
     <nav class="navbar navbar-dark bg-success sticky-top">
       <div class="navbar-nav d-flex flex-row">
@@ -39,4 +67,52 @@
     {% block content %}{% endblock content %}
     </div>
   </body>
+  <script>
+      $(document).ready(function () {
+          new DataTable('.my-table', {
+              fixedColumns: true,
+              rowReorder: {
+                  selector: 'tr'
+              },
+          });
+      });
+      function updatePlaceholder(select) {
+          var input = document.getElementById('input_'+select.name.split('_')[1]); // 対応するinput要素を取得
+          if (select.value === "width") {
+              input.placeholder = "mm"; // 幅が選択された場合のプレースホルダー
+          } else if (select.value === "area") {
+              input.placeholder = "mm"; // 面積が選択された場合のプレースホルダー
+          } else if (select.value === "bolt") {
+            input.placeholder = "本"; // 本数が選択された場合のプレースホルダー
+          } else if (select.value === "level") {
+            input.placeholder = "mm"; // 段差量が選択された場合のプレースホルダー
+          } else {
+              input.placeholder = "単位"; // デフォルトのプレースホルダー
+          }
+      }
+      const sort_areas    = document.querySelectorAll(".sort_area")
+      for (const area of sort_areas ){
+          new Sortable(area, {
+              animation: 150,
+              ghostClass: 'dragging',
+              onEnd: function(){ console.log("ソート完了") },
+          });
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        var list = document.getElementById("myList");
+        var items = list.querySelectorAll("li");
+        
+        // 指定した順序に基づいてリストアイテムを並べ替える
+        var order = ["主桁", "横桁", "床版", "PC定着部", "防護柵"];
+        
+        order.forEach(function(text) {
+          for (var i = 0; i < items.length; i++) {
+            if (items[i].textContent === text) {
+              list.appendChild(items[i]);
+              break;
+            }
+          }
+        });
+      });
+  </script>
 </html>

@@ -6,28 +6,6 @@
 {% block h1 %}損傷一覧{% endblock %}
 
 {% block content %}
-<head>
-    <!--<link href="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.css" rel="stylesheet"/>
-    <script src="https://cdn.datatables.net/v/dt/jq-3.6.0/dt-1.13.4/datatables.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>-->
-    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-    <script src="https://cdn.datatables.net/fixedcolumns/5.0.0/js/dataTables.fixedColumns.js"></script>
-    <script src="https://cdn.datatables.net/fixedcolumns/5.0.0/js/fixedColumns.dataTables.js"></script>
-    <script src="https://cdn.datatables.net/rowreorder/1.5.0/js/dataTables.rowReorder.js"></script>
-    <script src="https://cdn.datatables.net/rowreorder/1.5.0/js/rowReorder.dataTables.js"></script>
-    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.js"></script>
-    <link href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css" rel="stylesheet"/>
-    <link href="https://cdn.datatables.net/fixedcolumns/5.0.0/css/fixedColumns.dataTables.css" rel="stylesheet"/>
-    <link href="https://cdn.datatables.net/rowreorder/1.5.0/css/rowReorder.dataTables.css" rel="stylesheet"/>
-</head>
-<body>
-    <Style>
-        .my-table th, .my-table td {
-            border: 3px double dimgray; /* ボーダースタイルを設定 */
-            padding: 8px; /* セルの内側の余白を設定 */
-        }
-    </style>
     <table class="my-table" border="1">
         <thead>
             <tr>
@@ -43,29 +21,47 @@
             <form>
                 <tr>
                     <td>{{ bridge.first }}</td>
-                    <td>{{ bridge.second }}</td>
                     <td>
+                        {% if bridge.second is not None %}
+                            {% if bridge.second %}
+                                {% for item in bridge.second %}
+                                    {{ item }}</br>
+                                    <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)" style="width: 100px;">
+                                        </br><option value=""></option>
+                                        <option value="width">幅</option>
+                                        <option value="area">面積</option>
+                                        <option value="bolt">本数</option>
+                                        <option value="level">段差量</option>
+                                        <!-- 必要に応じて他のオプションを追加 -->
+                                    </select>
+                                    <input type="text" name="input3_{{ forloop.counter }}" placeholder="数量" style="width: 100px;" /> <!-- 数量 -->
+                                    <input type="text" name="input2_{{ forloop.counter }}" placeholder="単位" style="width: 50px;" id="input_{{ forloop.counter }}" /> <!-- 単位 -->                               
+                                    <input type="text" name="input4_{{ forloop.counter }}" placeholder="分類" style="width: 75px;" /> <!-- 分類 -->
+                                    <input type="text" name="input5_{{ forloop.counter }}" placeholder="パターン" style="width: 75px;" /> <!-- パターン -->
+                                    </br></br>
+                                {% endfor %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td class="center-align">
                     {% if bridge.last is not None %}
                         {% if bridge.last|length == 1 %}<!-- 要素が1つの場合 -->
                             <img src="{% static bridge.last.0 %}" width="200" height="150">
                             <!--<td>{{ bridge.last}}</td>-->
                         {% elif bridge.last|length == 2 %}
-                            <td>
-                                <img src="{% static bridge.last.0 %}" width="200" height="150">
-                                <img src="{% static bridge.last.1 %}" width="200" height="150">
-                            </td>
+                            <img src="{% static bridge.last.0 %}" width="200" height="150"></br>
+                            <img src="{% static bridge.last.1 %}" width="200" height="150">
                         {% elif bridge.last|length == 3 %}
-                            <td><img src="{% static bridge.last.0 %}" width="200" height="150">
-                                <img src="{% static bridge.last.1 %}" width="200" height="150">
-                                <img src="{% static bridge.last.2 %}" width="200" height="150"></td>
-
+                            <img src="{% static bridge.last.0 %}" width="200" height="150"></br>
+                            <img src="{% static bridge.last.1 %}" width="200" height="150"></br>
+                            <img src="{% static bridge.last.2 %}" width="200" height="150">
                         {% else %}<!-- それ以外の場合の処理 -->
                             <img src="{% static bridge.picture %}" width="200" height="150">
                         {% endif %}
                     {% endif %}
                     </td>
-                    <td><img src="{% static bridge.picture %}" width="200" height="150"></td>
-                    <td>
+                    <td class="center-align"><img src="{% static bridge.picture %}" width="200" height="150"></td>
+                    <td class="center-align">
                         <textarea name="notes" rows="6" placeholder="自由記述"></textarea>
                     </td>
                 </tr>
@@ -73,17 +69,4 @@
             {% endfor %}
         </tbody>
     </table>
-    <script>
-        $(document).ready(function() {
-        $('my-table').DataTable( {
-            rowReorder: {
-                selector: 'tr'
-            }
-        } );
-        $("#sortable").sortable({
-            handle: ".draggable-handle" // ドラッグ可能な要素を指定
-        });
-        })
-    </script>
-</body>
 {% endblock %}

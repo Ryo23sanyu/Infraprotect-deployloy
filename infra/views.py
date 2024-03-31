@@ -218,7 +218,6 @@ def panorama_list(request):
     return render(request, 'image_list.html', {'panoramas': panoramas})
 
 
-
 def panorama_upload(request):
     if request.method == 'POST':
         image = request.FILES['image']
@@ -333,7 +332,6 @@ def table_view(request):
         pattern = re.compile(r',(?![0-9])')
         # リスト内包表記で各要素をチェックして、条件に合致する場合は置き換えを行います。
         first_item = [Markup(pattern.sub(",</br>", sub_list[0])) for sub_list in extracted_text]
-        #first_item = [Markup(sub_list[0].replace(",", ",")) for sub_list in extracted_text]
 
     # リストの各要素から記号を削除する
         def remove_symbols(other_items):
@@ -347,8 +345,22 @@ def table_view(request):
             return processed_other_items
     # それ以外の要素を抽出
         other_items = [sub_list[1:-2] for sub_list in extracted_text]          
-        second_items = remove_symbols(other_items)
-
+        second = remove_symbols(other_items)
+        
+        # 丸数字を直接列挙
+        circle_numbers = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖'
+        
+        second_items = []
+        # リスト内の各文字列に対して処理を行う
+        for second_over in second:
+            # アルファベット(aからe)と直後に続く特定の丸数字の間にコンマを挿入
+            if second_over == "":
+                second_items.append(None)
+            else:
+                second_item = re.sub(f'([a-e])([{circle_numbers}])', r'\1,\2', second_over)
+                second_split = second_item.split(",")
+                second_items.append(second_split)
+            
     # 最後から2番目の要素を抽出（写真番号-00）
         third_items = [sub_list[-2] for sub_list in extracted_text if len(sub_list) >= 3]
         
@@ -382,7 +394,7 @@ def table_view(request):
             result = [pattern.sub("", string) for string in last]
             return result
 
-        last = result_items
+        last_item = remove_parentheses_from_list(result_items)
 
         damage_table = []  # 空のリストを作成
 
@@ -393,7 +405,6 @@ def table_view(request):
             except IndexError:
                 third = None
             
-            last_item = remove_parentheses_from_list(last)
             # ['NON-a', '9月7日 S404', '9月7日 S537', '9月8日 S117,9月8日 S253']
             name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
             # name_item に格納されるのは 'NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253'のいずれかです。リストのi番目の文字列になります。
@@ -401,17 +412,18 @@ def table_view(request):
             dis_items = name_item.split(',') #「9月8日 S*/*117」,「9月8日 S*/*253」
             # コンマが付いていたら分割
             
-            time_item = []
+            time_result = []
             current_date = ''  # 現在の日付を保持する変数
-            # 先頭が数字で始まるかチェック（日付として扱えるか）
-            if re.match(r'^\d', dis_items):
-                current_date = re.match(r'^\d+月\d+日', dis_items).group(0)  # 日付を更新
-                time_item.extend(dis_items)  # 日付がある項目はそのまま追加
-            else:
-                # 日付がない項目は、現在の日付を先頭に追加
-                time_item.extend(''.join([current_date, ' ', dis_items]))
+            for time_item in dis_items:
+                # 先頭が数字で始まるかチェック（日付として扱えるか）
+                if re.match(r'^\d', time_item):
+                    current_date = re.match(r'^\d+月\d+日', time_item).group(0)  # 日付を更新
+                    time_result.append(time_item)  # 日付がある項目はそのまま追加
+                else:
+                    # 日付がない項目は、現在の日付を先頭に追加
+                    time_result.append(''.join([current_date, '　', time_item]))
 
-            sub_dis_items = ['infra/static/infra/img/' + item + ".jpg" for item in time_item]
+            sub_dis_items = ['infra/static/infra/img/' + item + ".jpg" for item in time_result]
             # dis_itemsの要素の数だけ、分割した各文字の先頭に「infra/static/infra/img/」各文字の後ろに「.jpg」を追加
             # ['infra/static/infra/img/9月8日 S*/*117.jpg', 'infra/static/infra/img/9月8日 S*/*253.jpg']
             photo_paths = []
@@ -486,4 +498,3 @@ def display_photo(request):
     else:
         form = UploadForm()
     return render(request, 'upload_photo.html', {'form': form})
-
