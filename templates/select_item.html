@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}番号登録{% endblock title %}
+{% block h1 %}番号登録{% endblock %}
+
+{% block content %}
+<form method='POST'>
+  {% csrf_token %}
+  {% for per_form in form %}
+    {{ per_form }}
+    <br>
+  {% endfor %}
+  {{ form.management_form }}
+  <button name="btn_submit" type="submit">
+    送信する
+  </button>
+  <button name="btn_add" type="submit">
+    追加する
+  </button>
+</form>
+<h3>{{ message }}</h3>
+
+{% endblock %}

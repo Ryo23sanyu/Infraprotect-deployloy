@@ -1,20 +1,22 @@
 import glob
 import re
+from django import forms
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from markupsafe import Markup
 import pandas as pd
-from .models import Infra
+from .models import Infra, Number
 from .models import Article
 from django.db import models
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .forms import FileUploadForm, UploadForm
+from .forms import FileUploadForm, NumberForm, UploadForm
 from .forms import PhotoUploadForm, NameForm
 from .models import Photo, Panorama
 import os
 from django.contrib.auth.decorators import login_required
+from django.views.generic.edit import FormView
 import ezdxf
 from ezdxf.entities.mtext import MText
 import tkinter
@@ -206,16 +208,17 @@ def image_list(request):
 def panorama_list(request):
     panoramas = Panorama.objects.all()
     if request.method == 'POST':
-        selected_ids = request.POST.getlist('selected_panoramas')
+        selected_ids = request.POST.getlist('image_list')
         for panorama in panoramas:
             if str(panorama.id) in selected_ids:
                 panorama.checked = True
             else:
                 panorama.checked = False
             panorama.save()
-        return redirect('panorama_list')  # 再描画のためにリダイレクト
-
-    return render(request, 'image_list.html', {'panoramas': panoramas})
+        return redirect('image_list')  # 再描画のためにリダイレクト
+    
+    return redirect('image_list')
+    #return render(request, 'image_list.html', {'panoramas': panoramas})
 
 
 def panorama_upload(request):
@@ -498,3 +501,21 @@ def display_photo(request):
     else:
         form = UploadForm()
     return render(request, 'upload_photo.html', {'form': form})
+
+# 番号図用
+def number_create_view(request):
+    if request.method == 'POST':
+        form = NumberForm(request.POST)
+        if form.is_valid():
+            # フォームが有効な場合、データをモデルに保存します。
+            Number.objects.create(
+                name=form.cleaned_data['name'],
+                top_number=form.cleaned_data['top_number'],
+                bottom_number=form.cleaned_data['bottom_number'],
+                single_number=form.cleaned_data['single_number'],
+            )
+            # データ保存後、適切なページにリダイレクトします。ここではホームページを想定。
+            return redirect('/')
+    else:
+        form = NumberForm()  # GETリクエストの場合、空のフォームを表示します。
+    return render(request, 'select_item.html', {'form': form})

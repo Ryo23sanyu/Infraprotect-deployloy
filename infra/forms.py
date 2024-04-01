@@ -1,6 +1,6 @@
 from django import forms
 from .models import CustomUser, UploadedFile
-from .models import Photo, Company, Number
+from .models import Photo, Company
 
 class FileUploadForm(forms.ModelForm):
     class Meta:
@@ -20,14 +20,6 @@ class UserCreationForm(forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ('username', 'password', 'company')
-        
-# 番号登録
-
-class NumberForm(forms.ModelForm):
-    class Meta:
-        model = Number
-        fields = '__all__'
-        labels = {'single_number': '単独番号', 'double_number_one': '連続する始番', 'double_number_two': '連続する末番'}
 
 # <<写真表示>>
 
@@ -40,3 +32,10 @@ class NameForm(forms.Form):
     initial = forms.CharField(label='イニシャル')
     name = forms.CharField(label='名前')
     folder_path = forms.CharField(label='フォルダパス')
+    
+# 番号図用
+class NumberForm(forms.Form):
+     name = forms.CharField()
+     top_number = forms.CharField()
+     bottom_number = forms.CharField()
+     single_number = forms.CharField()

@@ -7,4 +7,3 @@ for i in range(len(picture)-1):# 文字数-1回
         break
 
 print(result)
-

@@ -26,9 +26,9 @@ urlpatterns = [
     path('images/', views.image_list, name='image_list'),
     path('panorama/list/', views.panorama_list, name='panorama_list'),
     #path('panorama/upload/', views.panorama_upload, name='panorama_upload'),
-    path('number/', views.sample_view, name='number'),
     path('table/', views.table_view, name='table'),
     path('photo/', views.display_photo, name='photo'),
+    path('number/', views.number_create_view, name='number'),
 ]
 
 if settings.DEBUG:

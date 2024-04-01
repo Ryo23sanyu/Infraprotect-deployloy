@@ -65,12 +65,6 @@ class Panorama(models.Model):
     # チェックボックスの状態を保存するフィールド
     # is_checked = models.BooleanField(default=False)
 
-# 番号登録
-class Number(models.Model):
-    single_number = models.CharField(max_length=5)
-    double_number_one = models.CharField(max_length=5)
-    double_number_two = models.CharField(max_length=5)
-
 # ファイルアップロード(プライマリーキーで分類分け)
 class Uploads(models.Model):
     primary_key = models.AutoField(primary_key=True)
@@ -78,3 +72,14 @@ class Uploads(models.Model):
 
 class Damage(models.Model):
     notes = models.TextField(blank=True, null=True)
+    
+# 番号図用
+PARTS = (('syuketa', '主桁'), ('yokoketa', '横桁'), ('PCteityakubu', 'PC定着部'))
+class Number(models.Model):
+    name = models.CharField(max_length=100, choices = PARTS)  # 名前を表すフィールド。最大100文字。
+    top_number = models.CharField(max_length=5) # Emailフィールド。
+    bottom_number = models.CharField(max_length=5)  # bottom_number。用途に応じて最大長を設定。
+    single_number = models.CharField(max_length=5)  # single_number。用途に応じて最大長を設定。
+
+    def __str__(self):
+        return self.name
