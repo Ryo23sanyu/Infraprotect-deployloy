@@ -73,13 +73,13 @@ class Uploads(models.Model):
 class Damage(models.Model):
     notes = models.TextField(blank=True, null=True)
     
-# 番号図用
+# 番号図用(models-forms-viewsの順)
 PARTS = (('syuketa', '主桁'), ('yokoketa', '横桁'), ('PCteityakubu', 'PC定着部'))
 class Number(models.Model):
-    name = models.CharField(max_length=100, choices = PARTS)  # 名前を表すフィールド。最大100文字。
-    top_number = models.CharField(max_length=5) # Emailフィールド。
-    bottom_number = models.CharField(max_length=5)  # bottom_number。用途に応じて最大長を設定。
-    single_number = models.CharField(max_length=5)  # single_number。用途に応じて最大長を設定。
+    name = models.CharField(max_length=100, choices = PARTS)
+    top_number = models.CharField(max_length=5, blank=True)
+    bottom_number = models.CharField(max_length=5, blank=True)
+    single_number = models.CharField(max_length=5, blank=True)
 
     def __str__(self):
         return self.name

@@ -74,9 +74,6 @@
       $(document).ready(function () {
           new DataTable('.my-table', {
               fixedColumns: true,
-              rowReorder: {
-                  selector: 'tr'
-              },
           });
       });
       function updatePlaceholder(select) {
@@ -93,5 +90,42 @@
               input.placeholder = "単位"; // デフォルトのプレースホルダー
           }
       }
+      document.addEventListener('DOMContentLoaded', (event) => {
+        // 名称ごとに対応番号を定義したオブジェクト
+        const namedConditions = {
+          '排水管': ['①', '②', '③', '④'],
+          '主桁': ['①', '⑤', '⑥'],
+          '床版': ['②', '③', '④', '⑦']
+        };
+      
+        // 全ての行を走査
+        const rows = document.querySelectorAll('tr');
+        rows.forEach(row => {
+          // 名称と情報を含む<td>タグを取得
+          const nameCell = row.querySelector('.sorting_1');
+          const infoCell = row.querySelectorAll('td')[1];
+      
+          // 名称に対応する条件を取得
+          const supportedNumbers = namedConditions[nameCell.textContent];
+      
+          // 条件に適合しない内容が含まれているかチェック
+          if (supportedNumbers && infoCell) {
+            const content = infoCell.innerHTML;
+            let unsupported = supportedNumbers.every(number => !content.includes(number));
+            
+            // 対応できない内容が含まれている場合、修正案を表示
+            if (unsupported) {
+              console.log(`${nameCell.textContent}: 対応できない番号が含まれています。`);
+              // ここで修正案を表示する処理を行う（例: alertやHTML内にメッセージを挿入）
+      
+              const div       = document.createElememt("div");
+              div.textContent = "対応できません";
+      
+              nameCell.appendChild(div);
+      
+            } 
+          }
+        });
+      });
   </script>
 </html>

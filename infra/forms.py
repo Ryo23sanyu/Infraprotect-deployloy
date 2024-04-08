@@ -1,5 +1,5 @@
 from django import forms
-from .models import CustomUser, UploadedFile
+from .models import CustomUser, Number, UploadedFile
 from .models import Photo, Company
 
 class FileUploadForm(forms.ModelForm):
@@ -33,9 +33,8 @@ class NameForm(forms.Form):
     name = forms.CharField(label='名前')
     folder_path = forms.CharField(label='フォルダパス')
     
-# 番号図用
-class NumberForm(forms.Form):
-     name = forms.CharField()
-     top_number = forms.CharField()
-     bottom_number = forms.CharField()
-     single_number = forms.CharField()
+# 番号図用(models-forms-viewsの順)
+class NumberForm(forms.ModelForm):
+    class Meta:
+        model   = Number
+        fields  = [ "name", "top_number", "bottom_number", "single_number" ]

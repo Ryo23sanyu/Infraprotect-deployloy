@@ -11,7 +11,7 @@
     {% for image_file in image_files %}
         <div class="col-md-4">
             <div class="picture img">
-                <img src="{% static image_file %}" width="50px" >
+                <img src="{% static image_file %}" width="50px">
                 <div class="caption">
                     <textarea id="comment-{{ forloop.counter0 }}" class="form-control" rows="6" placeholder="コメントを入力してください"></textarea>
                 </div>

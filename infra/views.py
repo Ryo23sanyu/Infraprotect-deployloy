@@ -226,7 +226,7 @@ def panorama_upload(request):
         image = request.FILES['image']
         checked = request.POST.get('checked', False)
         panorama = Panorama.objects.create(image=image, checked=checked)
-        return redirect('panorama_list')
+        return redirect('photo')
     return render(request, 'panorama_upload.html')
    
 # 番号表示  
@@ -447,6 +447,46 @@ def table_view(request):
 
             item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/img/noImage.png'}
             damage_table.append(item)
+            
+        #＜＜追加分＞＞    
+        # 結果を保持するリスト
+        # text_list = []
+
+        # # リストの長さに応じてループ
+        # for i in range(len(first_item)):
+        #     # Itemリストを作成し、多重リストに追加
+        #     item = [first_item[i], second_items[i], third, picture_urls]  # thirdとpicture_urlsもインデックスに対応していると仮定
+        #     text_list.append(item)
+            
+        # order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
+        # #優先順位の指定
+        # order_number = {"①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10, "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15, "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20, "㉑": 21, "㉒": 22, "㉓": 23, "㉔": 24, "㉕": 25, "㉖": 26}
+        # #優先順位の指定
+        
+        # def sort_category(text): # sort_category関数を定義
+        #     for key, val in order_dict.items(): # keyがキー(主桁～防護柵)、valが値(1～6)
+        #         if text.startswith(key): # textの1文字目がキー(主桁～防護柵)の場合
+        #             return val # 値(1～6)を返す
+        #     return len(order_dict) # startswitchに全くマッチしなかった場合に実行(len(order_dict):6 → 順序はリストの末尾)
+        
+        # def sort_number(text):
+        #     if len(text) > 1:  # 項目が2番目の要素も持つ場合
+        #         num_text = text[1].split('-')[0]  # 例えば "①-d" の "①" の部分を取得
+        #         for key, val in order_number.items():
+        #             if num_text.startswith(key):
+        #                 return val
+        #     return len(order_number)
+
+        # orted_text_list = sorted(text_list, key=lambda text: (sort_category(text[0]), text[0], sort_number(text)))
+        # # sorted(並び替えるオブジェクト, lamda式(無名関数)で並び替え 各要素: (text[0]で始まる要素を並び替え、その中でtext[0]の並び替え))
+        
+        # damage_table = []  # 辞書を格納するための新しいリスト
+
+        # for item in orted_text_list:
+        #     # 辞書を作成し、多重リストの要素を割り当て
+        #     item_dict = {'first': item[0], 'second': item[1], 'third': item[2], 'last': item[3]}
+        #     # 新しい辞書をリストに追加
+        #     damage_table.append(item_dict)
 
     context = {'damage_table': damage_table}  # テンプレートに渡すデータ
     return render(request, 'table.html', context)
@@ -497,25 +537,26 @@ def display_photo(request):
                 for chunk in photo.chunks():
                     f.write(chunk)  # 写真のデータをファイルに書き込みます
 
-        return render(request, 'image_list.html', {'photo': photo})
+        #return render(request, 'image_list.html', {'photo': photo})
+        return redirect("image_list")
     else:
         form = UploadForm()
     return render(request, 'upload_photo.html', {'form': form})
 
 # 番号図用
-def number_create_view(request):
-    if request.method == 'POST':
-        form = NumberForm(request.POST)
-        if form.is_valid():
-            # フォームが有効な場合、データをモデルに保存します。
-            Number.objects.create(
-                name=form.cleaned_data['name'],
-                top_number=form.cleaned_data['top_number'],
-                bottom_number=form.cleaned_data['bottom_number'],
-                single_number=form.cleaned_data['single_number'],
-            )
-            # データ保存後、適切なページにリダイレクトします。ここではホームページを想定。
-            return redirect('/')
+def number_create_view(request): # number_create_view関数を定義
+# この行ではnumber_create_viewという名前の関数を定義しています。この関数はrequestという引数を受け取ります。
+# requestはユーザーからのHTTPリクエストを表し、Djangoが自動的に関数に渡します。
+    if request.method == 'POST': # HTTPリクエストメソッドがPOSTメソッド(データをサーバーに送る役割)の場合
+        form = NumberForm(request.POST) # 
+
+        if form.is_valid(): # POSTメソッドがform.pyで定めたfieldsに従っている場合
+            form.save() # DBに保存する。
+        else:
+            print(form.errors) # エラーの理由を出す。
+
+        return redirect('/') # 
     else:
-        form = NumberForm()  # GETリクエストの場合、空のフォームを表示します。
+        form = NumberForm() # GETリクエストの場合、空のフォームを表示します。
+
     return render(request, 'select_item.html', {'form': form})

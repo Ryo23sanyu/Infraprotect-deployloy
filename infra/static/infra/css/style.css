@@ -57,3 +57,31 @@ a {
 .picture img {
   width: 200px;
 }
+
+.vert {
+  display: flex;
+  /*-webkit-justify-content: space-around; /*横方向に均等間隔で配置*/
+  /*justify-content: space-around; /*周囲に均等間隔で配置*/
+  /*align-items: flex-start; /*上端合わせ*/
+  /*align-items: flex-end; /*下端合わせ*/
+  align-items: center; /*中央合わせ*/
+  /*align-items: baseline; /*文字の基準点をそろえる*/
+  /*align-items: stretch; /*枠に合わせて伸ばす*/
+  flex-direction: column; /*縦並び*/
+  /*height: 200px; /*行の高さを200pxに固定*/
+  list-style:none;
+}
+
+.side {
+  display: flex;
+  /*-webkit-justify-content: space-around; /*横方向に均等間隔で配置*/
+  /*justify-content: space-around; /*周囲に均等間隔で配置*/
+  /*align-items: flex-start; /*上端合わせ*/
+  /*align-items: flex-end; /*下端合わせ*/
+  align-items: center; /*中央合わせ*/
+  /*align-items: baseline; /*文字の基準点をそろえる*/
+  /*align-items: stretch; /*枠に合わせて伸ばす*/
+  flex-direction: row; /*横並び*/
+  /*height: 200px; /*行の高さを200pxに固定*/
+  list-style:none;
+}

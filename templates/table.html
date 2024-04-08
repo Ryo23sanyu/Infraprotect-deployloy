@@ -11,9 +11,7 @@
             <tr>
                 <th>損傷箇所</th>
                 <th>損傷種類</th>
-                <th>損傷番号</th>
                 <th>損傷写真</th>
-                <th>写真メモ</th>
             </tr>
         </thead>
         <tbody id="sortable">
@@ -44,25 +42,40 @@
                         {% endif %}
                     </td>
                     <td class="center-align">
-                    {% if bridge.last is not None %}
-                        {% if bridge.last|length == 1 %}<!-- 要素が1つの場合 -->
-                            <img src="{% static bridge.last.0 %}" width="200" height="150">
-                            <!--<td>{{ bridge.last}}</td>-->
-                        {% elif bridge.last|length == 2 %}
-                            <img src="{% static bridge.last.0 %}" width="200" height="150"></br>
-                            <img src="{% static bridge.last.1 %}" width="200" height="150">
-                        {% elif bridge.last|length == 3 %}
-                            <img src="{% static bridge.last.0 %}" width="200" height="150"></br>
-                            <img src="{% static bridge.last.1 %}" width="200" height="150"></br>
-                            <img src="{% static bridge.last.2 %}" width="200" height="150">
-                        {% else %}<!-- それ以外の場合の処理 -->
-                            <img src="{% static bridge.picture %}" width="200" height="150">
-                        {% endif %}
-                    {% endif %}
-                    </td>
-                    <td class="center-align"><img src="{% static bridge.picture %}" width="200" height="150"></td>
-                    <td class="center-align">
-                        <textarea name="notes" rows="6" placeholder="自由記述"></textarea>
+                        <ul class="vert"> 
+                            {% if bridge.last is not None %}
+                                    {% for item in bridge.last %}
+                                            <ul class="side">
+                                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                                    <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
+                                                        <div>
+                                                            <img src="{% static item %}" width="200" height="150" style="margin:0 10px;">
+                                                        </div>
+                                                        <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
+                                                            <button style="margin-bottom: 10px;">変更</button> <!--bottom(下方向)に10pxの間隔を空ける-->
+                                                            <button style="margin-bottom: 10px;">追加</button>
+                                                            <button>削除</button> <!--縦文字に変更-->
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                                    <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
+                                                        <div>
+                                                            <img src="{% static bridge.picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                        </div>
+                                                        <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
+                                                            <button style="margin-bottom: 50px;">変更</button> <!--bottom(下方向)に10pxの間隔を空ける-->
+                                                            <button>削除</button>
+                                                        </div>
+                                                      </div>
+                                                </li>
+                                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                                    <textarea name="notes" rows="6" placeholder="写真メモ" style="margin:0 10px;"></textarea>
+                                                </li>
+                                            </ul>
+                                    {% endfor %}
+                            {% endif %}
+                        </ul>
                     </td>
                 </tr>
             </form>
