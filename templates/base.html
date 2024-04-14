@@ -18,6 +18,7 @@
     <script src="https://cdn.datatables.net/rowreorder/1.5.0/js/dataTables.rowReorder.js"></script>
     <script src="https://cdn.datatables.net/rowreorder/1.5.0/js/rowReorder.dataTables.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <link href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css" rel="stylesheet"/>
     <link href="https://cdn.datatables.net/fixedcolumns/5.0.0/css/fixedColumns.dataTables.css" rel="stylesheet"/>
     <link href="https://cdn.datatables.net/rowreorder/1.5.0/css/rowReorder.dataTables.css" rel="stylesheet"/>
@@ -48,9 +49,8 @@
         <a class="nav-link mx-3" href="{% url 'list-article' %}">案件一覧</a>
         <a class="nav-link mx-3" href="{% url 'create-article' %}">案件登録</a>
         <a class="nav-link mx-3" href="{% url 'file_upload' %}">アップロード</a>
-        <a class="nav-link mx-3" href="{% url 'image_list' %}">写真選択</a>
+        <a class="nav-link mx-3" href="{% url 'image_list' %}">写真一覧</a>
         <a class="nav-link mx-3" href="{% url 'table' %}">サンプル</a>
-        <a class="nav-link mx-3" href="{% url 'photo' %}">写真</a>
         <a class="nav-link mx-3" href="{% url 'number' %}">要素番号</a>
       </div>
       <div class="navbar-nav d-flex flex-row">
@@ -74,6 +74,7 @@
       $(document).ready(function () {
           new DataTable('.my-table', {
               fixedColumns: true,
+              "order": []
           });
       });
       function updatePlaceholder(select) {
@@ -127,5 +128,58 @@
           }
         });
       });
+
+      $(function () {
+          $('#fileSelect').click(function () {
+              $("#upload-file").click();
+          });
+          $('#upload-file').change(function () {
+              if (confirm('写真を変更します')) {
+                $('#ajax-file-send').on('submit', function(e) {//カッコ{ }内が実行する処理、upload-form(table.html)
+                    e.preventDefault();//フォーム送信の通信を止める処理
+                    var fd = new FormData($("#ajax-file-send").get(0));
+                    //new FormData()の引数にはform要素のDOMを指定し、生成されたFormDataオブジェクトをfdに格納します。
+                    //DOM(HTMLなどのドキュメントにJavaScriptからアクセスするための仕組み)
+          
+                    $.ajax({//生成したFormDataオブジェクトをAjaxを通して次のようにサーバーに送信
+                        'url': '{% url "ajax_file_send" %}',
+                        'type': 'POST',
+                        'data': fd,//dataにはFormDataオブジェクトを指定
+                        'processData': false,//dataを文字列への変換:falseにすることで変換されずにファイルとして送信される
+                        'contentType': false,
+                        'dataType': 'json'
+                    })
+                    .done(function(response){
+                      //Ajax通信が成功した場合に実行する処理
+                    })
+                    .fail(function (jqXHR, textStatus, errorThrown) {
+                        console.log("ajax通信に失敗しました");
+                        console.log("jqXHR          : " + jqXHR.status); // HTTPステータスが取得
+                        console.log("textStatus     : " + textStatus);    // タイムアウト、パースエラー
+                        console.log("errorThrown    : " + errorThrown.message); // 例外情報
+                        // 通信失敗時の処理
+                        alert('ファイルの取得に失敗しました。');
+                    });
+                });
+                  console.log('uploaded!')
+              } else {
+                  $(this).val('');
+                  console.log('reset!');
+              }
+          })
+      });
+
+      // ボタンをクリックしたときの処理
+      document.getElementById('fileSelect').addEventListener('click', function() {
+          // URL遷移
+          window.location.href = ajaxFileSendUrl;
+      });
+      
+      // もし削除ボタンもURL遷移したい場合は、同様に追加のイベントリスナーを定義
+      document.getElementById('deleteButton').addEventListener('click', function() {
+          // 別のURL遷移や動作
+          // window.location.href = '別のURL';
+      });
+
   </script>
 </html>

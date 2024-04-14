@@ -58,7 +58,6 @@ class Company(models.Model):
 
     
 # 写真シート
-    
 class Panorama(models.Model):
     image = models.ImageField(upload_to='panorama/')
     checked = models.BooleanField(default=False)
@@ -83,3 +82,10 @@ class Number(models.Model):
 
     def __str__(self):
         return self.name
+    
+class Image(models.Model):
+    title = models.CharField(max_length=255)  # 画像のタイトル
+    photo = models.ImageField(upload_to='photos/')  # 画像ファイル, 'photos/'はMEDIA_ROOT下の保存先ディレクトリ
+
+    def __str__(self):
+        return self.title

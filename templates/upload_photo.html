@@ -5,7 +5,7 @@
 {% block h1 %}画像アップロード{% endblock %}
 
 {% block content %}
-<form method="POST" enctype="multipart/form-data" href="{% url 'photo' %}">
+<form method="POST" enctype="multipart/form-data" action="{% url 'photo' %}">
   {% csrf_token %}
   {{ form.as_p }}
   <button type="submit">写真をアップロードする</button>

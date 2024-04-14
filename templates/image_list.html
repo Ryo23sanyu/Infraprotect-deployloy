@@ -5,21 +5,22 @@
 {% block h1 %}画像一覧{% endblock %}
 
 {% block content %}
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script><!--jQueryを読み込み-->
-<div class="row">
-    {% load static %}
-    {% for image_file in image_files %}
-        <div class="col-md-4">
-            <div class="picture img">
-                <img src="{% static image_file %}" width="50px">
-                <div class="caption">
-                    <textarea id="comment-{{ forloop.counter0 }}" class="form-control" rows="6" placeholder="コメントを入力してください"></textarea>
+    {% csrf_token %}
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script><!--jQueryを読み込み-->
+    <div class="row">
+        {% load static %}
+        {% for image_file in image_files %}
+            <div class="col-md-4">
+                <div class="picture img">
+                    <img src="{% static image_file %}" width="50px">
+                    <div class="caption">
+                        <textarea id="comment-{{ forloop.counter0 }}" class="form-control" rows="6" placeholder="コメントを入力してください"></textarea>
+                    </div>
                 </div>
             </div>
-        </div>
-    {% endfor %}
-</div>
-<a href="{% url 'photo'%}" class="btn btn-primary">写真選択</a>
+        {% endfor %}
+    </div>
+    <a href="{% url 'photo'%}" class="btn btn-primary">写真選択</a>
 <script>
     // テキストボックスの内容が変更されたときに自動保存を行う関数
     function autoSave(commentId) {

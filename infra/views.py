@@ -1,7 +1,7 @@
 import glob
 import re
 from django import forms
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
@@ -267,6 +267,7 @@ def table_view(request):
                     text = entity.plain_text()
                     cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
                     if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
+                    # if len(cad_data) > 0 and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
                 # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
                         related_text = "" # 見つけたMTextと関連するDefpointsレイヤの文字列を代入する変数
                 # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す
@@ -446,50 +447,66 @@ def table_view(request):
                 #picture_urlsの値は[None]とする。
 
             item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/img/noImage.png'}
+            #items = [{'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/img/noImage.png'} for i in range(len(first_item))]    
+            
+            #優先順位の指定
+            order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
+            order_number = {"None": 0, "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10, "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15, "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20, "㉑": 21, "㉒": 22, "㉓": 23, "㉔": 24, "㉕": 25, "㉖": 26}
+            order_lank = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}
+                       
+            def sort_category(text): # sort_category関数を定義
+                # ',' でテキストを分割し、最初の部分のみを考慮する
+                first_part = text.split(',')[0]
+                for key, val in order_dict.items(): # keyがキー(主桁～防護柵)、valが値(1～6)
+                    if first_part.startswith(key): # textの1文字目がキー(主桁～防護柵)の場合
+                        return val # 値(1～6)を返す
+                return max(order_dict.values()) + 1
+            
+            def extract_numbers(s):
+                # 文字列から数値部分だけを抽出してリストに格納する
+                return [int(''.join(filter(str.isdigit, part))) for part in s.split(',') if ''.join(filter(str.isdigit, part))]
+
+            def get_first_key(first):
+                num_parts = extract_numbers(first)
+                # 数値が含まれていない場合は、ソートで最後になるような大きな値を返す
+                return min(num_parts) if num_parts else float('inf')
+
+            def sort_number(second_list):
+                # リストが空の場合の処理
+                if not second_list or len(second_list) == 0:  # 条件式の調整
+                    return max(order_number.values()) + 1
+                else:
+                    second_text = second_list[0]
+                    if "-" in second_text: #second_textの文字の中に-があるとき
+                        num_text = second_text[0] #num_textにsecond_textの1文字目を入れる
+                        for key, val in order_number.items():
+                            if num_text.startswith(key):
+                                return val #数字を返す
+                return max(order_number.values()) + 1 #リストの最大数+1の数字を返す
+
+            def sort_lank(second_list):
+                if not second_list or len(second_list) == 0:  # 条件式の調整
+                    return max(order_number.values()) + 1
+                else:
+                    second_text = second_list[0]
+                    if '-' in second_text:
+                        lank_text = second_text.split("-")[1]
+                        for key, val in order_lank.items():
+                            if lank_text.startswith(key):
+                                return val
+                    return max(order_lank.values()) + 1
+
             damage_table.append(item)
-            
-        #＜＜追加分＞＞    
-        # 結果を保持するリスト
-        # text_list = []
+    sorted_text_list = sorted(damage_table, key=lambda text: (sort_category(text['first']), get_first_key(text['first']), sort_number(text['second']), sort_lank(text['second'])))
+            # sorted(並び替えるオブジェクト, lamda式(無名関数)で並び替え 各要素: (text[0]で始まる要素を並び替え、その中でtext[0]の並び替え))
 
-        # # リストの長さに応じてループ
-        # for i in range(len(first_item)):
-        #     # Itemリストを作成し、多重リストに追加
-        #     item = [first_item[i], second_items[i], third, picture_urls]  # thirdとpicture_urlsもインデックスに対応していると仮定
-        #     text_list.append(item)
-            
-        # order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
-        # #優先順位の指定
-        # order_number = {"①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10, "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15, "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20, "㉑": 21, "㉒": 22, "㉓": 23, "㉔": 24, "㉕": 25, "㉖": 26}
-        # #優先順位の指定
-        
-        # def sort_category(text): # sort_category関数を定義
-        #     for key, val in order_dict.items(): # keyがキー(主桁～防護柵)、valが値(1～6)
-        #         if text.startswith(key): # textの1文字目がキー(主桁～防護柵)の場合
-        #             return val # 値(1～6)を返す
-        #     return len(order_dict) # startswitchに全くマッチしなかった場合に実行(len(order_dict):6 → 順序はリストの末尾)
-        
-        # def sort_number(text):
-        #     if len(text) > 1:  # 項目が2番目の要素も持つ場合
-        #         num_text = text[1].split('-')[0]  # 例えば "①-d" の "①" の部分を取得
-        #         for key, val in order_number.items():
-        #             if num_text.startswith(key):
-        #                 return val
-        #     return len(order_number)
-
-        # orted_text_list = sorted(text_list, key=lambda text: (sort_category(text[0]), text[0], sort_number(text)))
-        # # sorted(並び替えるオブジェクト, lamda式(無名関数)で並び替え 各要素: (text[0]で始まる要素を並び替え、その中でtext[0]の並び替え))
-        
-        # damage_table = []  # 辞書を格納するための新しいリスト
-
-        # for item in orted_text_list:
-        #     # 辞書を作成し、多重リストの要素を割り当て
-        #     item_dict = {'first': item[0], 'second': item[1], 'third': item[2], 'last': item[3]}
-        #     # 新しい辞書をリストに追加
-        #     damage_table.append(item_dict)
-
-    context = {'damage_table': damage_table}  # テンプレートに渡すデータ
+    context = {'damage_table': sorted_text_list}  # テンプレートに渡すデータ
     return render(request, 'table.html', context)
+
+def ajax_file_send(request):
+    print("OK")
+    d = {}
+    return JsonResponse(d)
 
 # 番号表示
 
@@ -525,19 +542,21 @@ class Upload(models.Model):
 # <<写真表示>>
 save_path = "C:\work\django\myproject\myvenv\Infraproject\infra\static\infra\img"
 def display_photo(request):
-    if request.method == 'POST':
-        form = UploadForm(request.POST, request.FILES)
-        if form.is_valid():
+    if request.method == 'POST': # HTTPリクエストがPOSTメソッド(フォームの送信など)であれば、以下のコードを実行
+        form = UploadForm(request.POST, request.FILES) # UploadFormを使用して、送信されたデータ(request.POST)とファイル(request.FILES)を取得
+        if form.is_valid(): # formのis_valid()メソッドを呼び出して、フォームのバリデーション(検証)を実行
     # フォームが有効な場合は、選択された写真を特定のフォルダに保存します
-            photo = form.cleaned_data['photo']
-            file_name = photo.name  # 写真のファイル名を取得します
-            file_path = os.path.join(save_path, file_name)  # ファイルの保存先のパスを作成します
+            photo = form.cleaned_data['photo'] # バリデーションを通過したデータから、'photo'キーに対応するデータを取得しphoto変数に格納
+            file_name = photo.name  # アップロードされたファイルの名前をfile_name変数に格納
+            file_path = os.path.join(save_path, file_name)
+            #設定された保存パス（save_path）とファイル名（file_name）を組み合わせ、フルパスをfile_path変数に格納
 
-            with open(file_path, 'wb') as f:
-                for chunk in photo.chunks():
-                    f.write(chunk)  # 写真のデータをファイルに書き込みます
+            with open(file_path, 'wb') as f: # file_pathで指定されたパスにファイルをバイナリ書き込みモード('wb')で開く
+                for chunk in photo.chunks(): # アップロードされたファイル(photo)をchunks()メソッドを使用して分割し、ループ処理を行う
+                    f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む
+        else:
+            print("フォームが無効")
 
-        #return render(request, 'image_list.html', {'photo': photo})
         return redirect("image_list")
     else:
         form = UploadForm()

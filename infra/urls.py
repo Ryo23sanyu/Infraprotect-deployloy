@@ -26,9 +26,10 @@ urlpatterns = [
     path('images/', views.image_list, name='image_list'),
     path('panorama/list/', views.panorama_list, name='panorama_list'),
     #path('panorama/upload/', views.panorama_upload, name='panorama_upload'),
-    path('table/', views.table_view, name='table'),
+    path('table/', views.table_view, name='table'),# 損傷写真帳
     path('photo/', views.display_photo, name='photo'),
     path('number/', views.number_create_view, name='number'),
+    path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),
 ]
 
 if settings.DEBUG:

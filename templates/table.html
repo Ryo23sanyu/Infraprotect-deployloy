@@ -16,7 +16,9 @@
         </thead>
         <tbody id="sortable">
             {% for bridge in damage_table %}
-            <form>
+            <form id="ajax-file-send" action="#" method="post" enctype="multipart/form-data">
+                <!--ajaxの設定：methodはpostにする、mulitpart/form-dataとする、CSRF対策を行う-->
+                {% csrf_token %}
                 <tr>
                     <td>{{ bridge.first }}</td>
                     <td>
@@ -64,10 +66,13 @@
                                                             <img src="{% static bridge.picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
                                                         </div>
                                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
-                                                            <button style="margin-bottom: 50px;">変更</button> <!--bottom(下方向)に10pxの間隔を空ける-->
+                                                            <!--<button style="margin-bottom: 50px;">変更</button> bottom(下方向)に10pxの間隔を空ける-->
+                                                            <!--<input id="upload-file" name="upload-file" type="file" style="display: none">-->
+                                                            <input id="upload-file" name="upload-file" type="file" style="display: none">
+                                                            <button id="fileSelect" type="button" style="margin-bottom: 10px;">変更</button>
                                                             <button>削除</button>
                                                         </div>
-                                                      </div>
+                                                    </div>
                                                 </li>
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                                     <textarea name="notes" rows="6" placeholder="写真メモ" style="margin:0 10px;"></textarea>
