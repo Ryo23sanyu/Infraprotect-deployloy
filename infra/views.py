@@ -1,28 +1,27 @@
 import glob
 import re
+import pandas as pd
+import os
+import ezdxf
+import tkinter
+import tkinter.filedialog
 from django import forms
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from markupsafe import Markup
-import pandas as pd
-from .models import Infra, Number
-from .models import Article
+from requests import Response
+from .models import Article, Infra, Photo, Panorama, Number
 from django.db import models
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .forms import FileUploadForm, NumberForm, UploadForm
-from .forms import PhotoUploadForm, NameForm
-from .models import Photo, Panorama
-import os
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
+from .forms import FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
 from django.views.generic.edit import FormView
-import ezdxf
 from ezdxf.entities.mtext import MText
-import tkinter
-import tkinter.filedialog
 from PIL import Image, ImageTk
-
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -158,37 +157,10 @@ def photo_list(request):
     photos = Photo.objects.all()
     return render(request, 'infra/photo_list.html', {'photos': photos})
 
-def photo_upload(request):
-    if request.method == 'POST':
-        form = PhotoUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('image_list')
-    else:
-        form = PhotoUploadForm()
-    return render(request, 'image_list.html', {'form': form})
-
 def selected_photos(request):
     selected_photo_ids = request.POST.getlist('selected_photos')
     selected_photos = Photo.objects.filter(id__in=selected_photo_ids)
     return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
-  
-# <<写真の表示>>
-  
-def image_list(request):
-   
-    # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。    
-    import glob
-
-    files = glob.glob( "infra/static/infra/img/*.jpg" )
-
-    # ページに表示する際、"infra/static/" を削除する。
-    image_files = []
-    for file in files:
-        image_files.append( file.replace("infra/static/", "") )
-
-    # テンプレートに画像ファイルの一覧を渡してレンダリングする
-    return render(request, 'image_list.html', {'image_files': image_files})
 
 # 会社別に表示
 
@@ -265,27 +237,77 @@ def table_view(request):
                 if entity.dxf.layer != 'Defpoints':
                 # MTextのテキストを抽出する
                     text = entity.plain_text()
-                    cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
-                    if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
-                    # if len(cad_data) > 0 and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
-                # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
-                        related_text = "" # 見つけたMTextと関連するDefpointsレイヤの文字列を代入する変数
-                # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す
-                        for neighbor in msp.query('MTEXT[layer=="Defpoints"]'): # DefpointsレイヤーのMTextを抽出
-                        # MTextの挿入位置と特定のプロパティで描かれた文字の位置を比較する
-                            if entity_extension(entity, neighbor):
-                            # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
-                                related_text = neighbor.plain_text()
-                            #extracted_text.append(neighbor_text)
-                                break # 文字列が見つかったらbreakにょりforループを終了する
+                    if not text.startswith("※"):
+                        cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
+                        # if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
+                        if len(cad_data) > 0 and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
+                    # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
+                            related_text = "" # 見つけたMTextと関連するDefpointsレイヤの文字列を代入する変数
+                    # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す
+                            for neighbor in msp.query('MTEXT[layer=="Defpoints"]'): # DefpointsレイヤーのMTextを抽出
+                            # MTextの挿入位置と特定のプロパティで描かれた文字の位置を比較する
+                                if entity_extension(entity, neighbor):
+                                # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
+                                    related_text = neighbor.plain_text()
+                                #extracted_text.append(neighbor_text)
+                                    break # 文字列が見つかったらbreakによりforループを終了する
 
-                        if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
-                            cad_data.append(related_text) # 見つかった文字列を追加する
-                    #最後にまとめてcad_dataをextracted_textに追加する
-                        extracted_text.append(cad_data)
-        
+                            if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
+                                cad_data.append(related_text) # 見つかった文字列を追加する
+                        #最後にまとめてcad_dataをextracted_textに追加する
+                            extracted_text.append(cad_data)
+                            
+# << ※特記なき損傷の抽出用 >>                            
+                    else:
+                        lines = text.split('\n')# 改行でテキストを分割してリスト化
+                        sub_text = [[line] for line in lines]# 各行をサブリストとして持つ多重リストを構築
+
+                        pattern = r"\s[\u2460-\u3256]"# 文字列のどこかにスペース丸数字の並びがあるかをチェックする正規表現パターン
+                        pattern_start = r"^[\u2460-\u3256]"  # 文字列の開始が①～㉖であることをチェックする正規表現パターン
+                        pattern_anywhere = r"[\u2460-\u3256]"  # 文字列のどこかに①～㉖があるかをチェックする正規表現パターン
+                        last_found_circle_number = None  # 最後に見つかった丸数字を保持する変数
+
+                        # リストを逆順でループし、条件に応じて処理
+                        for i in range(len(sub_text)-1, -1, -1):  # 後ろから前にループ
+                            item = sub_text[i][0]  # textリストの各サブリストの最初の要素（[0]）をitem変数に代入（地覆 ㉓-c）
+                            if item.startswith("※"):
+                                sub_text.remove(sub_text[i]) # 配列から除外する
+                            elif re.search(pattern, item):  # itemが正規表現patternと一致している場合（スペース丸数字の並びがある）
+                                last_found = item  # last_found変数にitem要素を代入（地覆 ㉓-c）
+                                # print(last_found) 丸数字が付いている要素のみ出力
+                            elif 'last_found' in locals():  # last_foundが定義されている（要素が代入されている）場合のみ
+                                space = last_found.replace("　", " ")
+                                # 大文字スペースがあれば小文字に変換
+                                second = space.find(" ", space.find(" ") + 1)#10
+                                # 2つ目のスペース位置まで抽出
+                                sub_text[i][0] = item + last_found[second:]
+                                # item:スペース丸数字の並びがない文字列
+                                # last_found:スペース丸数字の並びがある文字列
+                                # last_found[second:]:スペースを含めた文字列
+                            elif re.match(pattern_start, item): # 文字列が①～㉖で開始するかチェック
+                                last_found_circle_number = item # 丸数字の入っている要素を保持
+                                sub_text.remove(sub_text[i])
+                            else:
+                                if last_found_circle_number is not None and not re.search(pattern_anywhere, item):
+                                    # 要素に丸数字が含まれておらず、直前に丸数字が見つかっている場合
+                                    sub_text[i][0] += " " + last_found_circle_number  # 要素の末尾に丸数字を追加
+
+                        for sub_list in sub_text:
+                            # サブリストの最初の要素を取得してスペース区切りで分割
+                            split_items = sub_list[0].split()
+                            
+                            # 分割した要素から必要なデータを取り出して新しいサブリストに格納
+                            header = split_items[0] + " " + split_items[1]  # 例：'主桁 Mg0101'
+                            status = split_items[2]  # 例：'①-d'
+                            # photo_number = '写真番号-00'
+                            # defpoints = 'defpoints'
+                            
+                            # 新しい形式のサブリストを作成してprocessed_listに追加
+                            # new_sub_list = [header, status, photo_number, defpoints]
+                            new_sub_list = [header, status]
+                            extracted_text.append(new_sub_list)
+# << ※特記なき損傷の抽出用 >>
         return extracted_text
-
 
     def entity_extension(mtext, neighbor):
         # MTextの挿入点
@@ -330,13 +352,29 @@ def table_view(request):
                 data.extend(next_data)
                 # 次の位置の要素を削除
                 extracted_text.remove(next_data)
-
-    # 先頭の要素を抽出
+                
+# extracted_text = [['主桁 Mg0101', '①-d', '写真番号-00', 'defpoints'], ['主桁 Mg0902', '⑦-c', '写真番号-00', 'defpoints']]
+                
+        # コンマが3つ以上存在する場合、3の倍数の位置で改行を挿入    
+        def insert_line_breaks_on_commas(text):
+            # コンマのカウントと改行の挿入を行う
+            count = 0
+            new_text = ''
+            for char in text:
+                if char == ',':
+                    count += 1
+                    if count % 3 == 0:
+                        # 3, 6, 9番目のコンマの後に改行タグを挿入
+                        new_text += ',</br>'
+                        continue
+                new_text += char
+            return new_text
+        
         # 正規表現を使って、コンマの直後に数字以外の文字が続く場所を見つけます。
         pattern = re.compile(r',(?![0-9])')
         # リスト内包表記で各要素をチェックして、条件に合致する場合は置き換えを行います。
-        first_item = [Markup(pattern.sub(",</br>", sub_list[0])) for sub_list in extracted_text]
-
+        first_item = [Markup(insert_line_breaks_on_commas(pattern.sub(",</br>", sub_list[0]))) for sub_list in extracted_text]
+        
     # リストの各要素から記号を削除する
         def remove_symbols(other_items):
             symbols = ['!', '[', ']', "'"]
@@ -347,13 +385,14 @@ def table_view(request):
                 processed_other_items.append(processed_item)
     
             return processed_other_items
-    # それ以外の要素を抽出
-        other_items = [sub_list[1:-2] for sub_list in extracted_text]          
-        second = remove_symbols(other_items)
         
+    # それ以外の要素(損傷名)を抽出
+        pattern = r'[\u2460-\u3256].*-[a-zA-Z]' # 丸数字とワイルドカードとアルファベット
+        other_items = [[item for item in sub_list if re.match(pattern, item)] for sub_list in extracted_text]
+        
+        second = remove_symbols(other_items)
         # 丸数字を直接列挙
         circle_numbers = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖'
-        
         second_items = []
         # リスト内の各文字列に対して処理を行う
         for second_over in second:
@@ -498,18 +537,50 @@ def table_view(request):
 
             damage_table.append(item)
     sorted_text_list = sorted(damage_table, key=lambda text: (sort_category(text['first']), get_first_key(text['first']), sort_number(text['second']), sort_lank(text['second'])))
-            # sorted(並び替えるオブジェクト, lamda式(無名関数)で並び替え 各要素: (text[0]で始まる要素を並び替え、その中でtext[0]の並び替え))
+    # sorted(並び替えるオブジェクト, lamda式(無名関数)で並び替え 各要素: (text[0]で始まる要素を並び替え、その中でtext[0]の並び替え))
 
     context = {'damage_table': sorted_text_list}  # テンプレートに渡すデータ
     return render(request, 'table.html', context)
 
+# def ajax_file_send(request):
+#     print("OK")
+#     d = {}
+#     return JsonResponse(d)
+
+# <<損傷写真用>>
+#def ajax_file_send(request): # damage_upload関数の定義
+#    if request.method == 'POST' and request.FILES['upload-file']:
+    # HTTPリクエストがPOSTメソッドかつ、upload-fileという名前でファイルがアップロードされている場合(base.htmlのfd.append("upload-file", $upfile.prop('files')[0]);)
+    # メソッドかつファイルの有無で判断する場合、
+#        myfile = request.FILES['upload-file'] # 受け取ったファイルをmyfileという変数に代入
+#        fs = FileSystemStorage() # FileSystemStorageのインスタンスを生成(ファイルシステム上にファイルを保存する準備)
+#        filename = fs.save(myfile.name, myfile) # myfileを指定した名前で保存し、保存したファイルの名前をfilename変数に格納
+#        uploaded_file_url = fs.url(filename) # 保存したファイルにアクセスするためのURLを生成
+#        return render(request, 'damage_table.html', {
+#            'upload_file': uploaded_file_url
+#        }) # damage_table.htmlテンプレートにuploaded_file_url変数を渡し、レンダリングしたHTMLをレスポンスとして返す
+#    return Response({'detail': '適切なエラーメッセージ'}, status=status.HTTP_400_BAD_REQUEST) # if以外の場合、damage_table.htmlテンプレートをレンダリングして返す
+
 def ajax_file_send(request):
-    print("OK")
-    d = {}
-    return JsonResponse(d)
+    if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ
+        if 'upload-file' in request.FILES: # アップロードされたファイルがrequest.FILESに入っている場合
+            myfile = request.FILES['upload-file'] # 受け取ったファイルをmyfileという変数に代入
+            fs = FileSystemStorage() # FileSystemStorageのインスタンスを生成(システム上にファイルを保存する準備)
+            filename = fs.save(myfile.name, myfile) # myfileを指定した名前で保存し、保存したファイルの名前をfilename変数に格納
+            uploaded_file_url = fs.url(filename) # 保存したファイルにアクセスするためのURLを生成
+            # success時のレスポンスはJSON形式で返すならこちらを使う
+            return JsonResponse({'upload_file_url': uploaded_file_url})
+            # HTMLページを返す場合はこちらを使う
+            # context = {'damage_table': sorted_text_list}
+            # return render(request, 'table.html', context)
+        else:
+            # ファイルがPOSTされていない場合はエラーレスポンスを返す
+            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。') # File is not attached
+    else:
+        # POSTメソッドでない場合はエラーレスポンスを返す
+        return HttpResponseBadRequest('無効な作業です。') # Invalid request method
 
 # 番号表示
-
 def sample_view(request):# 追加
     start = "0101"
     end = "0206"
@@ -529,7 +600,6 @@ def sample_view(request):# 追加
     return HttpResponse(result)# 追加
 
 # <<ファイルアップロード(プライマリーキーで分類分け)>>
-
 def upload_directory_path(instance, filename):
     # プライマリーキーを取得する
     primary_key = instance.pk
@@ -539,7 +609,18 @@ def upload_directory_path(instance, filename):
 class Upload(models.Model):
     file = models.FileField(upload_to=upload_directory_path)
 
-# <<写真表示>>
+# <<全景写真の表示>>
+def image_list(request):
+    # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。    
+    files = glob.glob( "infra/static/infra/img/*.jpg" )
+    # ページに表示する際、"infra/static/" を削除する。
+    image_files = []
+    for file in files:
+        image_files.append( file.replace("infra/static/", "") )
+    # テンプレートに画像ファイルの一覧を渡してレンダリングする
+    return render(request, 'image_list.html', {'image_files': image_files})
+
+# <<全景写真アップロード>>
 save_path = "C:\work\django\myproject\myvenv\Infraproject\infra\static\infra\img"
 def display_photo(request):
     if request.method == 'POST': # HTTPリクエストがPOSTメソッド(フォームの送信など)であれば、以下のコードを実行
@@ -553,14 +634,23 @@ def display_photo(request):
 
             with open(file_path, 'wb') as f: # file_pathで指定されたパスにファイルをバイナリ書き込みモード('wb')で開く
                 for chunk in photo.chunks(): # アップロードされたファイル(photo)をchunks()メソッドを使用して分割し、ループ処理を行う
-                    f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む
+                    f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む    
         else:
             print("フォームが無効")
-
         return redirect("image_list")
     else:
         form = UploadForm()
     return render(request, 'upload_photo.html', {'form': form})
+
+def photo_upload(request):
+    if request.method == 'POST':
+        form = PhotoUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('image_list')
+    else:
+        form = PhotoUploadForm()
+    return render(request, 'image_list.html', {'form': form})
 
 # 番号図用
 def number_create_view(request): # number_create_view関数を定義

@@ -27,9 +27,9 @@ def extract_text(filename):# 旗揚げ(MText)と写真番号(Def)を抽出する
                         #extracted_text.append(neighbor_text)
                             break # 文字列が見つかったらbreakにょりforループを終了する
                     if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
-                        cad_data.append(related_text + x + y) # 見つかった文字列を追加する
+                        cad_data.append(related_text + "," + x + "," + y) # 見つかった文字列を追加する
                 #最後にまとめてcad_dataをextracted_textに追加する
-                    extracted_text.append(cad_data + defx + defy)
+                    extracted_text.append(cad_data + "," + defx + "," + defy)
     return extracted_text
 
 def entity_extension(mtext, neighbor):# 旗揚げ(MText)と写真番号(Def)を紐付ける関数
@@ -57,45 +57,18 @@ def entity_extension(mtext, neighbor):# 旗揚げ(MText)と写真番号(Def)を�
             return True
     return False
 
-def extract_entities_below(entities, target_text):
-  # extract_entities_belowを定義。2つの引数(entities:DXFファイル内のエンティティ(図形など)のリスト、target_text:検索する文字列)を必要とする
-    below_entities = []
-    # 抽出されたエンティティを格納するための空のリストを作成
-    for entity in entities:
-      # entitiesリスト内の各エンティティに対して、ループを開始します。
-        if isinstance(entity, MText) and target_text in entity.dxf.text:
-          # イテレーション中のエンティティがMTextであり、さらにそのテキストにtarget_text(損傷図)が含まれているかをチェックします。
-            x, y, _ = entity.dxf.insert
-            # そのエンティティの挿入点(座標)を取得し、変数xとyに格納します。_はZ軸の座標を無視します。
-            for below_entity in entities:
-              # 再び全エンティティをループして、先ほど見つけた特定のエンティティよりも"上"にあるものを探します
-                if isinstance(below_entity, MText):
-                  # イテレーション中のエンティティがMTextの場合
-                    bx, by, _ = below_entity.dxf.insert
-                    # そのエンティティの挿入点を取得
-                    if by < y and bx >= x:# bx < x:にすると番号図を抽出
-                      # 対象のMTextのY軸が損傷図より小さく(右にある)、X軸が損傷図以上(下にある)の場合
-                        below_entities.append(below_entity)
-                        # 対象をbelow_entitiesに入れる
-    return below_entities
-  # 
-
-doc = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf')
-msp = doc.modelspace()
-entities = list(msp)
-
 # AutoCADファイル名を指定してテキストを抽出する
 filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
 extracted_text = extract_text(filename)
-doc = ezdxf.readfile(filename)
-msp = doc.modelspace()
+# doc = ezdxf.readfile(filename)
+# msp = doc.modelspace()
     
-target_text = "損傷図"
+# target_text = "損傷図"
 
 # 特定の文字の位置の下にあるエンティティを抽出
-below_entities = extract_entities_below(entities, target_text)
+# below_entities = extract_entities_below(entities, target_text)
 
 # 抽出結果を表示
 # print("特定の文字の位置の下にあるエンティティ:")
-for entity in below_entities:
+for entity in extracted_text:
     print(f"Text: {entity.dxf.text}, X: {entity.dxf.insert[0]}, Y: {entity.dxf.insert[1]}")

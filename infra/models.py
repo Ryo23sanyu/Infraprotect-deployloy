@@ -45,9 +45,6 @@ class Infra(models.Model):
 class UploadedFile(models.Model):
     file = models.FileField(upload_to='uploads/')
     
-class Photo(models.Model):
-    image = models.ImageField(upload_to='photos/')
-    
 # 会社別に表示
 
 class CustomUser(AbstractUser):
@@ -56,6 +53,11 @@ class CustomUser(AbstractUser):
 class Company(models.Model):
     name = models.CharField(max_length=100)
 
+# 損傷写真用
+# class DamagePicture(models.Model): # DamagePictureという名前のDjangoモデルクラスを定義
+#     description = models.CharField(max_length=255, blank=True) # descriptionフィールドを定義
+#     document = models.FileField(upload_to='photos/') # documentフィールドを定義、アップロードされたファイルはphotos/に保存される
+#     uploaded_at = models.DateTimeField(auto_now_add=True) # uploaded_atフィールドを定義、レコードが作成された日時を自動的に保存
     
 # 写真シート
 class Panorama(models.Model):
@@ -82,10 +84,14 @@ class Number(models.Model):
 
     def __str__(self):
         return self.name
-    
+
+# 全景写真
+class Photo(models.Model):
+    image = models.ImageField(upload_to='photos/')
+
 class Image(models.Model):
-    title = models.CharField(max_length=255)  # 画像のタイトル
+    #title = models.CharField(max_length=255)  # 画像のタイトル
     photo = models.ImageField(upload_to='photos/')  # 画像ファイル, 'photos/'はMEDIA_ROOT下の保存先ディレクトリ
 
     def __str__(self):
-        return self.title
+        return self.photo

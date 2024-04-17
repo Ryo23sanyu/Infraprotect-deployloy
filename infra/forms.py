@@ -9,11 +9,6 @@ class FileUploadForm(forms.ModelForm):
         model = UploadedFile
         fields = ['file']
         
-class PhotoUploadForm(forms.ModelForm):
-    class Meta:
-        model = Photo
-        fields = ['image']
-        
 # 会社別に表示
 class UserCreationForm(forms.ModelForm):
     company = forms.ModelChoiceField(queryset=Company.objects.all())
@@ -23,8 +18,7 @@ class UserCreationForm(forms.ModelForm):
         fields = ('username', 'password', 'company')
 
 # <<写真表示>>
-#class UploadForm(forms.Form):
-#    photo = forms.ImageField()
+
     
 # <<損傷写真表示>>
 class NameForm(forms.Form):
@@ -39,12 +33,19 @@ class NumberForm(forms.ModelForm):
         fields  = [ "name", "top_number", "bottom_number", "single_number" ]
 
 # 全景写真用
-class UploadForm(forms.ModelForm):
-    class Meta:
-        model = Image  # アップロードする画像を格納するモデル
-        fields = ('photo',)  # photoは画像データを格納するフィールド
+class UploadForm(forms.ModelForm): # UploadFormという名前のFormクラスを定義(Modelクラスと紐付け)
+    class Meta: # ModelFormと紐付ける場合に記載
+        model = Image # models.pyのImageクラスと紐付け
+        fields = ['photo'] # このFormで扱うフィールドを指定
+        photo = forms.ImageField()
 
-# 画像変更用(Ajax)
+class PhotoUploadForm(forms.ModelForm): # PhotoUploadFormという名前のFormクラスを定義(Modelクラスと紐付け)
+    class Meta: # ModelFormと紐付ける場合に記載
+        model = Photo # models.pyのPhotoクラスと紐付け
+        fields = ['image'] # このFormで扱うフィールドを指定
+
+    
+# 損傷写真変更用(Ajax)
 class FileUploadSampleForm(forms.Form):
     file = forms.ImageField()
 
@@ -54,3 +55,9 @@ class FileUploadSampleForm(forms.Form):
         upload_file = self.files['file']  # フォームからアップロードファイルを取得
         file_name = default_storage.save(now_date + "_" + upload_file.name, upload_file)  # ファイルを保存 戻り値は実際に保存したファイル名
         return default_storage.url(file_name)
+
+# 損傷写真用
+# class DamagePictureForm(forms.ModelForm): # DamagePictureFormという名前のDjangoのモデルフォームクラスを定義
+#     class Meta: # Metaクラスを定義(フォームの挙動やモデルフォームと関連付けられているモデルの指定などを行える)
+#         model = DamagePicture # models.pyのクラス名と同じ(関連付けられているモデルを指定)
+#         fields = ('description', 'document', ) # モデルフォームに含めるフィールドを指定

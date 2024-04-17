@@ -7,7 +7,6 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.index_view, name='index'),
-    #path('infra/', views.ListInfraView.as_view(), name='list-infra'),
     path('article/<int:pk>/infra/', views.ListInfraView.as_view(), name='list-infra'),
     path('article/<int:pk>/infra/create/', views.CreateInfraView.as_view(), name='create-infra'),
     path('article/<int:pk>/infra/detail/', views.DetailInfraView.as_view(), name='detail-infra'),
@@ -23,14 +22,13 @@ urlpatterns = [
     path('photos/', views.photo_list, name='photo_list'),
     path('photos/upload/', views.photo_upload, name='photo_upload'),
     path('photos/selected/', views.selected_photos, name='selected_photos'),
-    path('images/', views.image_list, name='image_list'),
     path('panorama/list/', views.panorama_list, name='panorama_list'),
-    #path('panorama/upload/', views.panorama_upload, name='panorama_upload'),
+    path('images/', views.image_list, name='image_list'),# 全景写真
+    path('photo/', views.display_photo, name='photo'),# 全景写真のアップロード
     path('table/', views.table_view, name='table'),# 損傷写真帳
-    path('photo/', views.display_photo, name='photo'),
     path('number/', views.number_create_view, name='number'),
-    path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),
+    path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更
 ]
-
+# path('URLの末尾', views.py内の関数名(操作に対するリクエストを受ける), ルーティングに名前を付ける(この名前でURLを参照できるようになる)),
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

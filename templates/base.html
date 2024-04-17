@@ -74,7 +74,7 @@
       $(document).ready(function () {
           new DataTable('.my-table', {
               fixedColumns: true,
-              "order": []
+              "order": [],
           });
       });
       function updatePlaceholder(select) {
@@ -135,11 +135,13 @@
           });
           $('#upload-file').change(function () {
               if (confirm('写真を変更します')) {
-                $('#ajax-file-send').on('submit', function(e) {//カッコ{ }内が実行する処理、upload-form(table.html)
-                    e.preventDefault();//フォーム送信の通信を止める処理
-                    var fd = new FormData($("#ajax-file-send").get(0));
-                    //new FormData()の引数にはform要素のDOMを指定し、生成されたFormDataオブジェクトをfdに格納します。
-                    //DOM(HTMLなどのドキュメントにJavaScriptからアクセスするための仕組み)
+                //$('#ajax-file-send').on('submit', function(e) {//カッコ{ }内が実行する処理、upload-form(table.html)
+                    //e.preventDefault();//フォーム送信の通信を止める処理
+                    let $upfile = $('#upload-file');//id属性がupload-fileであるHTML要素を探して、変数$upfileに格納
+                    let fd = new FormData(); //新たなFormDataオブジェクトを作成し、変数fdに格納
+                    fd.append("upload-file", $upfile.prop('files')[0]);//変数fdにファイルを追加
+                    //"upload-file"というキーで、変数$upfile（input 要素）に格納されているファイルの中から
+                    //最初のファイル（$upfile.prop('files')[0]）を追加しています。
           
                     $.ajax({//生成したFormDataオブジェクトをAjaxを通して次のようにサーバーに送信
                         'url': '{% url "ajax_file_send" %}',
@@ -149,18 +151,17 @@
                         'contentType': false,
                         'dataType': 'json'
                     })
-                    .done(function(response){
-                      //Ajax通信が成功した場合に実行する処理
-                      console.log("ajax通信に失敗成功しました");
+                    .done(function(response){ //Ajax通信が成功した場合
+                      console.log("ajax通信に失敗しました");
                     })
-                    .fail(function (jqXHR, textStatus, errorThrown) {
+                    .fail(function (jqXHR, textStatus, errorThrown) { //Ajax通信が失敗した場合
                         console.log("ajax通信に失敗しました");
-                        console.log("jqXHR          : " + jqXHR.status); // HTTPステータスが取得
-                        console.log("textStatus     : " + textStatus);    // タイムアウト、パースエラー
-                        console.log("errorThrown    : " + errorThrown.message); // 例外情報
+                        console.log("jqXHR          : " + jqXHR.status); // HTTPステータスコードを取得
+                        console.log("textStatus     : " + textStatus); // エラーの種類を取得
+                        console.log("errorThrown    : " + errorThrown.message); // 具体的なエラーメッセージを取得
                         // 通信失敗時の処理
-                        alert('ファイルの取得に失敗しました。');
-                    });
+                        alert('ファイルの取得に失敗しました。'); // 失敗した場合、アラートとしてエラーを通知
+                   // });
                 });
                   console.log('uploaded!')
               } else {
@@ -170,17 +171,35 @@
           })
       });
 
-      // ボタンをクリックしたときの処理
-      document.getElementById('fileSelect').addEventListener('click', function() {
-          // URL遷移
-          window.location.href = ajaxFileSendUrl;
-      });
+      function getCookie(name) {
+          var cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              var cookies = document.cookie.split(';');
+              for (var i = 0; i < cookies.length; i++) {
+                  var cookie = jQuery.trim(cookies[i]);
+                  // Does this cookie string begin with the name we want?
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
       
-      // もし削除ボタンもURL遷移したい場合は、同様に追加のイベントリスナーを定義
-      document.getElementById('deleteButton').addEventListener('click', function() {
-          // 別のURL遷移や動作
-          // window.location.href = '別のURL';
+      var csrftoken = getCookie('csrftoken');
+      
+      function csrfSafeMethod(method) {
+          // these HTTP methods do not require CSRF protection
+          return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+      }
+      
+      $.ajaxSetup({
+          beforeSend: function (xhr, settings) {
+              if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                  xhr.setRequestHeader("X-CSRFToken", csrftoken);
+              }
+          }
       });
-
   </script>
 </html>
