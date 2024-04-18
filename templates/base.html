@@ -140,6 +140,8 @@
                     let $upfile = $('#upload-file');//id属性がupload-fileであるHTML要素を探して、変数$upfileに格納
                     let fd = new FormData(); //新たなFormDataオブジェクトを作成し、変数fdに格納
                     fd.append("upload-file", $upfile.prop('files')[0]);//変数fdにファイルを追加
+                    fd.append(upload_file_url, 'upload_file_url');
+                    // prop:プロパティ値を取得、files:ファイルのリスト
                     //"upload-file"というキーで、変数$upfile（input 要素）に格納されているファイルの中から
                     //最初のファイル（$upfile.prop('files')[0]）を追加しています。
           

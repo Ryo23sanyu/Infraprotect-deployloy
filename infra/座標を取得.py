@@ -27,9 +27,9 @@ def extract_text(filename):# 旗揚げ(MText)と写真番号(Def)を抽出する
                         #extracted_text.append(neighbor_text)
                             break # 文字列が見つかったらbreakにょりforループを終了する
                     if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
-                        cad_data.append(related_text + "," + x + "," + y) # 見つかった文字列を追加する
+                        cad_data.append(related_text + str(x) + str(y)) # 見つかった文字列を追加する
                 #最後にまとめてcad_dataをextracted_textに追加する
-                    extracted_text.append(cad_data + "," + defx + "," + defy)
+                    extracted_text.append(cad_data[:] + [defx, defy])
     return extracted_text
 
 def entity_extension(mtext, neighbor):# 旗揚げ(MText)と写真番号(Def)を紐付ける関数
@@ -71,4 +71,4 @@ extracted_text = extract_text(filename)
 # 抽出結果を表示
 # print("特定の文字の位置の下にあるエンティティ:")
 for entity in extracted_text:
-    print(f"Text: {entity.dxf.text}, X: {entity.dxf.insert[0]}, Y: {entity.dxf.insert[1]}")
+    print(entity)

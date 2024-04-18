@@ -637,7 +637,7 @@ def display_photo(request):
                     f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む    
         else:
             print("フォームが無効")
-        return redirect("image_list")
+        return HttpResponseBadRequest('添付ファイルが見つかりませんでした。')
     else:
         form = UploadForm()
     return render(request, 'upload_photo.html', {'form': form})
