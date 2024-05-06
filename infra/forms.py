@@ -1,6 +1,7 @@
 import datetime
+from multiprocessing import context
 from django import forms
-from .models import CustomUser, Image, Number, UploadedFile
+from .models import CustomUser, Image, Number, Regulation, UploadedFile
 from .models import Photo, Company
 from django.core.files.storage import default_storage
 from .models import 交通規制_CHOICES
@@ -19,7 +20,7 @@ class UserCreationForm(forms.ModelForm):
         fields = ('username', 'password', 'company')
 
 # <<各橋作成時のボタン選択肢>>
-class BridgeCreateForm(forms.Form): # あなたのフォームクラス名を適切なものに置き換えてください
+class BridgeCreateForm(forms.Form):
     交通規制 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=交通規制_CHOICES)
 
 # <<センサス調査>>

@@ -12,13 +12,13 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from markupsafe import Markup
 from requests import Response
-from .models import Article, DamageReport, Infra, Photo, Panorama, Number
+from .models import Article, DamageReport, Infra, Photo, Panorama, Number, Regulation
 from django.db import models
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from .forms import CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
+from .forms import BridgeCreateForm, CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
 from django.views.generic.edit import FormView
 from ezdxf.entities.mtext import MText
 from PIL import Image, ImageTk
@@ -727,6 +727,8 @@ def damage_text_view(request):
     # 条件に応じて placeholder_text 属性を設定
     for bridge in damage_reports:
         if 'Mg' in bridge.first and '⑦' in bridge.second and 'c' in bridge.second:
+            #TODO :ここに追加。
+            print(True) 
             bridge.placeholder_text = '指定された条件に合った文言'
         # ここにその他の条件を追加
         else:
@@ -735,4 +737,14 @@ def damage_text_view(request):
     # コンテキストに damage_reports を追加してテンプレートに渡す
     context = {'damage_table': damage_reports}
     return render(request, 'table.html', context)
+
+def infraregulations_view(request):
+    form = BridgeCreateForm()
+    regulations = Regulation.objects.all()
+    context = {
+        'form': form,
+        'regulations': regulations,
+    }
+    return render(request, 'infra_create.html', context)
+
     

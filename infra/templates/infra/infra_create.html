@@ -20,7 +20,10 @@
     <p>{{ form.下部構造形式.label_tag }} {{ form.下部構造形式 }}</p>
     <p>{{ form.基礎構造形式.label_tag }} {{ form.基礎構造形式 }}</p>
     <p>{{ form.近接方法.label_tag }} {{ form.近接方法 }}</p>
-    <p>{{ form.交通規制.label_tag }} {{ form.交通規制 }}</p>
+    {% for regulation in regulations %}
+      <input id="{{ regulation.id }}" class="input_chk" type="checkbox" name="交通規制" value="{{ regulation.id }}">
+      <label class="surround_label" for="{{ regulation.id }}">{{ regulation.交通規制 }}</label>
+    {% endfor %}
     <p>{{ form.第三者点検の有無.label_tag }} {{ form.第三者点検の有無 }}</p>
     <p>{{ form.海岸線との距離.label_tag }} {{ form.海岸線との距離 }}</p>
     <p>{{ form.路下条件.label_tag }} {{ form.路下条件 }}</p>
