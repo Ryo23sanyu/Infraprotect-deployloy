@@ -85,3 +85,23 @@ a {
   /*height: 200px; /*行の高さを200pxに固定*/
   list-style:none;
 }
+
+.my-button {
+  background-color: #007bff; /* ボタンの背景色を青色にする */
+  color: white; /* 文字色を白色にする */
+  padding: 10px 20px; /* 上下に10px、左右に20pxのパディングを追加 */
+  font-size: 16px; /* フォントサイズを大きくする */
+  border: none; /* 枠線を非表示にする */
+  cursor: pointer; /* マウスホバー時にカーソルをポインターに変更 */
+  border-radius: 5px; /* ボーダーの角を丸くする */
+}
+
+.map-container,
+.form-container {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.form-container {
+    padding-left: 20px; /* フォームと地図の間隔 */
+}

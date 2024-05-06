@@ -12,13 +12,13 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from markupsafe import Markup
 from requests import Response
-from .models import Article, Infra, Photo, Panorama, Number
+from .models import Article, DamageReport, Infra, Photo, Panorama, Number
 from django.db import models
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from .forms import FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
+from .forms import CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
 from django.views.generic.edit import FormView
 from ezdxf.entities.mtext import MText
 from PIL import Image, ImageTk
@@ -46,6 +46,7 @@ class ListInfraView(LoginRequiredMixin, ListView):
 class DetailInfraView(LoginRequiredMixin, DetailView):
     template_name = 'infra/infra_detail.html'
     model = Infra
+    fields = ('交通量', '大型車混入率')
     def get_context_data(self, **kwargs):
         # HTMLテンプレートでの表示変数として「article_id」を追加。
         # 値はパスパラメータpkの値→取り扱うarticle.idとなる
@@ -55,7 +56,7 @@ class DetailInfraView(LoginRequiredMixin, DetailView):
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'
   model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー', 'article')
+  fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
   success_url = reverse_lazy('detail-infra')
   # def get_success_url(self):
     # return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
@@ -86,7 +87,7 @@ class DeleteInfraView(LoginRequiredMixin, DeleteView):
 class UpdateInfraView(LoginRequiredMixin, UpdateView):
   template_name = 'infra/infra_update.html'
   model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '特記事項', 'カテゴリー', 'article')
+  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
   success_url = reverse_lazy('detail-infra')
   def get_success_url(self):
     return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
@@ -98,7 +99,6 @@ def infra_view(request):
     # 例えば、選択されたload_gradeに基づいてデータをフィルタリングして表示するなど
 
   # 通常のビューロジック
-  # ・・・
   return render(request, 'infra/infra_detail.html')
 
 def index_view(request):
@@ -485,7 +485,7 @@ def table_view(request):
                 picture_urls = None
                 #picture_urlsの値は[None]とする。
 
-            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/img/noImage.png'}
+            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png'}
             #items = [{'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/img/noImage.png'} for i in range(len(first_item))]    
             
             #優先順位の指定
@@ -608,38 +608,59 @@ def upload_directory_path(instance, filename):
 
 class Upload(models.Model):
     file = models.FileField(upload_to=upload_directory_path)
+    
+# <<センサス調査>>
+def census_view(request):
+    form = CensusForm()
+    return render(request, 'infra_detail.html', {'form': form})
 
 # <<全景写真の表示>>
 def image_list(request):
-    # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。    
-    files = glob.glob( "infra/static/infra/img/*.jpg" )
+    # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。
+    save_path = r"C:\work\django\myproject\program\Infraproject\infra\static\infra\img"
+    files_jpg = glob.glob(save_path + "\*.jpg")
+    files_png = glob.glob(save_path + "\*.png")
+    files = files_jpg + files_png  # 2つのリストを結合する。
     # ページに表示する際、"infra/static/" を削除する。
+
+    web_base_path = "infra/img/"  # ウェブからアクセスする際のベースパス
+
     image_files = []
-    for file in files:
-        image_files.append( file.replace("infra/static/", "") )
+    for file_path in files:
+        # OSの絶対パスからウェブアクセス可能な相対パスへ変換
+        relative_path = file_path.replace(save_path, web_base_path).replace("\\", "/")
+        image_files.append(relative_path)
     # テンプレートに画像ファイルの一覧を渡してレンダリングする
     return render(request, 'image_list.html', {'image_files': image_files})
 
 # <<全景写真アップロード>>
-save_path = "C:\work\django\myproject\myvenv\Infraproject\infra\static\infra\img"
+save_path = r"C:\work\django\myproject\program\Infraproject\infra\static\infra\img"
 def display_photo(request):
+    print("リクエストメソッド:", request.method)  # リクエストのメソッドを表示
     if request.method == 'POST': # HTTPリクエストがPOSTメソッド(フォームの送信など)であれば、以下のコードを実行
         form = UploadForm(request.POST, request.FILES) # UploadFormを使用して、送信されたデータ(request.POST)とファイル(request.FILES)を取得
+        print("フォームが有効か？:", form.is_valid())  # フォームの有効性を表示
         if form.is_valid(): # formのis_valid()メソッドを呼び出して、フォームのバリデーション(検証)を実行
     # フォームが有効な場合は、選択された写真を特定のフォルダに保存します
+            # print("フォームが有効")
             photo = form.cleaned_data['photo'] # バリデーションを通過したデータから、'photo'キーに対応するデータを取得しphoto変数に格納
+            print("アップロードされた写真の名前:", photo.name)  # アップロードされた写真の名前を表示
             file_name = photo.name  # アップロードされたファイルの名前をfile_name変数に格納
             file_path = os.path.join(save_path, file_name)
             #設定された保存パス（save_path）とファイル名（file_name）を組み合わせ、フルパスをfile_path変数に格納
 
             with open(file_path, 'wb') as f: # file_pathで指定されたパスにファイルをバイナリ書き込みモード('wb')で開く
                 for chunk in photo.chunks(): # アップロードされたファイル(photo)をchunks()メソッドを使用して分割し、ループ処理を行う
-                    f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む    
+                    f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む
+            return redirect('image_list')
         else:
-            print("フォームが無効")
-        return HttpResponseBadRequest('添付ファイルが見つかりませんでした。')
+            print("フォームエラー:", form.errors)  # フォームのエラーを表示
+        # フォームが有効・無効 共通
+            print(form.errors)  # コンソールにエラーメッセージを出力
+            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。 エラー: {}'.format(form.errors))
+            #return HttpResponseBadRequest('添付ファイルが見つかりませんでした。')
     else:
-        form = UploadForm()
+        form = UploadForm() # Forms.pyの「UploadForm」を呼び出し
     return render(request, 'upload_photo.html', {'form': form})
 
 def photo_upload(request):
@@ -651,6 +672,30 @@ def photo_upload(request):
     else:
         form = PhotoUploadForm()
     return render(request, 'image_list.html', {'form': form})
+
+# <<全景写真の変更>>
+def change_photo(request):
+    if request.method == 'POST':
+        form = UploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # ここで、古い写真の削除や新しい写真の保存処理を行います。
+            # 例: image_idを使用して特定のレコードを探し、そのレコードに新しい画像を保存
+            image_id = request.POST.get('image_id', None)  # 画像ID取得
+            if image_id:
+                image_instance = UploadForm.objects.get(id=image_id)
+                image_instance.photo = form.cleaned_data['photo']
+                image_instance.save()
+                return redirect('image_list')
+            else:
+                # エラー処理
+                pass
+        else:
+            # フォームのバリデーションに失敗したときの処理
+            pass
+    else:
+        form = UploadForm()  # GETリクエストの場合、空のフォームを表示
+
+    return render(request, 'upload_photo.html', {'form': form})
 
 # 番号図用
 def number_create_view(request): # number_create_view関数を定義
@@ -669,3 +714,25 @@ def number_create_view(request): # number_create_view関数を定義
         form = NumberForm() # GETリクエストの場合、空のフォームを表示します。
 
     return render(request, 'select_item.html', {'form': form})
+
+# <<所見一覧>>
+def opinion_view(request):
+    return render(request, 'opinion.html')
+
+# <<損傷メモ>>
+def damage_text_view(request):
+    # データベースから情報を取得。ここでは例として `DamageReport` モデルを仮定します。
+    damage_reports = DamageReport.objects.all()
+
+    # 条件に応じて placeholder_text 属性を設定
+    for bridge in damage_reports:
+        if 'Mg' in bridge.first and '⑦' in bridge.second and 'c' in bridge.second:
+            bridge.placeholder_text = '指定された条件に合った文言'
+        # ここにその他の条件を追加
+        else:
+            bridge.placeholder_text = 'デフォルトの文言'
+
+    # コンテキストに damage_reports を追加してテンプレートに渡す
+    context = {'damage_table': damage_reports}
+    return render(request, 'table.html', context)
+    

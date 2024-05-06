@@ -12,9 +12,19 @@ class Article(models.Model):
   
   def __str__(self):
     return self.案件名
+
+
     
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 LOADGRADE = (('one', '一等橋'),('two', '二等橋'),('three', '三等橋'),('unknown', '不明'))
+交通規制_CHOICES = (('one', '無し'),('two', '片側交互通行'),('three', '車線減少'),('four', '歩道規制'),('unknown', '通行止め'))
+
+# 交通規制のモデル
+class Regulation(models.Model):
+    交通規制 = models.CharField(max_length=50, choices=交通規制_CHOICES)
+    def __str__(self):
+        return self.title
+
 class Infra(models.Model):
   title = models.CharField(max_length=100)# 橋名
   径間数 = models.IntegerField()# 径間数
@@ -31,12 +41,15 @@ class Infra(models.Model):
   下部構造形式 = models.CharField(max_length=100)# 下部構造形式
   基礎構造形式 = models.CharField(max_length=100)# 基礎構造形式
   近接方法 = models.CharField(max_length=100)# 近接方法
-  交通規制 = models.CharField(max_length=100)# 交通規制
+  # 交通規制 = models.CharField(max_length=100)
+  交通規制 = models.ManyToManyField(Regulation)# 交通規制
   第三者点検の有無 = models.CharField(max_length=100)# 第三者点検の有無
   海岸線との距離 = models.CharField(max_length=100)# 海岸線の距離
   路下条件 = models.CharField(max_length=100)# 路下条件
   特記事項 = models.CharField(max_length=100, blank=True)# 特記事項
   カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
+  交通量 = models.CharField(max_length=10, blank=True)# 12時間交通量
+  大型車混入率 = models.CharField(max_length=10, blank=True)# 大型車混入率
   article = models.ForeignKey(Article, on_delete=models.CASCADE)
   
   def __str__(self):
@@ -93,5 +106,10 @@ class Image(models.Model):
     #title = models.CharField(max_length=255)  # 画像のタイトル
     photo = models.ImageField(upload_to='photos/')  # 画像ファイル, 'photos/'はMEDIA_ROOT下の保存先ディレクトリ
 
-    def __str__(self):
-        return self.photo
+    #def __str__(self):
+    #    return self.photo
+
+# 損傷メモ
+class DamageReport(models.Model):
+    first = models.CharField(max_length=100)
+    second = models.TextField()

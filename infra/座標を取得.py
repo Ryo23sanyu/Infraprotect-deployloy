@@ -27,9 +27,14 @@ def extract_text(filename):# 旗揚げ(MText)と写真番号(Def)を抽出する
                         #extracted_text.append(neighbor_text)
                             break # 文字列が見つかったらbreakにょりforループを終了する
                     if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
-                        cad_data.append(related_text + str(x) + str(y)) # 見つかった文字列を追加する
-                #最後にまとめてcad_dataをextracted_textに追加する
-                    extracted_text.append(cad_data[:] + [defx, defy])
+                        #cad_data.append(related_text[:] + str(x) + "," + str(y))
+                        cad_data.append(related_text[:]) # cad_dataに「部材名～使用写真」までを追加
+                        cad_data.append([str(x), str(y)]) # 続いてcad_dataに「MTEXT」のX,Y座標を追加
+                        #cad_data.append(str(x))
+                        #cad_data.append(str(y))
+                        
+                    #最後にまとめてcad_dataをextracted_textに追加する
+                    extracted_text.append(cad_data[:] + [[str(defx), str(defy)]]) # extracted_textに「MTEXTとその座標」およびdefのX,Y座標を追加
     return extracted_text
 
 def entity_extension(mtext, neighbor):# 旗揚げ(MText)と写真番号(Def)を紐付ける関数

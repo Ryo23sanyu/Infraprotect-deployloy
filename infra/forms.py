@@ -3,6 +3,7 @@ from django import forms
 from .models import CustomUser, Image, Number, UploadedFile
 from .models import Photo, Company
 from django.core.files.storage import default_storage
+from .models import 交通規制_CHOICES
 
 class FileUploadForm(forms.ModelForm):
     class Meta:
@@ -17,8 +18,14 @@ class UserCreationForm(forms.ModelForm):
         model = CustomUser
         fields = ('username', 'password', 'company')
 
-# <<写真表示>>
+# <<各橋作成時のボタン選択肢>>
+class BridgeCreateForm(forms.Form): # あなたのフォームクラス名を適切なものに置き換えてください
+    交通規制 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=交通規制_CHOICES)
 
+# <<センサス調査>>
+class CensusForm(forms.Form):
+    traffic = forms.CharField(label='交通量')
+    mixing = forms.CharField(label='大型車混入率')
     
 # <<損傷写真表示>>
 class NameForm(forms.Form):
@@ -34,10 +41,10 @@ class NumberForm(forms.ModelForm):
 
 # 全景写真用
 class UploadForm(forms.ModelForm): # UploadFormという名前のFormクラスを定義(Modelクラスと紐付け)
+    photo = forms.ImageField() # modelに定義されているものを使用
     class Meta: # ModelFormと紐付ける場合に記載
         model = Image # models.pyのImageクラスと紐付け
-        fields = ['photo'] # このFormで扱うフィールドを指定
-        photo = forms.ImageField()
+        fields = ['photo'] # Image.modelのphotoフィールドのみを使用
 
 class PhotoUploadForm(forms.ModelForm): # PhotoUploadFormという名前のFormクラスを定義(Modelクラスと紐付け)
     class Meta: # ModelFormと紐付ける場合に記載

@@ -50,11 +50,11 @@
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                                     <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
                                                         <div>
-                                                            <img src="{% static item %}" width="200" height="150" style="margin:0 10px;">
+                                                            <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static item %}" width="200" height="150" style="margin:0 10px;">
                                                         </div>
                                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
-                                                            <input id="upload-file" name="upload-file" type="file" style="display: none">
-                                                            <button id="fileSelect" type="button" style="margin-bottom: 10px;">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
+                                                            <input id="upload-file-{{ forloop.parentloop.counter }}" name="upload-file" type="file" style="display: none">
+                                                            <button id="fileSelect-{{ forloop.parentloop.counter }}" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
                                                             <button style="margin-bottom: 10px;">追加</button>
                                                             <button>削除</button> <!--縦文字に変更-->
                                                         </div>
@@ -63,7 +63,7 @@
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                                     <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
                                                         <div>
-                                                            <img src="{% static bridge.picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                            <img id="before-image" src="{% static bridge.picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
                                                         </div>
                                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
                                                             <input id="upload-file" name="upload-file" type="file" style="display: none">
@@ -75,7 +75,10 @@
                                                     </div>
                                                 </li>
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                                    <textarea name="notes" rows="6" placeholder="写真メモ" style="margin:0 10px;"></textarea>
+                                                    <!-- <textarea name="notes" rows="6" placeholder="写真メモ" style="margin:0 10px;"></textarea> -->
+                                                    <textarea name="notes" rows="6" style="margin:0 10px;">
+                                                        {{ item.placeholder_text }}
+                                                    </textarea>
                                                 </li>
                                             </ul>
                                     {% endfor %}

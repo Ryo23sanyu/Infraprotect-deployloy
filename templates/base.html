@@ -52,6 +52,7 @@
         <a class="nav-link mx-3" href="{% url 'image_list' %}">写真一覧</a>
         <a class="nav-link mx-3" href="{% url 'table' %}">サンプル</a>
         <a class="nav-link mx-3" href="{% url 'number' %}">要素番号</a>
+        <a class="nav-link mx-3" href="{% url 'opinion' %}">所見一覧</a>
       </div>
       <div class="navbar-nav d-flex flex-row">
       {% if request.user.is_authenticated %}
@@ -130,48 +131,62 @@
       });
 
       $(function () {
-          $('#fileSelect').click(function () {
-              $("#upload-file").click();
+          // "変更"ボタンのクリックイベントに対する処理
+          $('body').on('click', '[id^=fileSelect-]', function () {
+            // body要素内で、id属性がfileSelect-で始まる全ての要素に対して、clickイベントが発生した時の処理を紐付け
+              var index = this.id.split('-')[1];
+                // クリックされた要素(this)のid属性値をハイフン(-)で分割し、2番目の部分（配列のインデックス1）を変数indexに格納
+              $('#upload-file-' + index).click();
+                // 対応するinput[type=file]要素を選択し、upload-fileのclick動作を実行します。これにより、ファイル選択ダイアログが表示
           });
-          $('#upload-file').change(function () {
-              if (confirm('写真を変更します')) {
-                //$('#ajax-file-send').on('submit', function(e) {//カッコ{ }内が実行する処理、upload-form(table.html)
-                    //e.preventDefault();//フォーム送信の通信を止める処理
-                    let $upfile = $('#upload-file');//id属性がupload-fileであるHTML要素を探して、変数$upfileに格納
-                    let fd = new FormData(); //新たなFormDataオブジェクトを作成し、変数fdに格納
-                    fd.append("upload-file", $upfile.prop('files')[0]);//変数fdにファイルを追加
-                    fd.append(upload_file_url, 'upload_file_url');
-                    // prop:プロパティ値を取得、files:ファイルのリスト
-                    //"upload-file"というキーで、変数$upfile（input 要素）に格納されているファイルの中から
-                    //最初のファイル（$upfile.prop('files')[0]）を追加しています。
-          
-                    $.ajax({//生成したFormDataオブジェクトをAjaxを通して次のようにサーバーに送信
-                        'url': '{% url "ajax_file_send" %}',
-                        'type': 'POST',
-                        'data': fd,//dataにはFormDataオブジェクトを指定
-                        'processData': false,//dataを文字列への変換:falseにすることで変換されずにファイルとして送信される
-                        'contentType': false,
-                        'dataType': 'json'
-                    })
-                    .done(function(response){ //Ajax通信が成功した場合
-                      console.log("ajax通信に失敗しました");
-                    })
-                    .fail(function (jqXHR, textStatus, errorThrown) { //Ajax通信が失敗した場合
-                        console.log("ajax通信に失敗しました");
-                        console.log("jqXHR          : " + jqXHR.status); // HTTPステータスコードを取得
-                        console.log("textStatus     : " + textStatus); // エラーの種類を取得
-                        console.log("errorThrown    : " + errorThrown.message); // 具体的なエラーメッセージを取得
-                        // 通信失敗時の処理
-                        alert('ファイルの取得に失敗しました。'); // 失敗した場合、アラートとしてエラーを通知
-                   // });
-                });
-                  console.log('uploaded!')
-              } else {
-                  $(this).val('');
-                  console.log('reset!');
+      
+          // ファイルが選択されたときの処理
+          $('body').on('change', '[id^=upload-file-]', function () {
+            // body要素内で、id属性がupload-file-で始まる全ての要素に対して、changeイベントが発生した時の処理を紐付け
+              var index = this.id.split('-')[2];
+                // イベントが発生した要素のid属性を3つ目のハイフンで分割して、その後の部分を取得
+              var fileInput = '#upload-file-' + index;
+                // 対応するファイル入力のセレクタを組み立て
+              var imgTag = '#uploaded-image-' + index;
+                // 対応する画像タグのセレクタを組み立て
+
+              var file = $(fileInput).prop('files')[0];
+                // fileInputセレクタで選択された要素の、filesプロパティから最初のファイルを取得
+              if (!file) return;
+                // ファイルが選択されていなければ終了(return)
+      
+              if (confirm('写真を変更しますか？')) {
+                // ダイアログを表示
+                  var fd = new FormData();
+                    // FormDataオブジェクトを変数fdで作成
+                  fd.append('upload-file', file);
+                    // 選択されたファイルを変数fdに追加
+      
+                  // ファイルをサーバに送信
+                  $.ajax({
+                      url: '{% url "ajax_file_send" %}', // 送信先のURL (DjangoのURL設定に依存します)
+                      type: 'POST',
+                      data: fd,
+                      processData: false,
+                      contentType: false,
+                      dataType: 'json',
+                      // 送信成功時の処理
+                      success: function (response) {
+                          if(response.filePath) {
+                              $(fileButton).val(response.filePath); // レスポンスからfilePathを取得し、ボタンのvalueを更新
+                          }
+                      }
+                  });
+
+                  var reader = new FileReader();
+                  reader.onload = function (e) { // ファイルの読み込みが完了したらこの関数が呼ばれる
+                      $(imgTag).attr('src', e.target.result); // 読み込んだファイルの内容（画像データ）を<img>タグのsrc属性に設定
+                  };
+                  reader.readAsDataURL(file); // 選択されたファイルをDataURLとして読み込み
               }
-          })
+          });
       });
+      
 
       function getCookie(name) {
           var cookieValue = null;
