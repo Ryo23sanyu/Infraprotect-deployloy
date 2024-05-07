@@ -111,5 +111,5 @@ class Image(models.Model):
 
 # 損傷メモ
 class DamageReport(models.Model):
-    first = models.CharField(max_length=100)
-    second = models.TextField()
+    first_item = models.CharField(max_length=100)
+    second_items = models.TextField()

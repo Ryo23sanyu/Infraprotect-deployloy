@@ -727,11 +727,11 @@ def damage_text_view(request):
     # 条件に応じて placeholder_text 属性を設定
     for bridge in damage_reports:
         if 'Mg' in bridge.first and '⑦' in bridge.second and 'c' in bridge.second:
-            #TODO :ここに追加。
             print(True) 
             bridge.placeholder_text = '指定された条件に合った文言'
         # ここにその他の条件を追加
         else:
+            print(False)
             bridge.placeholder_text = 'デフォルトの文言'
 
     # コンテキストに damage_reports を追加してテンプレートに渡す
@@ -746,5 +746,3 @@ def infraregulations_view(request):
         'regulations': regulations,
     }
     return render(request, 'infra_create.html', context)
-
-    
