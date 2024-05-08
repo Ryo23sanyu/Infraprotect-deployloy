@@ -4,7 +4,7 @@ from django import forms
 from .models import CustomUser, Image, Number, Regulation, UploadedFile
 from .models import Photo, Company
 from django.core.files.storage import default_storage
-from .models import 交通規制_CHOICES
+from .models import 交通規制_CHOICES, 活荷重_CHOICES, 等級_CHOICES, 適用示方書_CHOICES, 近接方法_CHOICES, 第三者点検_CHOICES, 路下条件_CHOICES
 
 class FileUploadForm(forms.ModelForm):
     class Meta:
@@ -22,6 +22,12 @@ class UserCreationForm(forms.ModelForm):
 # <<各橋作成時のボタン選択肢>>
 class BridgeCreateForm(forms.Form):
     交通規制 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=交通規制_CHOICES)
+    活荷重 = forms.ChoiceField(widget=forms.RadioSelect, choices=活荷重_CHOICES)
+    等級 = forms.ChoiceField(widget=forms.RadioSelect, choices=等級_CHOICES)
+    適用示方書 = forms.ChoiceField(widget=forms.RadioSelect, choices=適用示方書_CHOICES)
+    近接方法 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=近接方法_CHOICES)
+    第三者点検 = forms.ChoiceField(widget=forms.RadioSelect, choices=第三者点検_CHOICES)
+    路下条件 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=路下条件_CHOICES)
 
 # <<センサス調査>>
 class CensusForm(forms.Form):

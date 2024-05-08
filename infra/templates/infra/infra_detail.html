@@ -71,11 +71,11 @@
       <button type="submit" name="交通規制" value="road_side">路肩規制</button>
       <button type="submit" name="交通規制" value="stop">通行止め</button>
     </form>
-    <p>第三者点検の有無：{{ object.第三者点検の有無 }}</p>
+    <p>第三者点検の有無：{{ object.第三者点検 }}</p>
     <form method="POST" action="{% url 'detail-infra' object.pk %}">
       {% csrf_token %}
-      <button type="submit" name="第三者点検の有無" value="yes">対象</button>
-      <button type="submit" name="第三者点検の有無" value="no">対象外</button>
+      <button type="submit" name="第三者点検" value="yes">対象</button>
+      <button type="submit" name="第三者点検" value="no">対象外</button>
     </form>
     <p>海岸線との距離：{{ object.海岸線との距離 }} m</p>
     <p>路下条件：{{ object.路下条件 }}</p>

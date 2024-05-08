@@ -16,14 +16,53 @@ class Article(models.Model):
 
     
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
-LOADGRADE = (('one', '一等橋'),('two', '二等橋'),('three', '三等橋'),('unknown', '不明'))
-交通規制_CHOICES = (('one', '無し'),('two', '片側交互通行'),('three', '車線減少'),('four', '歩道規制'),('unknown', '通行止め'))
+# LOADGRADE = (('one', '一等橋'),('two', '二等橋'),('three', '三等橋'),('unknown', '不明'))
 
 # 交通規制のモデル
+交通規制_CHOICES = (('無し', '無し'),('片側交互通行', '片側交互通行'),('車線減少', '車線減少'),('歩道規制', '歩道規制'),('通行止め', '通行止め'))
 class Regulation(models.Model):
     交通規制 = models.CharField(max_length=50, choices=交通規制_CHOICES)
     def __str__(self):
-        return self.title
+        return self.交通規制
+    # returnで戻すため、class内の定義に合わせる
+    
+活荷重_CHOICES = (('不明', '不明'),('A活荷重', 'A活荷重'),('B活荷重', 'B活荷重'),('TL-20', 'TL-20'),('TL-14', 'TL-14'),('TL-6', 'TL-6'))
+class LoadWeight(models.Model):
+    活荷重 = models.CharField(max_length=50, choices=活荷重_CHOICES)
+    def __str__(self):
+        return self.活荷重
+    
+等級_CHOICES = (('不明', '不明'),('一等橋', '一等橋'),('二等橋', '二等橋'),('三等橋', '三等橋'),('その他', 'その他'))
+class LoadGrade(models.Model):
+    等級 = models.CharField(max_length=50, choices=等級_CHOICES)
+    def __str__(self):
+        return self.等級
+    
+適用示方書_CHOICES = (('不明', '不明'),('平成29年 道路橋示方書', '平成29年 道路橋示方書'),('平成24年 道路橋示方書', '平成24年 道路橋示方書'),('平成14年 道路橋示方書', '平成14年 道路橋示方書'),('平成8年 道路橋示方書', '平成8年 道路橋示方書'),('平成5年 道路橋示方書', '平成5年 道路橋示方書'),('平成2年 道路橋示方書', '平成2年 道路橋示方書'),\
+    ('昭和55年 道路橋示方書', '昭和55年 道路橋示方書'),('昭和53年 道路橋示方書', '昭和53年 道路橋示方書'),('昭和47年 道路橋示方書', '昭和47年 道路橋示方書'),('昭和43年 プレストレスコンクリート道路橋示方書', '昭和43年 プレストレスコンクリート道路橋示方書'),\
+        ('昭和39年 鉄筋コンクリート道路橋示方書', '昭和39年 鉄筋コンクリート道路橋示方書'),('昭和31年 鋼道路橋設計示方書', '昭和31年 鋼道路橋設計示方書'),('昭和15年 鋼道路橋設計示方書案', '昭和15年 鋼道路橋設計示方書案'),('大正15年 道路構造に関する細則案', '大正15年 道路構造に関する細則案'))
+class Rulebook(models.Model):
+    適用示方書 = models.CharField(max_length=100, choices=適用示方書_CHOICES)
+    def __str__(self):
+        return self.適用示方書
+    
+近接方法_CHOICES = (('地上', '地上'),('梯子', '梯子'),('橋梁点検車', '橋梁点検車'),('高所作業車', '高所作業車'),('軌陸車', '軌陸車'),('ボート', 'ボート'),('ロープアクセス', 'ロープアクセス'),('ドローン', 'ドローン'),('ファイバースコープ', 'ファイバースコープ'),('画像解析', '画像解析'))
+class Approach(models.Model):
+    近接方法 = models.CharField(max_length=50,choices=近接方法_CHOICES)
+    def __str__(self):
+        return self.近接方法
+    
+第三者点検_CHOICES = (('有り', '有り'),('無し', '無し'))
+class Thirdparty(models.Model):
+    第三者点検 = models.CharField(max_length=50, choices=第三者点検_CHOICES)
+    def __str__(self):
+        return self.第三者点検
+
+路下条件_CHOICES = (('河川', '河川'),('水路', '水路'),('湖沼', '湖沼'),('海洋', '海洋'),('道路', '道路'),('鉄道', '鉄道'))
+class UnderCondition(models.Model):
+    路下条件 = models.CharField(max_length=50, choices=路下条件_CHOICES)
+    def __str__(self):
+        return self.路下条件
 
 class Infra(models.Model):
   title = models.CharField(max_length=100)# 橋名
@@ -34,18 +73,17 @@ class Infra(models.Model):
   latitude = models.CharField(max_length=50, blank=True)# 緯度
   longitude = models.CharField(max_length=50, blank=True)# 経度
   橋梁コード = models.CharField(max_length=50, blank=True)# 橋梁コード
-  活荷重 = models.CharField(max_length=50, blank=True)# 活荷重
-  等級 = models.CharField(max_length=50, blank=True, choices = LOADGRADE)# 等級
-  適用示方書 = models.CharField(max_length=100, blank=True)# 適用示方書
+  活荷重 = models.ManyToManyField(LoadWeight)# 活荷重
+  等級 = models.ManyToManyField(LoadGrade)# 等級
+  適用示方書 = models.ManyToManyField(Thirdparty)# 適用示方書
   上部構造形式 = models.CharField(max_length=100)# 上部構造形式
   下部構造形式 = models.CharField(max_length=100)# 下部構造形式
   基礎構造形式 = models.CharField(max_length=100)# 基礎構造形式
-  近接方法 = models.CharField(max_length=100)# 近接方法
-  # 交通規制 = models.CharField(max_length=100)
+  近接方法 = models.ManyToManyField(Approach)# 近接方法
   交通規制 = models.ManyToManyField(Regulation)# 交通規制
-  第三者点検の有無 = models.CharField(max_length=100)# 第三者点検の有無
+  第三者点検 = models.ManyToManyField(Thirdparty)# 第三者点検の有無
   海岸線との距離 = models.CharField(max_length=100)# 海岸線の距離
-  路下条件 = models.CharField(max_length=100)# 路下条件
+  路下条件 = models.ManyToManyField(UnderCondition)# 路下条件
   特記事項 = models.CharField(max_length=100, blank=True)# 特記事項
   カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
   交通量 = models.CharField(max_length=10, blank=True)# 12時間交通量
@@ -111,5 +149,5 @@ class Image(models.Model):
 
 # 損傷メモ
 class DamageReport(models.Model):
-    first_item = models.CharField(max_length=100)
-    second_items = models.TextField()
+    first = models.CharField(max_length=100)
+    second = models.TextField()

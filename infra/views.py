@@ -12,7 +12,7 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from markupsafe import Markup
 from requests import Response
-from .models import Article, DamageReport, Infra, Photo, Panorama, Number, Regulation
+from .models import Approach, Article, DamageReport, Infra, LoadGrade, LoadWeight, Photo, Panorama, Number, Regulation, Rulebook, Thirdparty, UnderCondition
 from django.db import models
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -56,7 +56,7 @@ class DetailInfraView(LoginRequiredMixin, DetailView):
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'
   model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
+  fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
   success_url = reverse_lazy('detail-infra')
   # def get_success_url(self):
     # return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
@@ -76,8 +76,23 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
     #設定したのちsaveを実行し更新します。
     object.save()
     return super().form_valid(form)
+
   def get_success_url(self):
     return reverse_lazy('list-infra', kwargs={'pk': self.kwargs["pk"]})
+
+  #新規作成時、交通規制の全データをコンテキストに含める。
+  def get_context_data(self, **kwargs):
+    context = super().get_context_data(**kwargs)
+    context["loadWeights"] = LoadWeight.objects.all()
+    context["loadGrades"] = LoadGrade.objects.all()
+    context["rulebooks"] = Rulebook.objects.all()
+    context["approachs"] = Approach.objects.all()
+    context["regulations"] = Regulation.objects.all()
+    context["thirdpartys"] = Thirdparty.objects.all()
+    context["underconditions"] = UnderCondition.objects.all()
+    return context
+    #kwargs["article_id"] = self.kwargs["pk"]
+    #return super().get_context_data(**kwargs)
 
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
   template_name = 'infra/infra_delete.html'
@@ -87,7 +102,7 @@ class DeleteInfraView(LoginRequiredMixin, DeleteView):
 class UpdateInfraView(LoginRequiredMixin, UpdateView):
   template_name = 'infra/infra_update.html'
   model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検の有無', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
+  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
   success_url = reverse_lazy('detail-infra')
   def get_success_url(self):
     return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
@@ -744,5 +759,59 @@ def infraregulations_view(request):
     context = {
         'form': form,
         'regulations': regulations,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraloadWeights_view(request):
+    form = BridgeCreateForm()
+    loadWeights = LoadWeight.objects.all()
+    context = {
+        'form': form,
+        'loadWeights': loadWeights,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraloadGrades_view(request):
+    form = BridgeCreateForm()
+    loadGrades = LoadGrade.objects.all()
+    context = {
+        'form': form,
+        'loadGrades': loadGrades,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infrarerulebooks_view(request):
+    form = BridgeCreateForm()
+    rulebooks = Rulebook.objects.all()
+    context = {
+        'form': form,
+        'rulebooks': rulebooks,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraapproachs_view(request):
+    form = BridgeCreateForm()
+    approachs = Approach.objects.all()
+    context = {
+        'form': form,
+        'approachs': approachs,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infrathirdpartys_view(request):
+    form = BridgeCreateForm()
+    thirdpartys = Thirdparty.objects.all()
+    context = {
+        'form': form,
+        'thirdpartys': thirdpartys,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraunderConditions_view(request):
+    form = BridgeCreateForm()
+    underConditions = UnderCondition.objects.all()
+    context = {
+        'form': form,
+        'underConditions': underConditions,
     }
     return render(request, 'infra_create.html', context)

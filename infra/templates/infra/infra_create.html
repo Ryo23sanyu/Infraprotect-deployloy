@@ -13,20 +13,40 @@
     <p>{{ form.latitude.label_tag }} {{ form.latitude }}</p>
     <p>{{ form.longitude.label_tag }} {{ form.longitude }}</p>
     <p>{{ form.橋梁コード.label_tag }} {{ form.橋梁コード }}</p>
-    <p>{{ form.活荷重.label_tag }} {{ form.活荷重 }}</p>
-    <p>{{ form.等級.label_tag }} {{ form.等級 }}</p>
-    <p>{{ form.適用示方書.label_tag }} {{ form.適用示方書 }}</p>
+
+    <p>{% for loadWeight in loadWeights %}
+         <input id="{{ loadWeight.id }}" class="input_chk" type="checkbox" name="活荷重" value="{{ loadWeight.id }}">
+         <label class="surround_label" for="{{ loadWeight.id }}">{{ loadWeight.活荷重 }}</label>
+       {% endfor %}</p>
+    <p>{% for loadGrade in loadGrades %}
+         <input id="{{ loadGrade.id }}" class="input_chk" type="checkbox" name="等級" value="{{ loadGrade.id }}">
+         <label class="surround_label" for="{{ loadGrade.id }}">{{ loadGrade.等級 }}</label>
+       {% endfor %}</p>
+    <p>{% for rulebook in rulebooks %}
+         <input id="{{ rulebook.id }}" class="input_chk" type="checkbox" name="適用示方書" value="{{ rulebook.id }}">
+         <label class="surround_label" for="{{ rulebook.id }}">{{ rulebook.適用示方書 }}</label>
+       {% endfor %}</p>
+
     <p>{{ form.上部構造形式.label_tag }} {{ form.上部構造形式 }}</p>
     <p>{{ form.下部構造形式.label_tag }} {{ form.下部構造形式 }}</p>
     <p>{{ form.基礎構造形式.label_tag }} {{ form.基礎構造形式 }}</p>
-    <p>{{ form.近接方法.label_tag }} {{ form.近接方法 }}</p>
-    {% for regulation in regulations %}
-      <input id="{{ regulation.id }}" class="input_chk" type="checkbox" name="交通規制" value="{{ regulation.id }}">
-      <label class="surround_label" for="{{ regulation.id }}">{{ regulation.交通規制 }}</label>
-    {% endfor %}
-    <p>{{ form.第三者点検の有無.label_tag }} {{ form.第三者点検の有無 }}</p>
+    <p>{% for approach in approachs %}
+         <input id="{{ approach.id }}" class="input_chk" type="checkbox" name="近接方法" value="{{ approach.id }}">
+         <label class="surround_label" for="{{ approach.id }}">{{ approach.近接方法 }}</label>
+       {% endfor %}</p>
+    <p>{% for regulation in regulations %}
+         <input id="{{ regulation.id }}" class="input_chk" type="checkbox" name="交通規制" value="{{ regulation.id }}">
+         <label class="surround_label" for="{{ regulation.id }}">{{ regulation.交通規制 }}</label>
+       {% endfor %}</p>
+    <p>{% for thirdparty in thirdpartys %}
+         <input id="{{ thirdparty.id }}" class="input_chk" type="checkbox" name="第三者点検" value="{{ thirdparty.id }}">
+         <label class="surround_label" for="{{ thirdparty.id }}">{{ thirdparty.第三者点検 }}</label>
+       {% endfor %}</p>
     <p>{{ form.海岸線との距離.label_tag }} {{ form.海岸線との距離 }}</p>
-    <p>{{ form.路下条件.label_tag }} {{ form.路下条件 }}</p>
+    <p>{% for undercondition in underconditions %}
+         <input id="{{ undercondition.id }}" class="input_chk" type="checkbox" name="路下条件" value="{{ undercondition.id }}">
+         <label class="surround_label" for="{{ undercondition.id }}">{{ undercondition.路下条件 }}</label>
+       {% endfor %}</p>
     <p>{{ form.特記事項.label_tag }} {{ form.特記事項 }}</p>
     <p>{{ form.カテゴリー.label_tag }} {{ form.カテゴリー }}</p>
     <p>{{ form.article.label_tag }} {{ form.article }}</p>
