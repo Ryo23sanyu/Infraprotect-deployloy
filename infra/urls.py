@@ -30,6 +30,7 @@ urlpatterns = [
     path('number/', views.number_create_view, name='number'),
     path('opinion/', views.opinion_view, name='opinion'),# 所見一覧
     path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更
+    path('damage-text/', views.damage_text_view, name='damage_text_view'),# 損傷写真帳の自動メモ
 ]
 # path('URLの末尾', views.py内の関数名(操作に対するリクエストを受ける), ルーティングに名前を付ける(この名前でURLを参照できるようになる)),
 if settings.DEBUG:

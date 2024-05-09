@@ -105,14 +105,14 @@ a {
 .form-container {
     padding-left: 20px; /* フォームと地図の間隔 */
 }
-
+/* 緒言のボタン選択 */
 .input_chk {
   display:none;
 }
 .chk_label {
   display:inline-block;
-  position:relative;
-  width:4rem;
+  position:relative;/*相対的な位置を指定*/
+  width:4rem;/*相対的な位置から大きさや幅を指定*/
   height:2rem;
   margin:0.25rem;
   border-radius:1rem;
@@ -134,19 +134,27 @@ a {
   transition:0.2s;
   box-shadow:4px 0 2px -2px #333;
 }
+
 input[type="checkbox"].input_chk:checked + label.chk_label{ background:orange; }
 input[type="checkbox"].input_chk:checked + label.chk_label:before{ left:50%; }
 
+input[type="radio"].input_chk:checked + label.chk_label{ background:orange; }
+input[type="radio"].input_chk:checked + label.chk_label:before{ left:50%; }
+
 .surround_label {
-  display:inline-block;
-  position:relative;
-  padding:0.5rem;
-  border:solid 1px orange;
-  border-radius:0.5rem;
-  cursor:pointer;
-  transition:0.2s;
+  display: inline-block;
+  position: relative;
+  padding: 0.5rem;
+  border: solid 1px orange;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: 0.2s;
 }
 input[type="checkbox"].input_chk:checked + label.surround_label{
+  background:orange;
+  transition:0.2s;
+}
+input[type="radio"].input_chk:checked + label.surround_label{
   background:orange;
   transition:0.2s;
 }

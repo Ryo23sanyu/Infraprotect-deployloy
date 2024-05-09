@@ -5,7 +5,65 @@
 {% block content %}
   <form method='POST'>
     {% csrf_token %}
-    {{form.as_p}}
+    <p>{{ form.title.label_tag }} {{ form.title }}</p>
+    <p>{{ form.径間数.label_tag }} {{ form.径間数 }}</p>
+    <p>{{ form.橋長.label_tag }} {{ form.橋長 }}</p>
+    <p>{{ form.全幅員.label_tag }} {{ form.全幅員 }}</p>
+    <p>{{ form.路線名.label_tag }} {{ form.路線名 }}</p>
+    <p>{{ form.橋梁コード.label_tag }} {{ form.橋梁コード }}</p>
+
+    <p>{{ form.活荷重.label_tag }}
+    {% for loadWeight in loadWeights %}
+    <input id="loadWeight_id_{{ loadWeight.id }}" class="input_chk" type="radio" name="活荷重" value="{{ loadWeight.id }}" {% if loadWeight.id in selected_loadWeights %}checked{% endif %}>
+    <label class="surround_label" for="loadWeight_id_{{ loadWeight.id }}">{{ loadWeight.活荷重 }}</label>
+    {% endfor %}</p>
+
+    <p>{{ form.等級.label_tag }}
+    {% for loadGrade in loadGrades %}
+    <input id="loadGrade_id_{{ loadGrade.id }}" class="input_chk" type="radio" name="等級" value="{{ loadGrade.id }}" {% if loadGrade.id in selected_loadGrades %}checked{% endif %}>
+    <label class="surround_label" for="loadGrade_id_{{ loadGrade.id }}">{{ loadGrade.等級 }}</label>
+    {% endfor %}</p>
+
+    <p>{{ form.適用示方書.label_tag }}
+    {% for rulebook in rulebooks %}
+    <input id="rulebook_id_{{ rulebook.id }}" class="input_chk" type="radio" name="適用示方書" value="{{ rulebook.id }}" {% if rulebook.id in selected_rulebooks %}checked{% endif %}>
+    <label class="surround_label" for="rulebook_id_{{ rulebook.id }}">{{ rulebook.適用示方書 }}</label>
+    {% endfor %}</p>
+
+    <p>{{ form.上部構造形式.label_tag }} {{ form.上部構造形式 }}</p>
+    <p>{{ form.下部構造形式.label_tag }} {{ form.下部構造形式 }}</p>
+    <p>{{ form.基礎構造形式.label_tag }} {{ form.基礎構造形式 }}</p>
+
+    <p>{{ form.近接方法.label_tag }}
+    {% for approach in approachs %}
+    <input id="approach_id_{{ approach.id }}" class="input_chk" type="checkbox" name="近接方法" value="{{ approach.id }}" {% if approach.id in selected_approachs %}checked{% endif %}>
+    <label class="surround_label" for="approach_id_{{ approach.id }}">{{ approach.近接方法 }}</label>
+    {% endfor %}</p>
+    
+    <p>{{ form.交通規制.label_tag }}
+    {% for regulation in regulations %}
+    <input id="regulation_id_{{ regulation.id }}" class="input_chk" type="checkbox" name="交通規制" value="{{ regulation.id }}" {% if regulation.id in selected_regulations %}checked{% endif %}>
+    <label class="surround_label" for="regulation_id_{{ regulation.id }}">{{ regulation.交通規制 }}</label>
+    {% endfor %}</p>
+
+    <p>{{ form.第三者点検.label_tag }}
+    {% for thirdparty in thirdpartys %}
+    <input id="thirdparty_id_{{ thirdparty.id }}" class="input_chk" type="radio" name="第三者点検" value="{{ thirdparty.id }}" {% if thirdparty.id in selected_thirdpartys %}checked{% endif %}>
+    <label class="surround_label" for="thirdparty_id_{{ thirdparty.id }}">{{ thirdparty.第三者点検 }}</label>
+    {% endfor %}</p>
+
+    <p>{{ form.海岸線との距離.label_tag }} {{ form.海岸線との距離 }}</p>
+
+    <p>{{ form.路下条件.label_tag }}
+    {% for undercondition in underconditions %}
+    <input id="undercondition_id_{{ undercondition.id }}" class="input_chk" type="checkbox" name="路下条件" value="{{ undercondition.id }}" {% if undercondition.id in selected_underconditions %}checked{% endif %}>
+    <label class="surround_label" for="undercondition_id_{{ undercondition.id }}">{{ undercondition.路下条件 }}</label>
+    {% endfor %}</p>
+    <p>{{ form.交通量.label_tag }} {{ form.交通量 }}</p>
+    <p>{{ form.大型車混入率.label_tag }} {{ form.大型車混入率 }}</p>
+    <p>{{ form.特記事項.label_tag }} {{ form.特記事項 }}</p>
+    <p>{{ form.カテゴリー.label_tag }} {{ form.カテゴリー }}</p>
+    <p>{{ form.article.label_tag }} {{ form.article }}</p>
     <input type='submit'>修正する</button>
   </form>
 {% endblock content %}

@@ -76,9 +76,9 @@
                                                 </li>
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                                     <!-- <textarea name="notes" rows="6" placeholder="写真メモ" style="margin:0 10px;"></textarea> -->
-                                                    <textarea name="notes" rows="6" style="margin:0 10px;">
-                                                        {{ bridge.placeholder_text }}
-                                                    </textarea>
+                                                    {% spaceless %}
+                                                    <textarea name="notes" rows="6" style="margin:0 10px;">{{ bridge.data}}</textarea>
+                                                    {% endspaceless %}
                                                 </li>
                                             </ul>
                                     {% endfor %}

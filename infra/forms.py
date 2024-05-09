@@ -1,7 +1,7 @@
 import datetime
 from multiprocessing import context
 from django import forms
-from .models import CustomUser, Image, Number, Regulation, UploadedFile
+from .models import CustomUser, Image, Infra, Number, Regulation, UploadedFile
 from .models import Photo, Company
 from django.core.files.storage import default_storage
 from .models import 交通規制_CHOICES, 活荷重_CHOICES, 等級_CHOICES, 適用示方書_CHOICES, 近接方法_CHOICES, 第三者点検_CHOICES, 路下条件_CHOICES
@@ -20,14 +20,40 @@ class UserCreationForm(forms.ModelForm):
         fields = ('username', 'password', 'company')
 
 # <<各橋作成時のボタン選択肢>>
-class BridgeCreateForm(forms.Form):
-    交通規制 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=交通規制_CHOICES)
-    活荷重 = forms.ChoiceField(widget=forms.RadioSelect, choices=活荷重_CHOICES)
-    等級 = forms.ChoiceField(widget=forms.RadioSelect, choices=等級_CHOICES)
-    適用示方書 = forms.ChoiceField(widget=forms.RadioSelect, choices=適用示方書_CHOICES)
-    近接方法 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=近接方法_CHOICES)
-    第三者点検 = forms.ChoiceField(widget=forms.RadioSelect, choices=第三者点検_CHOICES)
-    路下条件 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=路下条件_CHOICES)
+class BridgeCreateForm(forms.ModelForm):
+    class Meta:
+        model = Infra
+        fields = ['交通規制', '活荷重', '等級', '適用示方書', '近接方法', '第三者点検', '路下条件'] # 他のフィールドについても必要に応じて追加してください。
+        widgets = {
+            '交通規制': forms.CheckboxSelectMultiple,
+            '活荷重': forms.RadioSelect,
+            '等級': forms.RadioSelect,
+            '適用示方書': forms.RadioSelect,
+            '近接方法': forms.CheckboxSelectMultiple,
+            '第三者点検': forms.RadioSelect,
+            '路下条件': forms.CheckboxSelectMultiple,
+        }
+        
+class BridgeUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Infra
+        fields = ['交通規制', '活荷重', '等級', '適用示方書', '近接方法', '第三者点検', '路下条件'] # 他のフィールドについても必要に応じて追加してください。
+        widgets = {
+            '交通規制': forms.CheckboxSelectMultiple,
+            '活荷重': forms.RadioSelect,
+            '等級': forms.RadioSelect,
+            '適用示方書': forms.RadioSelect,
+            '近接方法': forms.CheckboxSelectMultiple,
+            '第三者点検': forms.RadioSelect,
+            '路下条件': forms.CheckboxSelectMultiple,
+        }
+    # 交通規制 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=交通規制_CHOICES)
+    # 活荷重 = forms.ChoiceField(widget=forms.RadioSelect, choices=活荷重_CHOICES)
+    # 等級 = forms.ChoiceField(widget=forms.RadioSelect, choices=等級_CHOICES)
+    # 適用示方書 = forms.ChoiceField(widget=forms.RadioSelect, choices=適用示方書_CHOICES)
+    # 近接方法 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=近接方法_CHOICES)
+    # 第三者点検 = forms.ChoiceField(widget=forms.RadioSelect, choices=第三者点検_CHOICES)
+    # 路下条件 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=路下条件_CHOICES)
 
 # <<センサス調査>>
 class CensusForm(forms.Form):

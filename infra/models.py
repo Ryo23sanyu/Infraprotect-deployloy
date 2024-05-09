@@ -75,7 +75,7 @@ class Infra(models.Model):
   橋梁コード = models.CharField(max_length=50, blank=True)# 橋梁コード
   活荷重 = models.ManyToManyField(LoadWeight)# 活荷重
   等級 = models.ManyToManyField(LoadGrade)# 等級
-  適用示方書 = models.ManyToManyField(Thirdparty)# 適用示方書
+  適用示方書 = models.ManyToManyField(Rulebook)# 適用示方書
   上部構造形式 = models.CharField(max_length=100)# 上部構造形式
   下部構造形式 = models.CharField(max_length=100)# 下部構造形式
   基礎構造形式 = models.CharField(max_length=100)# 基礎構造形式

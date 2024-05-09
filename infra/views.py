@@ -18,7 +18,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from .forms import BridgeCreateForm, CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
 from django.views.generic.edit import FormView
 from ezdxf.entities.mtext import MText
 from PIL import Image, ImageTk
@@ -56,6 +56,7 @@ class DetailInfraView(LoginRequiredMixin, DetailView):
 class CreateInfraView(LoginRequiredMixin, CreateView):
   template_name = 'infra/infra_create.html'
   model = Infra
+  form_class = BridgeCreateForm
   fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
   success_url = reverse_lazy('detail-infra')
   # def get_success_url(self):
@@ -106,6 +107,40 @@ class UpdateInfraView(LoginRequiredMixin, UpdateView):
   success_url = reverse_lazy('detail-infra')
   def get_success_url(self):
     return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
+
+  #新規作成時、交通規制の全データをコンテキストに含める。
+  def get_context_data(self, **kwargs):
+    context = super().get_context_data(**kwargs)
+    # 編集中のインスタンスに紐づく交通規制のIDをリストとして取得
+    # コンテキストに追加
+    selected_regulations = self.object.交通規制.values_list('id', flat=True)# 選択状態を保持
+    context['selected_regulations'] = list(selected_regulations)# 選択状態を保持
+    context["regulations"] = Regulation.objects.all()
+    
+    selected_loadWeights = self.object.活荷重.values_list('id', flat=True)
+    context['selected_loadWeights'] = list(selected_loadWeights)
+    context["loadWeights"] = LoadWeight.objects.all()
+    
+    selected_loadGrades = self.object.等級.values_list('id', flat=True)
+    context['selected_loadGrades'] = list(selected_loadGrades)
+    context["loadGrades"] = LoadGrade.objects.all()
+    
+    selected_rulebooks = self.object.適用示方書.values_list('id', flat=True)
+    context['selected_rulebooks'] = list(selected_rulebooks)
+    context["rulebooks"] = Rulebook.objects.all()
+    
+    selected_approachs = self.object.近接方法.values_list('id', flat=True)
+    context['selected_approachs'] = list(selected_approachs)
+    context["approachs"] = Approach.objects.all()
+    
+    selected_thirdpartys = self.object.第三者点検.values_list('id', flat=True)
+    context['selected_thirdpartys'] = list(selected_thirdpartys)
+    context["thirdpartys"] = Thirdparty.objects.all()
+    
+    selected_underconditions = self.object.路下条件.values_list('id', flat=True)
+    context['selected_underconditions'] = list(selected_underconditions)
+    context["underconditions"] = UnderCondition.objects.all()
+    return context
   
 def infra_view(request):
   if request.method == 'POST':
@@ -252,6 +287,7 @@ def table_view(request):
                 if entity.dxf.layer != 'Defpoints':
                 # MTextのテキストを抽出する
                     text = entity.plain_text()
+                    x, y, _ = entity.dxf.insert
                     if not text.startswith("※"):
                         cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
                         # if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
@@ -264,13 +300,15 @@ def table_view(request):
                                 if entity_extension(entity, neighbor):
                                 # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
                                     related_text = neighbor.plain_text()
+                                    defx, defy, _ = neighbor.dxf.insert
                                 #extracted_text.append(neighbor_text)
                                     break # 文字列が見つかったらbreakによりforループを終了する
 
                             if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
-                                cad_data.append(related_text) # 見つかった文字列を追加する
+                                cad_data.append(related_text[:]) # cad_dataに「部材名～使用写真」までを追加
+                                cad_data.append([str(x), str(y)]) # 続いてcad_dataに「MTEXT」のX,Y座標を追加
                         #最後にまとめてcad_dataをextracted_textに追加する
-                            extracted_text.append(cad_data)
+                            extracted_text.append(cad_data[:] + [[str(defx), str(defy)]]) # extracted_textに「MTEXTとその座標」およびdefのX,Y座標を追加
                             
 # << ※特記なき損傷の抽出用 >>                            
                     else:
@@ -367,7 +405,7 @@ def table_view(request):
                 data.extend(next_data)
                 # 次の位置の要素を削除
                 extracted_text.remove(next_data)
-                
+        
 # extracted_text = [['主桁 Mg0101', '①-d', '写真番号-00', 'defpoints'], ['主桁 Mg0902', '⑦-c', '写真番号-00', 'defpoints']]
                 
         # コンマが3つ以上存在する場合、3の倍数の位置で改行を挿入    
@@ -402,8 +440,8 @@ def table_view(request):
             return processed_other_items
         
     # それ以外の要素(損傷名)を抽出
-        pattern = r'[\u2460-\u3256].*-[a-zA-Z]' # 丸数字とワイルドカードとアルファベット
-        other_items = [[item for item in sub_list if re.match(pattern, item)] for sub_list in extracted_text]
+        pattern = r'[\u2460-\u2473\u3251-\u3256].*-[a-zA-Z]' # 丸数字とワイルドカードとアルファベット
+        other_items = [[item for item in sub_list if isinstance(item, str) and re.match(pattern, item)] for sub_list in extracted_text]
         
         second = remove_symbols(other_items)
         # 丸数字を直接列挙
@@ -418,13 +456,19 @@ def table_view(request):
                 second_item = re.sub(f'([a-e])([{circle_numbers}])', r'\1,\2', second_over)
                 second_split = second_item.split(",")
                 second_items.append(second_split)
+               
+        third_items = []
+        bottom_item = []
+        for sub_list in extracted_text:
+            list_count = sum(isinstance(item, list) for item in sub_list) # リストの中にリストがいくつあるか数える
             
-    # 最後から2番目の要素を抽出（写真番号-00）
-        third_items = [sub_list[-2] for sub_list in extracted_text if len(sub_list) >= 3]
-        
-    # 最後の要素を抽出（Defpoints）
-        bottom_item = [sub_list[-1] for sub_list in extracted_text]
-        
+            if list_count == 2: # 座標が2つのとき=Defpointsが存在するとき
+                bottom_item.append(sub_list[-3]) # 最後から3番目の要素を抽出（写真番号-00）
+                third_items.append(sub_list[-4]) # 最後から4番目の要素を抽出（Defpoints）
+            else:
+                bottom_item.append("")
+                third_items.append(None)
+
         result_items = []# 配列を作成
         for item in bottom_item:# text_itemsの要素を1つずつitem変数に入れてforループする
             if ',' in item:# 要素の中にカンマが含まれている場合に実行
@@ -464,7 +508,13 @@ def table_view(request):
                 third = None
             
             # ['NON-a', '9月7日 S404', '9月7日 S537', '9月8日 S117,9月8日 S253']
-            name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
+            if len(last_item)-1 < i:
+                break
+
+            if isinstance(last_item[i], list):
+                continue
+            else:
+                name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
             # name_item に格納されるのは 'NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253'のいずれかです。リストのi番目の文字列になります。
 
             dis_items = name_item.split(',') #「9月8日 S*/*117」,「9月8日 S*/*253」
@@ -501,7 +551,66 @@ def table_view(request):
                 #picture_urlsの値は[None]とする。
 
             item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png'}
-            #items = [{'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/img/noImage.png'} for i in range(len(first_item))]    
+            
+            bridge = {
+                "first": first_item[i],
+                "second": second_items[i]
+            }
+
+            # bridge.secondを置換する辞書
+            replacement_patterns = {
+                "①腐食(小小)-b": "腐食",
+                "①腐食(小大)-c": "拡がりのある腐食",
+                "①腐食(大小)-d": "板厚減少を伴う腐食",
+                "①腐食(大大)-e": "板厚減少を伴う拡がりのある腐食",
+                "③ゆるみ・脱落-c": "ボルトのゆるみ・脱落(〇本中〇本)",
+                "③ゆるみ・脱落-e": "ボルトのゆるみ・脱落(〇本中〇本)",
+                "④破断-e": "破断",
+                "⑦剥離・鉄筋露出-c": "コンクリートの剥離",
+                "⑦剥離・鉄筋露出-d": "鉄筋露出",
+                "⑦剥離・鉄筋露出-e": "著しい鉄筋露出",
+                "⑨抜け落ち-e": "コンクリート塊の抜け落ち",
+                "⑫うき-e": "コンクリートのうき",
+                "⑮舗装の異常-c": "最大幅0.0mmのひびわれ",
+                "⑮舗装の異常-e": "最大幅0.0mmのひびわれ・舗装の土砂化",
+                "⑳漏水・滞水-e": "漏水・滞水",
+                "㉑異常な音・振動-e": "異常な音・振動",
+                "㉒異常なたわみ-e": "異常なたわみ",
+                "㉓変形・欠損-c": "変形・欠損",
+                "㉓変形・欠損-e": "著しい変形・欠損",
+                "㉔土砂詰まり-e": "土砂詰まり",
+                "㉕沈下・移動・傾斜-e": "移動量0.0mmの沈下・移動・傾斜",
+            }
+            
+                # << ①と⑤があるとき、⑤を消す >>
+            for sublist in second_items:# リスト内の要素を走査して、先頭が「①」の要素が存在するかチェックする
+                if any(item.startswith('①') for item in sublist):
+                    # 「①」で始まる要素があれば、「⑤」で始まる要素を全て削除
+                    # サブリストのコピー上でイテレーションを行いながら、元のサブリストを編集
+                    sublist[:] = [item for item in sublist if not item.startswith('⑤')]
+            # << ⑰のとき、「⑰その他(分類6:)-e」を消す >>    
+                new_sublist = []  # sublistを更新するための一時リスト
+                for item in sublist:
+                    if item.startswith('⑰'):
+                        # 正規表現を使って「:」から「)-e」までの文字列を抽出する
+                        match = re.search(r':(.*?)(?=\)-e)', item)
+                        if match:
+                            # 抽出した部分をsublistに追加
+                            new_sublist.append(match.group(1))
+                        else:
+                            new_sublist.append(item)
+                    else:
+                        new_sublist.append(item)
+                        
+                sublist[:] = new_sublist
+
+
+                    # 抽出・置換ロジックをここに実装
+            first_part_extracted = bridge["first"][:bridge["first"].find(" ")]
+            second_replaced = "、".join(replacement_patterns.get(char, char) for char in bridge["second"])
+            combined_data = first_part_extracted + "に" + second_replaced + "が見られる。"
+            
+            context = {'bridge_data': combined_data}
             
             #優先順位の指定
             order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
@@ -736,7 +845,7 @@ def opinion_view(request):
 
 # <<損傷メモ>>
 def damage_text_view(request):
-    # データベースから情報を取得。ここでは例として `DamageReport` モデルを仮定します。
+    # データベースから情報を取得
     damage_reports = DamageReport.objects.all()
 
     # 条件に応じて placeholder_text 属性を設定
@@ -780,7 +889,7 @@ def infraloadGrades_view(request):
     }
     return render(request, 'infra_create.html', context)
 
-def infrarerulebooks_view(request):
+def infrarulebooks_view(request):
     form = BridgeCreateForm()
     rulebooks = Rulebook.objects.all()
     context = {
@@ -815,3 +924,69 @@ def infraunderConditions_view(request):
         'underConditions': underConditions,
     }
     return render(request, 'infra_create.html', context)
+
+
+# infra_update用
+
+def infraregulations_view(request):
+    form = BridgeUpdateForm()
+    regulations = Regulation.objects.all()
+    context = {
+        'form': form,
+        'regulations': regulations,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infraloadWeights_view(request):
+    form = BridgeUpdateForm()
+    loadWeights = LoadWeight.objects.all()
+    context = {
+        'form': form,
+        'loadWeights': loadWeights,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infraloadGrades_view(request):
+    form = BridgeUpdateForm()
+    loadGrades = LoadGrade.objects.all()
+    context = {
+        'form': form,
+        'loadGrades': loadGrades,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infrarulebooks_view(request):
+    form = BridgeUpdateForm()
+    rulebooks = Rulebook.objects.all()
+    context = {
+        'form': form,
+        'rulebooks': rulebooks,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infraapproachs_view(request):
+    form = BridgeUpdateForm()
+    approachs = Approach.objects.all()
+    context = {
+        'form': form,
+        'approachs': approachs,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infrathirdpartys_view(request):
+    form = BridgeUpdateForm()
+    thirdpartys = Thirdparty.objects.all()
+    context = {
+        'form': form,
+        'thirdpartys': thirdpartys,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infraunderConditions_view(request):
+    form = BridgeUpdateForm()
+    underConditions = UnderCondition.objects.all()
+    context = {
+        'form': form,
+        'underConditions': underConditions,
+    }
+    return render(request, 'infra_update.html', context)
