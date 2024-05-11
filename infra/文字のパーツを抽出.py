@@ -10,7 +10,7 @@ print(picture_name.find("　"))
 print(len(picture_name))
 # 文字数
 
-print(picture_name[0:picture_name.find("　")])
+print(picture_name[:picture_name.find("　")])
 # 最初のスペース位置まで抽出
 
 print(picture_name.find("　", picture_name.find("　") + 1))

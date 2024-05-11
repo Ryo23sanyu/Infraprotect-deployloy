@@ -1,4 +1,5 @@
 import glob
+import pprint
 import re
 import pandas as pd
 import os
@@ -447,6 +448,7 @@ def table_view(request):
         # 丸数字を直接列挙
         circle_numbers = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖'
         second_items = []
+
         # リスト内の各文字列に対して処理を行う
         for second_over in second:
             # アルファベット(aからe)と直後に続く特定の丸数字の間にコンマを挿入
@@ -456,7 +458,7 @@ def table_view(request):
                 second_item = re.sub(f'([a-e])([{circle_numbers}])', r'\1,\2', second_over)
                 second_split = second_item.split(",")
                 second_items.append(second_split)
-               
+
         third_items = []
         bottom_item = []
         for sub_list in extracted_text:
@@ -550,117 +552,166 @@ def table_view(request):
                 picture_urls = None
                 #picture_urlsの値は[None]とする。
 
-            item = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png'}
-            
-            bridge = {
-                "first": first_item[i],
-                "second": second_items[i]
-            }
+            bridge_damage = [] # すべての"bridge"辞書を格納するリスト
 
-            # bridge.secondを置換する辞書
+            for i in range(len(first_item)):
+                bridge = {
+                    "first": first_item[i],
+                    "second": second_items[i] if i < len(second_items) else None  # second_itemsが足りない場合にNoneを使用
+                }
+                bridge_damage.append(bridge)
+
             replacement_patterns = {
                 "①腐食(小小)-b": "腐食",
                 "①腐食(小大)-c": "拡がりのある腐食",
                 "①腐食(大小)-d": "板厚減少を伴う腐食",
                 "①腐食(大大)-e": "板厚減少を伴う拡がりのある腐食",
-                "③ゆるみ・脱落-c": "ボルトのゆるみ・脱落(〇本中〇本)",
-                "③ゆるみ・脱落-e": "ボルトのゆるみ・脱落(〇本中〇本)",
-                "④破断-e": "破断",
                 "⑦剥離・鉄筋露出-c": "コンクリートの剥離",
                 "⑦剥離・鉄筋露出-d": "鉄筋露出",
-                "⑦剥離・鉄筋露出-e": "著しい鉄筋露出",
-                "⑨抜け落ち-e": "コンクリート塊の抜け落ち",
-                "⑫うき-e": "コンクリートのうき",
+                "⑦剥離・鉄筋露出-e": "断面減少のある鉄筋露出",
                 "⑮舗装の異常-c": "最大幅0.0mmのひびわれ",
                 "⑮舗装の異常-e": "最大幅0.0mmのひびわれ・舗装の土砂化",
                 "⑳漏水・滞水-e": "漏水・滞水",
-                "㉑異常な音・振動-e": "異常な音・振動",
-                "㉒異常なたわみ-e": "異常なたわみ",
-                "㉓変形・欠損-c": "変形・欠損",
-                "㉓変形・欠損-e": "著しい変形・欠損",
                 "㉔土砂詰まり-e": "土砂詰まり",
-                "㉕沈下・移動・傾斜-e": "移動量0.0mmの沈下・移動・傾斜",
             }
-            
-                # << ①と⑤があるとき、⑤を消す >>
-            for sublist in second_items:# リスト内の要素を走査して、先頭が「①」の要素が存在するかチェックする
-                if any(item.startswith('①') for item in sublist):
-                    # 「①」で始まる要素があれば、「⑤」で始まる要素を全て削除
-                    # サブリストのコピー上でイテレーションを行いながら、元のサブリストを編集
-                    sublist[:] = [item for item in sublist if not item.startswith('⑤')]
-            # << ⑰のとき、「⑰その他(分類6:)-e」を消す >>    
-                new_sublist = []  # sublistを更新するための一時リスト
-                for item in sublist:
-                    if item.startswith('⑰'):
-                        # 正規表現を使って「:」から「)-e」までの文字列を抽出する
-                        match = re.search(r':(.*?)(?=\)-e)', item)
-                        if match:
-                            # 抽出した部分をsublistに追加
-                            new_sublist.append(match.group(1))
-                        else:
-                            new_sublist.append(item)
+
+            pavement_items = []
+            for bridge in bridge_damage:
+                for name_text in first_item:
+                    pavement_items.append(str(name_text))
+
+                updated_second_items = []  # 更新されたsecond_itemsを格納するための新しいリスト
+
+                for items in second_items:
+                    if items is None:
+                        updated_second_items.append(items)
+                        continue
+
+                    # '①'で始まる要素があるか確認
+                    has_item_starting_with_1 = any(item.startswith('①') for item in items)
+
+                    # '①'で始まる要素がある場合、'⑤'で始まる要素を削除
+                    if has_item_starting_with_1:
+                        updated_items = [item for item in items if not item.startswith('⑤')]
                     else:
-                        new_sublist.append(item)
+                        updated_items = items.copy()  # items自体を直接変更しないためのコピー
+
+                    # '⑰'で始まる要素があるか確認
+                    if any(item.startswith('⑰') for item in updated_items):
+                        new_sublist = []
+                        # '⑰'で始まる要素がある場合、'⑰'のカッコ内の値のみ抽出
+                        for item in updated_items:
+                            if item.startswith('⑰'):
+                                match = re.search(r'(?<=:)(.*?)(?=\)-e)', item)
+                                if match:
+                                    new_sublist.append(match.group(1))
+                                else:
+                                    new_sublist.append(item)  # マッチしなかった場合は元のアイテムを保持
+                            else:
+                                new_sublist.append(item)  # '⑰'で始まらないアイテムはそのまま追加
+                        updated_items = new_sublist  # 更新されたサブリストを反映
+
+                    updated_second_items.append(updated_items)
                         
-                sublist[:] = new_sublist
 
+            # 処理結果を確認
+            # first_itemとsecond_itemsを組み合わせて結果を表示する
+            combined_list = []
+            for i in range(len(first_item)):
+                # second_itemsのリストが存在するか、またはNoneであるかをチェック
+                second = updated_second_items[i] if i < len(updated_second_items) else None
+                
+                # 組み合わせをリストに追加
+                combined = {"first": first_item[i], "second": second}
+                combined_list.append(combined)
 
-                    # 抽出・置換ロジックをここに実装
-            first_part_extracted = bridge["first"][:bridge["first"].find(" ")]
-            second_replaced = "、".join(replacement_patterns.get(char, char) for char in bridge["second"])
-            combined_data = first_part_extracted + "に" + second_replaced + "が見られる。"
-            
-            context = {'bridge_data': combined_data}
-            
-            #優先順位の指定
-            order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
-            order_number = {"None": 0, "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10, "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15, "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20, "㉑": 21, "㉒": 22, "㉓": 23, "㉔": 24, "㉕": 25, "㉖": 26}
-            order_lank = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}
-                       
-            def sort_category(text): # sort_category関数を定義
-                # ',' でテキストを分割し、最初の部分のみを考慮する
-                first_part = text.split(',')[0]
-                for key, val in order_dict.items(): # keyがキー(主桁～防護柵)、valが値(1～6)
-                    if first_part.startswith(key): # textの1文字目がキー(主桁～防護柵)の場合
-                        return val # 値(1～6)を返す
-                return max(order_dict.values()) + 1
-            
-            def extract_numbers(s):
-                # 文字列から数値部分だけを抽出してリストに格納する
-                return [int(''.join(filter(str.isdigit, part))) for part in s.split(',') if ''.join(filter(str.isdigit, part))]
-
-            def get_first_key(first):
-                num_parts = extract_numbers(first)
-                # 数値が含まれていない場合は、ソートで最後になるような大きな値を返す
-                return min(num_parts) if num_parts else float('inf')
-
-            def sort_number(second_list):
-                # リストが空の場合の処理
-                if not second_list or len(second_list) == 0:  # 条件式の調整
-                    return max(order_number.values()) + 1
+            # 結果の印刷
+            for item in combined_list:
+                # item['first']のスペースまでの文字を抽出
+                first_part = ""
+                clean_text = str(item['first']).replace("</br>", "")
+                if "," in clean_text:
+                    pattern = ',(\d|,)*(?=\s|$)' # 「,」の後に(「数字」か「,」)の場合
+                    # 条件に一致するかチェック
+                    if re.search(pattern, clean_text):
+                        first_part = clean_text.split(" ")[0]
+                    else:
+                        sub_pattern = r'[A-Za-z0-9/ /]'
+                        # 置換処理を行い、日本語のみ抽出
+                        result = re.sub(sub_pattern, '', clean_text)
+                        first_part = result  # 数字、アルファベット、コンマを削除
                 else:
-                    second_text = second_list[0]
-                    if "-" in second_text: #second_textの文字の中に-があるとき
-                        num_text = second_text[0] #num_textにsecond_textの1文字目を入れる
-                        for key, val in order_number.items():
-                            if num_text.startswith(key):
-                                return val #数字を返す
-                return max(order_number.values()) + 1 #リストの最大数+1の数字を返す
-
-            def sort_lank(second_list):
-                if not second_list or len(second_list) == 0:  # 条件式の調整
-                    return max(order_number.values()) + 1
+                    first_part = clean_text.split(" ")[0]
+                
+                # item['second']を置換
+                second_parts = []
+                if item['second'] is not None:
+                    for element in item['second']:
+                        if element in replacement_patterns:
+                            second_parts.append(replacement_patterns[element])
+                        else:
+                            second_parts.append(element)
+                
+                # second_partsが複数要素を持つ可能性も考えられるので、','.join()で文字列に変換
+                second_part_joined = ', '.join(second_parts)
+                
+                # 結果の表示
+                if item['second'] == None:
+                    combined_data = None
                 else:
-                    second_text = second_list[0]
-                    if '-' in second_text:
-                        lank_text = second_text.split("-")[1]
-                        for key, val in order_lank.items():
-                            if lank_text.startswith(key):
-                                return val
-                    return max(order_lank.values()) + 1
+                    combined_data = f"{first_part}に{second_part_joined}が見られる。"
 
-            damage_table.append(item)
-    sorted_text_list = sorted(damage_table, key=lambda text: (sort_category(text['first']), get_first_key(text['first']), sort_number(text['second']), sort_lank(text['second'])))
+                items = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data}
+
+                #優先順位の指定
+                order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
+                order_number = {"None": 0, "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10, "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15, "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20, "㉑": 21, "㉒": 22, "㉓": 23, "㉔": 24, "㉕": 25, "㉖": 26}
+                order_lank = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}
+                        
+                def sort_category(text): # sort_category関数を定義
+                    # ',' でテキストを分割し、最初の部分のみを考慮する
+                    first_part = text.split(',')[0]
+                    for key, val in order_dict.items(): # keyがキー(主桁～防護柵)、valが値(1～6)
+                        if first_part.startswith(key): # textの1文字目がキー(主桁～防護柵)の場合
+                            return val # 値(1～6)を返す
+                    return max(order_dict.values()) + 1
+                
+                def extract_numbers(s):
+                    # 文字列から数値部分だけを抽出してリストに格納する
+                    return [int(''.join(filter(str.isdigit, part))) for part in s.split(',') if ''.join(filter(str.isdigit, part))]
+
+                def get_first_key(first):
+                    num_parts = extract_numbers(first)
+                    # 数値が含まれていない場合は、ソートで最後になるような大きな値を返す
+                    return min(num_parts) if num_parts else float('inf')
+
+                def sort_number(second_list):
+                    # リストが空の場合の処理
+                    if not second_list or len(second_list) == 0:  # 条件式の調整
+                        return max(order_number.values()) + 1
+                    else:
+                        second_text = second_list[0]
+                        if "-" in second_text: #second_textの文字の中に-があるとき
+                            num_text = second_text[0] #num_textにsecond_textの1文字目を入れる
+                            for key, val in order_number.items():
+                                if num_text.startswith(key):
+                                    return val #数字を返す
+                    return max(order_number.values()) + 1 #リストの最大数+1の数字を返す
+
+                def sort_lank(second_list):
+                    if not second_list or len(second_list) == 0:  # 条件式の調整
+                        return max(order_number.values()) + 1
+                    else:
+                        second_text = second_list[0]
+                        if '-' in second_text:
+                            lank_text = second_text.split("-")[1]
+                            for key, val in order_lank.items():
+                                if lank_text.startswith(key):
+                                    return val
+                        return max(order_lank.values()) + 1
+
+                damage_table.append(items)
+        sorted_text_list = sorted(damage_table, key=lambda text: (sort_category(text['first']), get_first_key(text['first']), sort_number(text['second']), sort_lank(text['second'])))
     # sorted(並び替えるオブジェクト, lamda式(無名関数)で並び替え 各要素: (text[0]で始まる要素を並び替え、その中でtext[0]の並び替え))
 
     context = {'damage_table': sorted_text_list}  # テンプレートに渡すデータ
