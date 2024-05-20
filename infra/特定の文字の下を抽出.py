@@ -70,17 +70,17 @@ def extract_entities_below(entities, target_text):# 文字の座標を取得す�
                         below_entities.append(below_entity)
     return below_entities
 
-doc = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf')
+doc = ezdxf.readfile(R'C:\work\django\myproject\program\Infraproject\uploads\2径間.dxf')
 msp = doc.modelspace()
 entities = list(msp)
 
 # AutoCADファイル名を指定してテキストを抽出する
-filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
+filename = R'C:\work\django\myproject\program\Infraproject\uploads\2径間.dxf'
 extracted_text = extract_text(filename)
 doc = ezdxf.readfile(filename)
 msp = doc.modelspace()
     
-target_text = "損傷図"
+target_text = "1径間"
 
 # 特定の文字の位置の下にあるエンティティを抽出
 below_entities = extract_entities_below(entities, target_text)

@@ -14,7 +14,7 @@ def extract_text(filename):# 旗揚げ(MText)と写真番号(Def)を抽出する
                 text = entity.plain_text()
                 x, y, _ = entity.dxf.insert
                 cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
-                if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
+                if len(cad_data) > 0 and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
             # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
                     related_text = "" # 見つけたMTextと関連するDefpointsレイヤの文字列を代入する変数
             # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す

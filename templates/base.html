@@ -154,14 +154,14 @@
                 // fileInputセレクタで選択された要素の、filesプロパティから最初のファイルを取得
               if (!file) return;
                 // ファイルが選択されていなければ終了(return)
-      
+
               if (confirm('写真を変更しますか？')) {
                 // ダイアログを表示
                   var fd = new FormData();
                     // FormDataオブジェクトを変数fdで作成
                   fd.append('upload-file', file);
                     // 選択されたファイルを変数fdに追加
-      
+
                   // ファイルをサーバに送信
                   $.ajax({
                       url: '{% url "ajax_file_send" %}', // 送信先のURL (DjangoのURL設定に依存します)

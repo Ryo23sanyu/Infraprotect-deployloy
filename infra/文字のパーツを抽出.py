@@ -39,3 +39,6 @@ a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 print(s[5]) # F
 print(s[:-1]) # ABCDEFGHIJKLMNOPQRSTUVWXY
 
+commma = "①腐食-b,⑤防食機能の劣化-e,㉓変形・欠損-c"
+start_special_text = commma.find(",")+1
+print(commma[start_special_text:])

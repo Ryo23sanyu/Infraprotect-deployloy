@@ -14,6 +14,8 @@
                 <th>損傷写真</th>
             </tr>
         </thead>
+        {# ここで動的にボタンを生成 #}
+        {% for i in keikan_range %}<button class="keikan-button-style">径間</button>{% endfor %}
         <tbody id="sortable">
             {% for bridge in damage_table %}
             <form id="ajax-file-send" action="#" method="post" enctype="multipart/form-data">
@@ -75,13 +77,16 @@
                                                     </div>
                                                 </li>
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                                    <!-- <textarea name="notes" rows="6" placeholder="写真メモ" style="margin:0 10px;"></textarea> -->
                                                     {% spaceless %}
-                                                    <textarea name="notes" rows="6" style="margin:0 10px;">{{ textarea_content }}</textarea>
+                                                        {% if bridge.textarea_content %} <!-- damage_tableのforループ(bridge)とviews.pyのtextarea_content-->
+                                                            <textarea name="notes" rows="6" style="margin:0 10px;">{{ bridge.textarea_content|safe }}</textarea>
+                                                        {% else %}
+                                                            <textarea name="notes" rows="6" style="margin:0 10px;" placeholder="写真メモを入力してください。"></textarea>
+                                                        {% endif %}
                                                     {% endspaceless %}
                                                 </li>
                                             </ul>
-                                    {% endfor %}
+                                    {% endfor %}                                    
                             {% endif %}
                         </ul>
                     </td>

@@ -12,8 +12,6 @@ class Article(models.Model):
   
   def __str__(self):
     return self.案件名
-
-
     
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 # LOADGRADE = (('one', '一等橋'),('two', '二等橋'),('three', '三等橋'),('unknown', '不明'))
@@ -25,13 +23,13 @@ class Regulation(models.Model):
     def __str__(self):
         return self.交通規制
     # returnで戻すため、class内の定義に合わせる
-    
+
 活荷重_CHOICES = (('不明', '不明'),('A活荷重', 'A活荷重'),('B活荷重', 'B活荷重'),('TL-20', 'TL-20'),('TL-14', 'TL-14'),('TL-6', 'TL-6'))
 class LoadWeight(models.Model):
     活荷重 = models.CharField(max_length=50, choices=活荷重_CHOICES)
     def __str__(self):
         return self.活荷重
-    
+
 等級_CHOICES = (('不明', '不明'),('一等橋', '一等橋'),('二等橋', '二等橋'),('三等橋', '三等橋'),('その他', 'その他'))
 class LoadGrade(models.Model):
     等級 = models.CharField(max_length=50, choices=等級_CHOICES)
@@ -95,7 +93,13 @@ class Infra(models.Model):
 
 class UploadedFile(models.Model):
     file = models.FileField(upload_to='uploads/')
-    
+
+class TableView(models.Model):
+    # ForeignKeyフィールドによってInfraとのリレーションシップを定義
+    infra = models.ForeignKey(Infra, on_delete=models.CASCADE)
+    damage_location = models.CharField(max_length=100) # 損傷箇所
+    damage_type = models.CharField(max_length=100) # 損傷種類
+
 # 会社別に表示
 
 class CustomUser(AbstractUser):
