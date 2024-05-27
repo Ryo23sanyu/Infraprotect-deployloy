@@ -1,4 +1,7 @@
-text_items = ['NON-a', '主桁 Mg0101', '舗装 Pm0101,0201']
+from markupsafe import Markup
+
+
+text_items = [Markup('床版 Ds0201,0203')]
 
 # 一つずつループで処理
 result_items = [] # 結果配列を作成

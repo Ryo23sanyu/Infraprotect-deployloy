@@ -1,7 +1,4 @@
-parts = ['主桁 Mg0110', '床版 Ds0101']
-first_part = ['主桁', '床版']
-join_damagename_result = ['⑧漏水・遊離石灰-e', '⑦剥離・鉄筋露出-d,⑪床版ひびわれ-d']
-changed_damage_name = []
+import re
 
 replacement_patterns = {
     "①腐食(小小)-b": "腐食", # 1
@@ -39,43 +36,46 @@ replacement_patterns = {
     "㉔土砂詰まり-e": "土砂詰まり", # 24
 }
 
-# 置換パターンに基づいて置換する関数を定義
+bridge_damage = [{'first': [['排水ます Dr0101']], 'second': [['⑰その他(分類6:埋没)-e']]}]
+first_item = [[['排水ます Dr0102', '排水ます Dr0201', '排水ます Dr0202']]]
+
 def replace_patterns(text, patterns):
-    for old, new in patterns.items():
-        text = text.replace(old, new)
+    for key, value in patterns.items():
+        text = re.sub(key, value, text)
     return text
 
-# 損傷文字を置換
-for damage in join_damagename_result:
-    changed_damage_name.append(replace_patterns(damage, replacement_patterns))
+pavement_items = []
 
-# 1つ目の要素の損傷メモ
-combined_result = f"{first_part[0]}に{changed_damage_name[0]}が見られる。"
-# 2つ目の要素の損傷メモ
-combined_result += f"また、{first_part[1]}に{changed_damage_name[1]}"
-# 2つ目以降の要素を結合
-if len(first_part) >= 3:
-    for i in range(2, len(first_part)):
-        combined_result += f"、{first_part[i]}に{changed_damage_name[i]}"
-else:
-    None
-if len(first_part) >= 2:
-    combined_result += "が見られる。"
-
-# 関連損傷をつけるコード
-# 1つ目の要素にカンマがあるかどうかをチェック
-if "," in join_damagename_result[0]:
-    # カンマがある場合、1つ目のpartsと1つ目のjoin_damagename_resultを結合し、残りはそのまま結合
-    tokki_1 = f"\n【関連損傷】\n{parts[0]}:{join_damagename_result[0]}"
-    for i in range(1, len(parts)):
-        tokki_1 += f"、{parts[i]}:{join_damagename_result[i]}"
-else:
-    # カンマがない場合、2つ目以降のpartsとjoin_damagename_resultを結合
-    tokki_1 = "\n【関連損傷】\n"
-    for i in range(len(parts)):
-        if i > 0:
-            if tokki_1:
-                tokki_1 += ""
-            tokki_1 += f"{parts[i]}:{join_damagename_result[i]}、"
-combined_result += tokki_1
-print(combined_result[:-1])
+for damage_parts in bridge_damage:
+    # print(damage_parts)
+    if isinstance(damage_parts["second"], list):  # "second"がリストの場合
+        filtered_second_items = []
+        for sublist in damage_parts["second"]:
+            if isinstance(sublist, list):  # サブリストがリストである場合
+                if any(item.startswith('①') for item in sublist) and any(item.startswith('⑤') for item in sublist):
+                    # ⑤で始まる要素を取り除く
+                    filtered_sublist = [item for item in sublist if not item.startswith('⑤')]
+                    filtered_second_items.append(filtered_sublist)
+                elif any(item.startswith('⑰') for item in sublist):
+                            # サブリスト内の全アイテムを再度チェック
+                            seventn = []
+                            for item in sublist:
+                                if item.startswith('⑰'):
+                                    match = re.search(r"⑰.*?\(.*?:(.*?)\)-e", item)
+                                    if match:
+                                        extracted_text = match.group(1)
+                                        seventn.append(extracted_text)
+                            filtered_second_items.append(seventn)
+                else:
+                    filtered_second_items.append(sublist)
+            else:
+                filtered_second_items.append([sublist])
+        
+        # フィルタリング後のsecond_itemsに対して置換を行う
+        replaced_items = []
+        for sublist in filtered_second_items:
+            replaced_sublist = [replace_patterns(item, replacement_patterns) for item in sublist]
+            replaced_items.append(replaced_sublist)
+        
+        combined = {"first": first_item, "second": replaced_items}
+        print(combined)

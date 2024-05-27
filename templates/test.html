@@ -1,0 +1,18 @@
+{% for item in bridge.second %}
+    {{ item }}</br>
+        {% if itme is not "NON-a" %}
+            <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)" style="width: 100px;">
+                </br><option value=""></option>
+                <option value="width">幅</option>
+                <option value="area">面積</option>
+                <option value="bolt">本数</option>
+                <option value="level">段差量</option>
+                <!-- 必要に応じて他のオプションを追加 -->
+            </select>
+            <input type="text" name="input3_{{ forloop.counter }}" placeholder="数量" style="width: 100px;" /> <!-- 数量 -->
+            <input type="text" name="input2_{{ forloop.counter }}" placeholder="単位" style="width: 50px;" id="input_{{ forloop.counter }}" /> <!-- 単位 -->                               
+            <input type="text" name="input4_{{ forloop.counter }}" placeholder="分類" style="width: 75px;" /> <!-- 分類 -->
+            <input type="text" name="input5_{{ forloop.counter }}" placeholder="パターン" style="width: 75px;" /> <!-- パターン -->
+            </br></br>
+        {% endif %}
+{% endfor %}

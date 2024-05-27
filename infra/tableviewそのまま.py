@@ -1,293 +1,6 @@
-import glob
-import pprint
-import re
-from django.views import View
-import pandas as pd
-import os
-import ezdxf
-import tkinter
-import tkinter.filedialog
-from django import forms
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
-from markupsafe import Markup
-from requests import Response
-from .models import Approach, Article, DamageReport, Infra, LoadGrade, LoadWeight, Photo, Panorama, Number, Regulation, Rulebook, Thirdparty, UnderCondition
-from django.db import models
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.conf import settings
-from django.core.files.storage import FileSystemStorage
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
-from django.views.generic.edit import FormView
-from ezdxf.entities.mtext import MText
-from PIL import Image, ImageTk
-
-class ListInfraView(LoginRequiredMixin, ListView):
-    template_name = 'infra/infra_list.html'
-    model = Infra # 使用するモデル「infra」
-    def get_queryset(self, **kwargs):
-        # モデル検索のクエリー。Infra.objects.all() と同じ結果で全ての Infra
-        queryset = super().get_queryset(**kwargs)
-        # パスパラメータpkによりarticleを求める
-        article = Article.objects.get(id = self.kwargs["pk"])
-        # 求めたarticleを元にモデル検索のクエリーを絞り込む
-        queryset = queryset.filter(article=article)
-        # 絞り込んだクエリーをDjangoに返却し表示データとしてもらう
-        return queryset
-
-    def get_context_data(self, **kwargs):
-        # HTMLテンプレートでの表示変数として「article_id」を追加。
-        # 値はパスパラメータpkの値→取り扱うarticle.idとなる
-        kwargs["article_id"] = self.kwargs["pk"]
-        return super().get_context_data(**kwargs)
-
-
-class DetailInfraView(LoginRequiredMixin, DetailView):
-    template_name = 'infra/infra_detail.html'
-    model = Infra
-    # fields = ('交通量', '大型車混入率')
-    def get_context_data(self, **kwargs):
-        # HTMLテンプレートでの表示変数として「article_id」を追加。
-        # 値はパスパラメータpkの値→取り扱うarticle.idとなる
-        kwargs["article_id"] = self.kwargs["pk"]
-        return super().get_context_data(**kwargs)
-  
-class CreateInfraView(LoginRequiredMixin, CreateView):
-  template_name = 'infra/infra_create.html' # 対応するhtmlの名前
-  model = Infra # models.pyのどのモデルと紐付くか
-  # form_class = BridgeCreateForm # forms.pyのどのクラスと紐付くか
-  fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
-  success_url = reverse_lazy('detail-infra')
-
-  def form_valid(self, form):
-    #ここのobjectはデータベースに登録を行うmodelつまりInfraの１レコードです。
-    #formはModelFormと呼ばれるフォームの仕組みで、saveを実行すると関連付いているモデルとして登録を行う動きをします。
-    object = form.save(commit=False)
-    #ここでのobjectは登録対象のInfraモデル１件です。登録処理を行いPKが払い出された情報がobjectです
-    #今回はarticle_id、つまりarticleオブジェクトが無いのでこれをobjectに設定します。
-    #articleオブジェクトを検索しobjectに代入する事で登録できます。
-    article = Article.objects.get( id = self.kwargs["pk"] )
-    # id = 1 のarticleを検索
-        # article = Article.objects.get(id = 1 )
-    object.案件名 = article
-    # titleの項目に「A」を設定
-        # article.title = "A"
-    #設定したのちsaveを実行し更新します。
-    object.save()
-    return super().form_valid(form)
-
-  def get_success_url(self):
-    return reverse_lazy('list-infra', kwargs={'pk': self.kwargs["pk"]})
-
-  #新規作成時、交通規制の全データをコンテキストに含める。
-  def get_context_data(self, **kwargs):
-    context = super().get_context_data(**kwargs)
-    context["loadWeights"] = LoadWeight.objects.all()
-    context["loadGrades"] = LoadGrade.objects.all()
-    context["rulebooks"] = Rulebook.objects.all()
-    context["approachs"] = Approach.objects.all()
-    context["regulations"] = Regulation.objects.all()
-    context["thirdpartys"] = Thirdparty.objects.all()
-    context["underconditions"] = UnderCondition.objects.all()
-    return context
-    
-  def keikan_create_view(request): # keikan_create_view関数を定義
-    if request.method == "POST": # リクエストメソッドがpostの場合
-        form = BridgeCreateForm(request.POST) # BridgeCreateFormというフォームクラスのインスタンスを生成
-        if form.is_valid(): # formが正常の場合
-            keikan_number = form.cleaned_data['径間数'] # form.cleaned_dataから'径間数'キーに対応するデータを取得
-            request.session['keikan_number'] = keikan_number # 取得した"径間数"を現在のユーザーセッションに保存
-            return redirect('table') # 「table」という名前のURLにリダイレクト
-        else:
-            form = BridgeCreateForm() # 新しい空のフォームインスタンスを生成
-    return render(request, 'infra/infra_create.html', {'form': form}) # 'infra_create.html'テンプレートをレンダリング
-  def damage_view(request): # damage_view関数を定義
-    keikan_number = request.session.get('keikan_number', 1) # request.session.getメソッドを使い、セッションから"径間数"を取得、デフォルト値は1
-    keikan_range = list(range(keikan_number)) # 1からkeikan_number（"径間数"）までの連続する整数列を生成
-    return render(request, 'table.html', {'keikan_range': keikan_range}) # 'table.html'テンプレートをレンダリング
-
-class DeleteInfraView(LoginRequiredMixin, DeleteView):
-  template_name = 'infra/infra_delete.html'
-  model = Infra
-  success_url = reverse_lazy('list-infra')
-  
-class UpdateInfraView(LoginRequiredMixin, UpdateView):
-  template_name = 'infra/infra_update.html'
-  model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
-  success_url = reverse_lazy('detail-infra')
-  def get_success_url(self):
-    return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
-
-  #新規作成時、交通規制の全データをコンテキストに含める。
-  def get_context_data(self, **kwargs):
-    context = super().get_context_data(**kwargs)
-    # 編集中のインスタンスに紐づく交通規制のIDをリストとして取得
-    # コンテキストに追加
-    selected_regulations = self.object.交通規制.values_list('id', flat=True)# 選択状態を保持
-    context['selected_regulations'] = list(selected_regulations)# 選択状態を保持
-    context["regulations"] = Regulation.objects.all()
-    
-    selected_loadWeights = self.object.活荷重.values_list('id', flat=True)
-    context['selected_loadWeights'] = list(selected_loadWeights)
-    context["loadWeights"] = LoadWeight.objects.all()
-    
-    selected_loadGrades = self.object.等級.values_list('id', flat=True)
-    context['selected_loadGrades'] = list(selected_loadGrades)
-    context["loadGrades"] = LoadGrade.objects.all()
-    
-    selected_rulebooks = self.object.適用示方書.values_list('id', flat=True)
-    context['selected_rulebooks'] = list(selected_rulebooks)
-    context["rulebooks"] = Rulebook.objects.all()
-    
-    selected_approachs = self.object.近接方法.values_list('id', flat=True)
-    context['selected_approachs'] = list(selected_approachs)
-    context["approachs"] = Approach.objects.all()
-    
-    selected_thirdpartys = self.object.第三者点検.values_list('id', flat=True)
-    context['selected_thirdpartys'] = list(selected_thirdpartys)
-    context["thirdpartys"] = Thirdparty.objects.all()
-    
-    selected_underconditions = self.object.路下条件.values_list('id', flat=True)
-    context['selected_underconditions'] = list(selected_underconditions)
-    context["underconditions"] = UnderCondition.objects.all()
-    return context
-
-def infra_view(request):
-  if request.method == 'POST':
-    等級 = request.POST.get('等級', None)
-    # load_gradeを使って必要な処理を行う
-    # 例えば、選択されたload_gradeに基づいてデータをフィルタリングして表示するなど
-
-  # 通常のビューロジック
-  return render(request, 'infra/infra_detail.html')
-
-def index_view(request):
-  order_by = request.GET.get('order_by', '案件名')
-  object_list = Article.objects.order_by(order_by)
-  return render(request, 'infra/index.html', {'object_list': object_list})
-
-# def index_view(request):
-  # order_by = request.GET.get('order_by', 'span_number')
-  # object_list = Infra.objects.order_by(order_by)
-  # return render(request, 'infra/index.html', {'object_list': object_list})
-
-class ListArticleView(LoginRequiredMixin, ListView):
-  template_name = 'infra/article_list.html'
-  model = Article
-  
-class DetailArticleView(LoginRequiredMixin, DetailView):
-  template_name = 'infra/article_detail.html'
-  model = Article
-  
-class CreateArticleView(LoginRequiredMixin, CreateView):
-  template_name = 'infra/article_create.html'
-  model = Article
-  fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
-  success_url = reverse_lazy('list-article')
-  
-class DeleteArticleView(LoginRequiredMixin, DeleteView):
-  template_name = 'infra/article_delete.html'
-  model = Article
-  success_url = reverse_lazy('list-article')
-  
-class UpdateArticleView(LoginRequiredMixin, UpdateView):
-  template_name = 'infra/article_update.html'
-  model = Article
-  fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
-  success_url = reverse_lazy('list-article')
-  
-# class ArticleInfraView(LoginRequiredMixin, DetailView):
- # template_name = 'infra/infra_article.html'
- #  model = Article
- 
-def file_upload(request):
-    if request.method == 'POST':
-        form = FileUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('file_upload_success')
-    else:
-        form = FileUploadForm()
-    return render(request, 'infra/file_upload.html', {'form': form})
-
-def file_upload_success(request):
-    return render(request, 'infra/file_upload_success.html')
-  
-def photo_list(request):
-    photos = Photo.objects.all()
-    return render(request, 'infra/photo_list.html', {'photos': photos})
-
-def selected_photos(request):
-    selected_photo_ids = request.POST.getlist('selected_photos')
-    selected_photos = Photo.objects.filter(id__in=selected_photo_ids)
-    return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
-
-# 会社別に表示
-
-#@login_required
-#def my_view(request):
-    #user = request.user
-    # 会社情報を使ってコンテンツをフィルタリングする処理
-    #filtered_data = Data.objects.filter(company=user.company)
-    #return render(request, 'template.html', {'filtered_data': filtered_data})
-  
-# 全景写真
-
-# def panorama_list(request):
-#     panorama = Panorama.objects.all()
-#     return render(request, 'panorama_list.html', {'panorama': panorama})
-
-def panorama_list(request):
-    panoramas = Panorama.objects.all()
-    if request.method == 'POST':
-        selected_ids = request.POST.getlist('image_list')
-        for panorama in panoramas:
-            if str(panorama.id) in selected_ids:
-                panorama.checked = True
-            else:
-                panorama.checked = False
-            panorama.save()
-        return redirect('image_list')  # 再描画のためにリダイレクト
-    
-    return redirect('image_list')
-    #return render(request, 'image_list.html', {'panoramas': panoramas})
-
-
-def panorama_upload(request):
-    if request.method == 'POST':
-        image = request.FILES['image']
-        checked = request.POST.get('checked', False)
-        panorama = Panorama.objects.create(image=image, checked=checked)
-        return redirect('photo')
-    return render(request, 'panorama_upload.html')
-   
-# 番号表示  
-
-def number_view(request):
-    start = "0101"
-    end = "0206"
-
-    # 最初の2桁と最後の2桁を取得
-    start_prefix = start[:2]
-    start_suffix = start[2:]
-    end_prefix = end[:2]
-    end_suffix = end[2:]
-
-    # 抽出した数字を文字列として結合
-    result = ""
-    for prefix in range(int(start_prefix), int(end_prefix)+1):
-        for suffix in range(int(start_suffix), int(end_suffix)+1):
-            result += "{:02d}{:02d}\n".format(prefix, suffix)
-
-    return HttpResponse(result)
-
 # <<テーブルの作成>>
 def table_view(request):
-    dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_損傷橋.dxf'
+    dxf_filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
     search_title_text = "1径間" # 複数径間の場合は"1径間"
     second_search_title_text = "損傷図"
 
@@ -524,8 +237,24 @@ def table_view(request):
         
         #print(first_item)
         extracted_text = first_item
+
+        #<< テスト >>
+        # コンマが3つ以上存在する場合、3の倍数の位置で改行を挿入する関数
+        def insert_line_breaks_on_commas(text):
+            # コンマのカウントと改行の挿入を行う
+            count = 0
+            new_text = ''
+            for char in text:
+                if char == ',':
+                    count += 1
+                    if count % 3 == 0:
+                        # 3, 6, 9番目のコンマの後に改行タグを挿入
+                        new_text += ',</br>'
+                        continue
+                new_text += char
+            return new_text
             
-        sub_first_item = [] 
+        first_item = [] 
         for check_sub_list in extracted_text:
             first_sub_item = []
             for first_sub_list in check_sub_list:
@@ -541,50 +270,18 @@ def table_view(request):
                     # sub_list自体を文字列に変換するのではなく、detailフィールドのみを操作する
                     detail_str = first_sub_list['detail']
                     # detail_strのカンマの直後に`</br>`タグを挿入
-                    processed_str = pattern.sub(",", detail_str)
+                    modified_str = pattern.sub(",</br>", detail_str)
+                    # さらにinsert_line_breaks_on_commas関数を利用して処理
+                    processed_str = insert_line_breaks_on_commas(modified_str)
                     # processed_strをMarkup関数を使ってHTML安全なマークアップに変換
                     markup_str = Markup(processed_str)
                     # markup_strをリストに包む
                     wrapped_markup_str = [markup_str]
                     # first_sub_itemリストに追加
                     first_sub_item.append(wrapped_markup_str)
-            sub_first_item.append(first_sub_item)
+            first_item.append(first_sub_item)     
+        #print(first_item)
         # [[[Markup('横桁 Cr0503')]], [[Markup('主桁 Mg0110')], [Markup('床版 Ds0101')]], [[Markup('横桁 Cr0802')]], [[Markup('排水ます Dr0102,0201')]], [[Markup('排水ます Dr0202')]], [[Markup('PC定着部 Cn1101')]], [[Markup('排水ます Dr0102,0201,0202')]]]
-
-            def process_item(item):
-                if isinstance(item, Markup):
-                    item = str(item)
-                
-                if ',' in item:
-                    sub_items = item.split(',')
-                    for i, sitem in enumerate(sub_items):
-                        if i > 0 and sitem[0].isnumeric():
-                            before_sub_item = sub_items[i - 1]
-                            before_sub_item_splitted = before_sub_item.split()
-                            before_sub_item_prefix = before_sub_item_splitted[0]
-                            before_sub_item_suffix = ''
-                            
-                            for char in before_sub_item_splitted[1]:
-                                if char.isnumeric():
-                                    break
-                                else:
-                                    before_sub_item_suffix += char
-                            
-                            sub_items[i] = before_sub_item_prefix + ' ' + before_sub_item_suffix + sitem
-                    item = ",".join(sub_items)
-                
-                return item.split(',')
-
-            first_item = []
-            for sub_one in sub_first_item:
-                append2 = []
-                for text_items in sub_one:
-                    result_items = []
-                    for item in text_items:
-                        processed_items = process_item(item)
-                        result_items.extend(processed_items)
-                    append2.append(result_items)
-                first_item.append(append2)
 
         # << ◆損傷種類(second)の要素◆ >> 
         # リストの各要素から記号を削除する関数
@@ -607,16 +304,10 @@ def table_view(request):
                 if 'items' in damage_item:
                 # sub_list自体を文字列に変換するのではなく、detailフィールドのみを操作する
                     detail_damage = damage_item['items']
-                    for split_detail_damage in detail_damage:
-                        if "," in split_detail_damage:
-                            join_detail_damage = ""
-                            middle_damage = split_detail_damage.split(",")
-                            join_detail_damage = middle_damage
-                        else:
-                            join_detail_damage = detail_damage
-                            
-                    filtered_sub_list.append(join_detail_damage)
+                    # first_sub_itemリストに追加
+                    filtered_sub_list.append(detail_damage)
             second_items.append(filtered_sub_list)
+        #print(second_items)
 
         third_items = []
         bottom_item = []
@@ -636,36 +327,8 @@ def table_view(request):
                 damage_coordinate.append(other_sub_list[-1]) # damage:
                 picture_coordinate.append(None) # picture:写真指定なし
         #print(other_sub_list)
-        
-        result_items = []# 配列を作成
-        for item in bottom_item:# text_itemsの要素を1つずつitem変数に入れてforループする
-            if ',' in item:# 要素の中にカンマが含まれている場合に実行
-                pattern = r',(?![^(]*\))'
-                sub_items = re.split(pattern, item)# カンマが含まれている場合カンマで分割
-                extracted_item = []# 配列を作成
-                for item in sub_items:# bottom_itemの要素を1つずつitem変数に入れてforループする
-                    for p in range(len(item)):#itemの文字数をiに代入
-                        if "A" <= item[p].upper() <= "Z" and p < len(item) - 1 and item[p+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
-                            extracted_item.append(item[:p+1]+"*/*"+item[p+1:])# アルファベットと数字の間に*/*を入れてextracted_itemに代入
-                            break
-                join = ",".join(extracted_item)# 加工した内容をカンマ区切りの１つの文字列に戻す
-                result_items.append(join)# result_itemsに格納
 
-            else:# ifがfalseの場合(カンマが含まれていない場合)
-                non_extracted_item = ''
-                for j in range(len(item)):
-                    if "A" <= item[j].upper() <= "Z" and j < len(item) - 1 and item[j+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
-                        non_extracted_item = item[:j+1]+"*/*"+item[j+1:]#アルファベットまでをextracted_itemに代入
-                    elif non_extracted_item == '':
-                        non_extracted_item = item
-                result_items.append(non_extracted_item)
-
-        def remove_parentheses_from_list(last):
-            pattern = re.compile(r"\([^()]*\)")
-            result = [pattern.sub("", string) for string in last]
-            return result
-
-        last_item = remove_parentheses_from_list(result_items)
+        last_item = bottom_item
 
         damage_table = []  # 空のリストを作成
 
@@ -686,7 +349,7 @@ def table_view(request):
                 name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
             # name_item に格納されるのは 'NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253'のいずれかです。リストのi番目の文字列になります。
 
-            pattern = r',(?![^(]*\))'
+            pattern = r', (?![^()]*\))'
             dis_items = re.split(pattern, name_item)#「9月8日 S*/*117」,「9月8日 S*/*253」
             # コンマが付いていたら分割
             
@@ -713,15 +376,16 @@ def table_view(request):
                 sub_photo_paths = glob.glob(item)
                 photo_paths.extend(sub_photo_paths)
                 # photo_pathsリストにsub_photo_pathsを追加
-            # print(photo_paths)
+                print(photo_paths)
             if len(photo_paths) > 0:# photo_pathにはリストが入るため、[i]番目の要素が0より大きい場合
                 picture_urls = [''.join(photo_path).replace('infra/static/', '') for photo_path in photo_paths]
-                
+                print(picture_urls)
                 # photo_pathsの要素の数だけphoto_pathという変数に代入し、forループを実行
                 # photo_pathという1つの要素の'infra/static/'を空白''に置換し、中間文字なしで結合する。
                 # picture_urlsという新規配列に格納する。
             else:# それ以外の場合
                 picture_urls = None
+                print(picture_urls)
                 #picture_urlsの値は[None]とする。
 
     # << ◆写真メモを作成するコード◆ >>
@@ -733,52 +397,7 @@ def table_view(request):
                 "second": second_items[i] if i < len(second_items) else None  # second_itemsが足りない場合にNoneを使用
             }
             bridge_damage.append(bridge)
-            #print(bridge_damage)
-            
-    # << ◆1つ1つの部材に対して損傷を紐付けるコード◆ >>
-            first_element = bridge_damage[0]
-
-            # 'first'キーの値にアクセス
-            first_value = first_element['first']
-
-            first_and_second = []
-            #<<◆ 部材名が1種類かつ部材名の要素が1種類の場合 ◆>>
-            if len(first_value) == 1: # 部材名称が1つの場合
-                if len(first_value[0]) == 1: # 要素が1つの場合
-                    # カッコを1つ減らすためにリストをフラットにする
-                    flattened_first = [first_buzai_item for first_buzai_sublist in first_value for first_buzai_item in first_buzai_sublist]
-                    first_element['first'] = flattened_first
-                    # 同様に 'second' の値もフラットにする
-                    second_value = first_element['second']
-                    flattened_second = [second_name_item for second_name_sublist in second_value for second_name_item in second_name_sublist]
-                    first_element['second'] = flattened_second
-                    
-                    first_and_second.append(first_element)
-                    #print(first_and_second) # [{'first': ['排水管 Dp0102'], 'second': ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']}]
-                    
-                #<<◆ 部材名が1種類かつ部材名の要素が複数の場合 ◆>>
-                else: # 別の部材に同じ損傷が紐付く場合
-                        # 元のリストから各要素を取得
-                    for first_buzai_item in bridge_damage:
-                        #print(item)
-                        first_elements = first_buzai_item['first'][0]  # ['床版 Ds0201', '床版 Ds0203']
-                        second_elements = first_buzai_item['second'][0]  # ['⑦剥離・鉄筋露出-d']
-                        #print(second_elements)
-                        
-                        # first の要素と second を一対一で紐付け
-                        for first_buzai_second_name in first_elements:
-                            first_and_second.append({'first': [first_buzai_second_name], 'second': second_elements})
-
-                #print(first_and_second) # [{'first': '床版 Ds0201', 'second': '⑦剥離・鉄筋露出-d'}, {'first': '床版 Ds0203', 'second': '⑦剥離・鉄筋露出-d'}]
-
-            #<<◆ 部材名が複数の場合 ◆>>
-            else:
-                for double_item in bridge_damage:
-                    first_double_elements = double_item['first'] # [['支承本体 Bh0101'], ['沓座モルタル Bm0101']]
-                    second_double_elements = double_item['second'] # [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c']]
-                    
-                    for break_first, break_second in zip(first_double_elements, second_double_elements):
-                        first_and_second.append({'first': break_first, 'second': break_second})
+            #print(bridge)
 
             replacement_patterns = {
                 "①腐食(小小)-b": "腐食", # 1
@@ -816,20 +435,17 @@ def table_view(request):
                 "㉔土砂詰まり-e": "土砂詰まり", # 24
             }
 
-
             pavement_items = []
             for damage_parts in bridge_damage:
-                if isinstance(damage_parts["second"], list):  # "second"がリストの場合
+                if isinstance(damage_parts["second"], list):
                     filtered_second_items = []
                     for second_list_item in damage_parts["second"]:
-                        if isinstance(second_list_item, str) and second_list_item.startswith('①'):  # 文字列かつ①で始まる場合
-                            # ⑤で始まる要素はフィルタリングし、それ以外を追加
-                            if not second_list_item.startswith('⑤'):
-                                filtered_second_items.append(second_list_item)
-                        elif isinstance(second_list_item, str):
+                        if any(d.startswith('①') for d in second_list_item if isinstance(d, str)):
+                            filtered_second_items.append([d for d in second_list_item if not d.startswith('⑤')])
+                        else:
                             filtered_second_items.append(second_list_item)
-                    damage_parts["second"] = filtered_second_items  # フィルタリング後のsecond_itemsをセット
-                pavement_items.append(damage_parts)  # 結果リストに追加
+                    damage_parts["second"] = filtered_second_items  # フィルタリング後の second_items をセット
+                pavement_items.append(damage_parts)
 
             def update_items(items):
                 new_items = []
@@ -849,41 +465,45 @@ def table_view(request):
 
             updated_second_items = update_items(damage_parts["second"])
                         
+            # << ◆まだ◆ >>
             combined_list = []
             if damage_parts["second"] is not None:
                 combined_second = updated_second_items #if i < len(updated_second_items) else None
             else:
                 combined_second = None
             
-            combined = {"first": first_item[i], "second": combined_second, "third": third}
+            combined = {"first": first_item[i], "second": combined_second}
             combined_list.append(combined)
+            #print(combined_list)
 
-    #<< ◆損傷メモの作成◆ >>
+        # << 損傷メモの作成 >>
             # 部材名を表示
-            def extract_before_space(text):
-                return text.split(' ')[0]  # スペースより前の部分を抽出
-
-            for first_second_joinitem in combined_list:
-                # 写真番号がない場合(メモがない場合)以外
-                third = first_second_joinitem.get('third')  # 'third' の存在を確認し、変数に格納
-                if third:
-                    first_part = []
-                    
-                    # firstの各要素からスペースより前の部分を抽出
-                    for parts in first_second_joinitem['first']:
-                        for part in parts:
-                            first_part.append(extract_before_space(part))
-                
+            for first_second_joinitem in combined_list:#★
                 #print(first_second_joinitem)
+                # item['first']のスペースまでの文字を抽出
+                first_part = ""
+                clean_text = str(first_second_joinitem['first']).replace("</br>", "")#★
+                #print(clean_text)
+                markup_pattern = re.compile(r"Markup\('([^']+)'\)")# 正規表現でMarkupの要素部分を抽出
+                
+                def extract_before_space(text):
+                    return text.split(' ')[0]# スペースより前の部分を抽出
+                
+                # 要素を分割する
+                parts = re.findall(markup_pattern, clean_text)
+                # 各要素のスペースより前の部分を抽出
+                first_part = [extract_before_space(part) for part in parts]
+                #print(parts)     
+                
                 # item['second']を置換        
                 second_parts = []
-                if first_second_joinitem['second'] is not []:#★
-                    for part_element in first_second_joinitem['second']:#★
-                        if part_element in replacement_patterns:
-                            second_parts.append(replacement_patterns[part_element])
-                        else:
-                            second_parts.append(part_element)
-                #print(second_parts)
+                if first_second_joinitem['second'] is not None:#★
+                    for element in first_second_joinitem['second']:#★
+                        for part_element in element:
+                            if part_element in replacement_patterns:
+                                second_parts.append(replacement_patterns[part_element])
+                            else:
+                                second_parts.append(part_element)
 
                 # second_partsが複数要素を持つ可能性も考えられるので、','.join()で文字列に変換
                 second_part_joined = ', '.join(second_parts)
@@ -941,23 +561,29 @@ def table_view(request):
                         if "," in join_damagename_result[0]:
                             # カンマがある場合、1つ目のpartsと1つ目のjoin_damagename_resultを結合し、残りはそのまま結合
                             tokki_1 = f"\n【関連損傷】\n{parts[0]}:{join_damagename_result[0]}"
-                            for cma in range(1, len(parts)):
-                                tokki_1 += f"、{parts[cma]}:{join_damagename_result[cma]}"
+                            for i in range(1, len(parts)):
+                                tokki_1 += f"、{parts[i]}:{join_damagename_result[i]}"
                         else:
                             # カンマがない場合、2つ目以降のpartsとjoin_damagename_resultを結合
                             tokki_1 = "\n【関連損傷】\n"
-                            for cma in range(len(parts)):
-                                if cma > 0:
+                            for i in range(len(parts)):
+                                if i > 0:
                                     if tokki_1:
                                         tokki_1 += ""
-                                    tokki_1 += f"{parts[cma]}:{join_damagename_result[cma]}、"
+                                    tokki_1 += f"{parts[i]}:{join_damagename_result[i]}、"
                         combined_result += tokki_1
                         combined_data = combined_result[:-1]
                         
-                
-    # << ◆ ここまで ◆ >>                   
+
                     # \n文字列のときの改行文字
-                items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
+                items = {'first': first_item[i][0][0], 'second': second_items[i][0], 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
+                print(items)
+                
+                    # {'first': Markup('排水管 Dp0102'), 'second': ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e'], 'third': '写真番号-32', /
+                    # 'last': ['infra/img\\9月7日\u3000佐藤\u3000地上\\P9070486.JPG'], 'picture': 'infra/noImage.png', /
+                    # 'textarea_content': '排水管に拡がりのある腐食が見られる。\n【関連損傷】\n ⑤防食機能の劣化(分類1)-e', /
+                    # 'damage_coordinate': ['547059.1990495767', '229268.8593029478'], /
+                    # 'picture_coordinate': ['549204.9604817769', '229256.3408485695']}
                     
                 #優先順位の指定
                 order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
@@ -967,7 +593,7 @@ def table_view(request):
                 def sort_category(text): # sort_category関数を定義
                     # テキストがリスト形式で渡される場合を想定
                     if isinstance(text, list) and len(text) > 0:
-                        first_part = text[0][0]  # リストの最初の要素を取得
+                        first_part = text[0]  # リストの最初の要素を取得
                     else:
                         first_part = text  # それ以外の場合はそのまま使用
                     for key, val in order_dict.items(): # keyがキー(主桁～防護柵)、valが値(1～6)
@@ -1030,290 +656,5 @@ def table_view(request):
     # sorted(並び替えるオブジェクト, lamda式(無名関数)で並び替え 各要素: (text[0]で始まる要素を並び替え、その中でtext[0]の並び替え))
 
     context = {'damage_table': sorted_text_list}  # テンプレートに渡すデータ
-    #print(sorted_text_list) # sorted_text_list（itemsの内容を並び替え）をすべて表示
+    print(sorted_text_list) # sorted_text_list（itemsの内容を並び替え）をすべて表示
     return render(request, 'table.html', context)
-
-def ajax_file_send(request):
-    if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ
-        if 'upload-file' in request.FILES: # アップロードされたファイルがrequest.FILESに入っている場合
-            myfile = request.FILES['upload-file'] # 受け取ったファイルをmyfileという変数に代入
-            fs = FileSystemStorage() # FileSystemStorageのインスタンスを生成(システム上にファイルを保存する準備)
-            filename = fs.save(myfile.name, myfile) # myfileを指定した名前で保存し、保存したファイルの名前をfilename変数に格納
-            uploaded_file_url = fs.url(filename) # 保存したファイルにアクセスするためのURLを生成
-            # success時のレスポンスはJSON形式で返すならこちらを使う
-            return JsonResponse({'upload_file_url': uploaded_file_url})
-            # HTMLページを返す場合はこちらを使う
-            # context = {'damage_table': sorted_text_list}
-            # return render(request, 'table.html', context)
-        else:
-            # ファイルがPOSTされていない場合はエラーレスポンスを返す
-            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。') # File is not attached
-    else:
-        # POSTメソッドでない場合はエラーレスポンスを返す
-        return HttpResponseBadRequest('無効な作業です。') # Invalid request method
-
-# 番号表示
-def sample_view(request):# 追加
-    start = "0101"
-    end = "0206"
-
-# 最初の2桁と最後の2桁を取得
-    start_prefix = start[:2]
-    start_suffix = start[2:]
-    end_prefix = end[:2]
-    end_suffix = end[2:]
-
-# 抽出した数字を表示
-    result = ""# 追加
-    for prefix in range(int(start_prefix), int(end_prefix)+1):
-        for suffix in range(int(start_suffix), int(end_suffix)+1):
-            result += "{:02d}{:02d}".format(prefix, suffix)
-        
-    return HttpResponse(result)# 追加
-
-# <<ファイルアップロード(プライマリーキーで分類分け)>>
-def upload_directory_path(instance, filename):
-    # プライマリーキーを取得する
-    primary_key = instance.pk
-    # 'documents/プライマリーキー/filename' のパスを返す
-    return 'uploads/{}/{}'.format(primary_key, filename)
-
-class Upload(models.Model):
-    file = models.FileField(upload_to=upload_directory_path)
-    
-# <<センサス調査>>
-def census_view(request):
-    form = CensusForm()
-    return render(request, 'infra_detail.html', {'form': form})
-
-# <<全景写真の表示>>
-def image_list(request):
-    # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。
-    save_path = r"C:\work\django\myproject\program\Infraproject\infra\static\infra\img"
-    files_jpg = glob.glob(save_path + "\*.jpg")
-    files_png = glob.glob(save_path + "\*.png")
-    files = files_jpg + files_png  # 2つのリストを結合する。
-    # ページに表示する際、"infra/static/" を削除する。
-
-    web_base_path = "infra/img/"  # ウェブからアクセスする際のベースパス
-
-    image_files = []
-    for file_path in files:
-        # OSの絶対パスからウェブアクセス可能な相対パスへ変換
-        relative_path = file_path.replace(save_path, web_base_path).replace("\\", "/")
-        image_files.append(relative_path)
-    # テンプレートに画像ファイルの一覧を渡してレンダリングする
-    return render(request, 'image_list.html', {'image_files': image_files})
-
-# <<全景写真アップロード>>
-save_path = r"C:\work\django\myproject\program\Infraproject\infra\static\infra\img"
-def display_photo(request):
-    print("リクエストメソッド:", request.method)  # リクエストのメソッドを表示
-    if request.method == 'POST': # HTTPリクエストがPOSTメソッド(フォームの送信など)であれば、以下のコードを実行
-        form = UploadForm(request.POST, request.FILES) # UploadFormを使用して、送信されたデータ(request.POST)とファイル(request.FILES)を取得
-        print("フォームが有効か？:", form.is_valid())  # フォームの有効性を表示
-        if form.is_valid(): # formのis_valid()メソッドを呼び出して、フォームのバリデーション(検証)を実行
-    # フォームが有効な場合は、選択された写真を特定のフォルダに保存します
-            # print("フォームが有効")
-            photo = form.cleaned_data['photo'] # バリデーションを通過したデータから、'photo'キーに対応するデータを取得しphoto変数に格納
-            print("アップロードされた写真の名前:", photo.name)  # アップロードされた写真の名前を表示
-            file_name = photo.name  # アップロードされたファイルの名前をfile_name変数に格納
-            file_path = os.path.join(save_path, file_name)
-            #設定された保存パス（save_path）とファイル名（file_name）を組み合わせ、フルパスをfile_path変数に格納
-
-            with open(file_path, 'wb') as f: # file_pathで指定されたパスにファイルをバイナリ書き込みモード('wb')で開く
-                for chunk in photo.chunks(): # アップロードされたファイル(photo)をchunks()メソッドを使用して分割し、ループ処理を行う
-                    f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む
-            return redirect('image_list')
-        else:
-            print("フォームエラー:", form.errors)  # フォームのエラーを表示
-        # フォームが有効・無効 共通
-            print(form.errors)  # コンソールにエラーメッセージを出力
-            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。 エラー: {}'.format(form.errors))
-            #return HttpResponseBadRequest('添付ファイルが見つかりませんでした。')
-    else:
-        form = UploadForm() # Forms.pyの「UploadForm」を呼び出し
-    return render(request, 'upload_photo.html', {'form': form})
-
-def photo_upload(request):
-    if request.method == 'POST':
-        form = PhotoUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('image_list')
-    else:
-        form = PhotoUploadForm()
-    return render(request, 'image_list.html', {'form': form})
-
-# <<全景写真の変更>>
-def change_photo(request):
-    if request.method == 'POST':
-        form = UploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            # ここで、古い写真の削除や新しい写真の保存処理を行います。
-            # 例: image_idを使用して特定のレコードを探し、そのレコードに新しい画像を保存
-            image_id = request.POST.get('image_id', None)  # 画像ID取得
-            if image_id:
-                image_instance = UploadForm.objects.get(id=image_id)
-                image_instance.photo = form.cleaned_data['photo']
-                image_instance.save()
-                return redirect('image_list')
-            else:
-                # エラー処理
-                pass
-        else:
-            # フォームのバリデーションに失敗したときの処理
-            pass
-    else:
-        form = UploadForm()  # GETリクエストの場合、空のフォームを表示
-
-    return render(request, 'upload_photo.html', {'form': form})
-
-# 番号図用
-def number_create_view(request): # number_create_view関数を定義
-# この行ではnumber_create_viewという名前の関数を定義しています。この関数はrequestという引数を受け取ります。
-# requestはユーザーからのHTTPリクエストを表し、Djangoが自動的に関数に渡します。
-    if request.method == 'POST': # HTTPリクエストメソッドがPOSTメソッド(データをサーバーに送る役割)の場合
-        form = NumberForm(request.POST) # 
-
-        if form.is_valid(): # POSTメソッドがform.pyで定めたfieldsに従っている場合
-            form.save() # DBに保存する。
-        else:
-            print(form.errors) # エラーの理由を出す。
-
-        return redirect('/') # 
-    else:
-        form = NumberForm() # GETリクエストの場合、空のフォームを表示します。
-
-    return render(request, 'select_item.html', {'form': form})
-
-# << 所見一覧 >>
-def opinion_view(request):
-    return render(request, 'opinion.html')
-
-# << 橋梁緒言の選択肢 >>
-def infraregulations_view(request):
-    form = BridgeCreateForm()
-    regulations = Regulation.objects.all()
-    context = {
-        'form': form,
-        'regulations': regulations,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraloadWeights_view(request):
-    form = BridgeCreateForm()
-    loadWeights = LoadWeight.objects.all()
-    context = {
-        'form': form,
-        'loadWeights': loadWeights,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraloadGrades_view(request):
-    form = BridgeCreateForm()
-    loadGrades = LoadGrade.objects.all()
-    context = {
-        'form': form,
-        'loadGrades': loadGrades,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infrarulebooks_view(request):
-    form = BridgeCreateForm()
-    rulebooks = Rulebook.objects.all()
-    context = {
-        'form': form,
-        'rulebooks': rulebooks,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraapproachs_view(request):
-    form = BridgeCreateForm()
-    approachs = Approach.objects.all()
-    context = {
-        'form': form,
-        'approachs': approachs,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infrathirdpartys_view(request):
-    form = BridgeCreateForm()
-    thirdpartys = Thirdparty.objects.all()
-    context = {
-        'form': form,
-        'thirdpartys': thirdpartys,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraunderConditions_view(request):
-    form = BridgeCreateForm()
-    underConditions = UnderCondition.objects.all()
-    context = {
-        'form': form,
-        'underConditions': underConditions,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraregulations_view(request):
-    form = BridgeUpdateForm()
-    regulations = Regulation.objects.all()
-    context = {
-        'form': form,
-        'regulations': regulations,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infraloadWeights_view(request):
-    form = BridgeUpdateForm()
-    loadWeights = LoadWeight.objects.all()
-    context = {
-        'form': form,
-        'loadWeights': loadWeights,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infraloadGrades_view(request):
-    form = BridgeUpdateForm()
-    loadGrades = LoadGrade.objects.all()
-    context = {
-        'form': form,
-        'loadGrades': loadGrades,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infrarulebooks_view(request):
-    form = BridgeUpdateForm()
-    rulebooks = Rulebook.objects.all()
-    context = {
-        'form': form,
-        'rulebooks': rulebooks,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infraapproachs_view(request):
-    form = BridgeUpdateForm()
-    approachs = Approach.objects.all()
-    context = {
-        'form': form,
-        'approachs': approachs,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infrathirdpartys_view(request):
-    form = BridgeUpdateForm()
-    thirdpartys = Thirdparty.objects.all()
-    context = {
-        'form': form,
-        'thirdpartys': thirdpartys,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infraunderConditions_view(request):
-    form = BridgeUpdateForm()
-    underConditions = UnderCondition.objects.all()
-    context = {
-        'form': form,
-        'underConditions': underConditions,
-    }
-    return render(request, 'infra_update.html', context)

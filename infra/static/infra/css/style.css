@@ -169,7 +169,3 @@ input[type="radio"].input_chk:checked + label.surround_label{
   margin-left: auto; /* 左側のマージンを自動で調整して右詰めに */
   margin-right: 0; /* 右側のマージンは0 */
 }
-.highlight {
-  background-color: yellow; /* 背景色を黄色に指定 */
-  vertical-align: top; /* 上端に寄せる */
-}
