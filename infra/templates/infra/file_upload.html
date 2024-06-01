@@ -34,14 +34,19 @@
       formData.append('file', files[0]); // ファイルを追加
       
       // AJAXリクエストを使ってファイルをアップロード
-      fileArea.addEventListener('drop', function(evt){
-        evt.preventDefault();
-        fileArea.classList.remove('dragenter');
-        var files = evt.dataTransfer.files;
-        console.log("DRAG & DROP");
-        console.table(files);
-        fileInput.files = files;
-        photoPreview('onChenge',files[0]);  
+      //fileArea.addEventListener('drop', function(evt){
+        //evt.preventDefault();
+        //fileArea.classList.remove('dragenter');
+        //var files = evt.dataTransfer.files;
+        //console.log("DRAG & DROP");
+        //console.table(files);
+        //fileInput.files = files;
+        //photoPreview('onChenge',files[0]);  
+      //});
+
+      // id_fileに対してドラッグアンドドロップをセットする
+      const fileInput = document.querySelector("#id_file");
+      fileInput.files = files;
     });
   </script>
   

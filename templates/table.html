@@ -23,14 +23,14 @@
                 <tr>
                     <td>
                         {% for item in bridge.join %}
-                            {% if "[NON-a]" not in item %} <!-- NON-aを含まない場合 -->
-                                <div style="border: 1px solid black; padding: 5px; margin-bottom: 10px; width: 430px;">
-                                    {% for first_item in item.first %}
-                                        <span style="background-color: Pink;">{{ first_item }}</span> <!-- first項目に色付け -->
-                                        <br>
-                                    {% endfor %}
-                                    {% for second_item in item.second %}
-                                        {{ second_item }}
+                            <div style="border: 1px solid black; padding: 5px; margin-bottom: 10px; width: 410px;">
+                                {% for first_item in item.first %}
+                                    <span style="background-color: Pink;">{{ first_item }}</span> <!-- first項目に色付け -->
+                                    <br>
+                                {% endfor %}
+                                {% for second_item in item.second %}
+                                    {{ second_item }}
+                                    {% if "NON-a" not in second_item %} <!-- NON-aを含まない場合 -->
                                         <br>
                                         <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)" style="width: 100px;">
                                             <option value=""></option>
@@ -41,15 +41,19 @@
                                             <!-- 必要に応じて他のオプションを追加 -->
                                         </select>
                                         <input type="text" name="input3_{{ forloop.counter }}" placeholder="数量" style="width: 100px;" />
-                                        <input type="text" name="input2_{{ forloop.counter }}" placeholder="単位" style="width: 50px;" id="input_{{ forloop.counter }}" />
-                                        <input type="text" name="input4_{{ forloop.counter }}" placeholder="分類" style="width: 75px;" />
-                                        <input type="text" name="input5_{{ forloop.counter }}" placeholder="パターン" style="width: 75px;" />
-                                        <br><br>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                損傷なし
-                            {% endif %}
+                                        <input type="text" name="input2_{{ forloop.counter }}" placeholder="単位" style="width: 60px;" id="input_{{ forloop.counter }}" />
+                                        <input type="text" name="input4_{{ forloop.counter }}" placeholder="分類" style="width: 60px;" />
+                                        <input type="text" name="input5_{{ forloop.counter }}" placeholder="パターン" style="width: 60px;" />
+                                        <br>
+                                    {% else %}
+                                        
+                                    {% endif %}
+                                {% endfor %}
+                                <br>
+                                <button>変更</button>
+                                <button>削除</button>
+                            </div>
+
                         {% endfor %}
                     </td>
                     <td class="center-align">

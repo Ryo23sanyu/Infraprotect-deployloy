@@ -287,15 +287,14 @@ def number_view(request):
 
 # <<テーブルの作成>>
 def table_view(request):
-    # AutoCADファイル名を指定してテキストを抽出する
-    dxf_filename = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
+    dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_損傷橋.dxf'
     search_title_text = "1径間" # 複数径間の場合は"1径間"
     second_search_title_text = "損傷図"
-    
+
     def find_square_around_text(dxf_filename, target_text, second_target_text):
         doc = ezdxf.readfile(dxf_filename)
         msp = doc.modelspace()
-       
+        
         text_positions = [] # 見つかったテキストの位置を格納するためのリストを作成
         
         extracted_text = []
@@ -365,7 +364,7 @@ def table_view(request):
                     #最後にまとめてcad_dataをextracted_textに追加する
                         extracted_text.append(cad_data[:] + [[str(defx), str(defy)]]) # extracted_textに「MTEXTとその座標」およびdefのX,Y座標を追加
                         
-# << ※特記なき損傷の抽出用 ↓ >>                            
+    # << ※特記なき損傷の抽出用 ↓ >>                            
                 else:
                     lines = text.split('\n')# 改行でテキストを分割してリスト化
                     sub_text = [[line] for line in lines]# 各行をサブリストとして持つ多重リストを構築
@@ -416,7 +415,7 @@ def table_view(request):
                         extracted_text.append(new_sub_list)
 
                         new_sub_list.append([str(x), str(y)])
-# << ※特記なき損傷の抽出用 ↑ >>
+    # << ※特記なき損傷の抽出用 ↑ >>
         return extracted_text
 
     def entity_extension(mtext, neighbor):
@@ -460,42 +459,135 @@ def table_view(request):
                 data.extend(next_data)
                 # 次の位置の要素を削除
                 extracted_text.remove(next_data)
-# extracted_text = [['主桁 Mg0101', '①-d', '写真番号-00', 'defpoints'], ['主桁 Mg0902', '⑦-c', '写真番号-00', 'defpoints']]
+    # extracted_text = [['主桁 Mg0101', '①-d', '写真番号-00', 'defpoints'], ['主桁 Mg0902', '⑦-c', '写真番号-00', 'defpoints']]
 
-# << ◆部材名(first)の要素◆ >>
-        # コンマが3つ以上存在する場合、3の倍数の位置で改行を挿入    
-        def insert_line_breaks_on_commas(text):
-            # コンマのカウントと改行の挿入を行う
-            count = 0
-            new_text = ''
-            for char in text:
-                if char == ',':
-                    count += 1
-                    if count % 3 == 0:
-                        # 3, 6, 9番目のコンマの後に改行タグを挿入
-                        new_text += ',</br>'
-                        continue
-                new_text += char
-            return new_text
-        
-        # 正規表現を使って、コンマの直後に数字以外の文字が続く場所を見つけます。
-        pattern = re.compile(r',(?![0-9])')
-        
-        result_first_list = []  # 結果を格納するリスト
-        for sub_list in extracted_text:
-            # 正規表現による置換を実行
-            replaced_text = pattern.sub(",</br>", sub_list[0])
-            # コンマごとに改行を挿入
-            with_inserted_breaks = insert_line_breaks_on_commas(replaced_text)
-            # 最終的な文字列をMarkupオブジェクトとしてリストに追加
-            final_text = Markup(with_inserted_breaks)
-            result_first_list.append(final_text)
+    # それぞれのリストから文字列のみを抽出する関数(座標以外を抽出)
+        def extract_text(data):
+            extracted = []  # 空のリストを用意
+            removed_elements = []  # バックアップ用リスト
 
-        # 書き直したコードの結果を使用する
-        first_item = result_first_list
+            pattern = r'[\u2460-\u3256]'  # ⓵～㉖
+
+            for list_item in data:  # list_item変数に要素を代入してループ処理
+                # print(list_item)
+                item_extracted = [item for item in list_item if isinstance(item, str)]
+                
+                if item_extracted:  # item_extractedが空でないことを確認
+                    # 最後の要素に特定の文字が含まれているかどうかをチェック
+                    contains_symbols = bool(re.search(pattern, item_extracted[-1]))
+
+                    # '月'と'日'が最後の要素に含まれているかどうかをチェック
+                    if '月' in item_extracted[-1] and '日' in item_extracted[-1] and not contains_symbols:
+                        extracted.append(item_extracted[:-2])
+                        # 座標や日時を削除し、removed_elementsに保存
+                        removed_elements.append([item for item in list_item if item not in item_extracted[:-2]])
+                    else:
+                        extracted.append(item_extracted)
+                        # 座標や日時を削除し、removed_elementsに保存
+                        removed_elements.append([item for item in list_item if item not in item_extracted])
+                else:
+                    extracted.append([])
+                    removed_elements.append(list_item)
+
+            return extracted, removed_elements  # extractedの結果を関数に返す
+
+        # 関数を使って特定の部分を抽出
+        extracted_text, removed_elements = extract_text(extracted_text)
+
+        first_item = []
+        current_detail = None  # 現在処理しているdetailを追跡
+
+        for text, removed in zip(extracted_text, removed_elements):  # 1つずつのリスト
+            result_list = []
+            for item in text:# 1つずつの要素
+            # 各条件を個別に確認する
+                space_exists = re.search(r"\s+", item) is not None # スペースを含む
+                alpha_exists = re.search(r"[a-zA-Z]+", item) is not None # アルファベットを含む
+                digits_exists = re.search(r"\d{2,}", item) is not None # 2桁以上の数字を含む
+            
+                if space_exists and alpha_exists and digits_exists:
+                # 新しいdetail項目を作成し、resultsに追加します
+                    current_detail = {'detail': item, 'items': []}
+                    result_list.append(current_detail)
+                
+                else:
+                # 既存のdetailのitemsに現在の項目を追加
+                    if current_detail is not None:
+                        current_detail['items'].append(item)
+                    
+        # 元の要素を結果に追加
+            for elem in removed:
+                result_list.append(elem)
+
+        #print(result_list)
+            first_item.append(result_list)
         
-# << ◆損傷種類(second)の要素◆ >>
-    # リストの各要素から記号を削除する
+        #print(first_item)
+        extracted_text = first_item
+            
+        sub_first_item = [] 
+        for check_sub_list in extracted_text:
+            first_sub_item = []
+            for first_sub_list in check_sub_list:
+                # 各条件を個別に確認する
+                space_exists = re.search(r"\s+", str(first_sub_list)) is not None # スペースを含む
+                alpha_exists = re.search(r"[a-zA-Z]+", str(first_sub_list)) is not None # アルファベットを含む
+                digits_exists = re.search(r"\d{2,}", str(first_sub_list)) is not None # 2桁以上の数字を含む
+                # 正規表現を使って、コンマの直後に数字以外の文字が続く場所を見つけます。
+                pattern = re.compile(r',(?![0-9])')
+                # print(sub_list)
+        # リスト内包表記で各要素をチェックして、条件に合致する場合は置き換えを行います。
+                if space_exists and alpha_exists and digits_exists and not "月" in first_sub_list:
+                    # sub_list自体を文字列に変換するのではなく、detailフィールドのみを操作する
+                    detail_str = first_sub_list['detail']
+                    # detail_strのカンマの直後に`</br>`タグを挿入
+                    processed_str = pattern.sub(",", detail_str)
+                    # processed_strをMarkup関数を使ってHTML安全なマークアップに変換
+                    markup_str = Markup(processed_str)
+                    # markup_strをリストに包む
+                    wrapped_markup_str = [markup_str]
+                    # first_sub_itemリストに追加
+                    first_sub_item.append(wrapped_markup_str)
+            sub_first_item.append(first_sub_item)
+        # [[[Markup('横桁 Cr0503')]], [[Markup('主桁 Mg0110')], [Markup('床版 Ds0101')]], [[Markup('横桁 Cr0802')]], [[Markup('排水ます Dr0102,0201')]], [[Markup('排水ます Dr0202')]], [[Markup('PC定着部 Cn1101')]], [[Markup('排水ます Dr0102,0201,0202')]]]
+
+            def process_item(item):
+                if isinstance(item, Markup):
+                    item = str(item)
+                
+                if ',' in item:
+                    sub_items = item.split(',')
+                    for i, sitem in enumerate(sub_items):
+                        if i > 0 and sitem[0].isnumeric():
+                            before_sub_item = sub_items[i - 1]
+                            before_sub_item_splitted = before_sub_item.split()
+                            before_sub_item_prefix = before_sub_item_splitted[0]
+                            before_sub_item_suffix = ''
+                            
+                            for char in before_sub_item_splitted[1]:
+                                if char.isnumeric():
+                                    break
+                                else:
+                                    before_sub_item_suffix += char
+                            
+                            sub_items[i] = before_sub_item_prefix + ' ' + before_sub_item_suffix + sitem
+                    item = ",".join(sub_items)
+                
+                return item.split(',')
+
+            first_item = []
+            for sub_one in sub_first_item:
+                append2 = []
+                for text_items in sub_one:
+                    result_items = []
+                    for item in text_items:
+                        processed_items = process_item(item)
+                        result_items.extend(processed_items)
+                    append2.append(result_items)
+                first_item.append(append2)
+
+        # << ◆損傷種類(second)の要素◆ >> 
+        # リストの各要素から記号を削除する関数
         def remove_symbols(other_items):
             symbols = ['!', '[', ']', "'"]
 
@@ -503,58 +595,53 @@ def table_view(request):
             for item in other_items:
                 processed_item = ''.join(c for c in item if c not in symbols)
                 processed_other_items.append(processed_item)
-    
+
             return processed_other_items
         
-    # それ以外の要素(損傷名)を抽出
+        # それ以外の要素(損傷名)を抽出
         pattern = r'[\u2460-\u2473\u3251-\u3256].*-[a-zA-Z]' # 丸数字とワイルドカードとアルファベット
-        other_items = []
-        for sub_list in extracted_text:
-            filtered_sub_list = []
-            for item in sub_list:
-                if isinstance(item, str):# itemが文字列か確認
-                    if re.match(pattern, item):# itemが正規表現と一致した場合
-                        filtered_sub_list.append(item)# filtered_sub_listリストに格納
-            other_items.append(filtered_sub_list)# forループの後にfiltered_sub_listリストをother_itemsリストに格納
-
-        second = remove_symbols(other_items)
-        # 丸数字を直接列挙
-        circle_numbers = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖'
         second_items = []
+        for second_sub_list in extracted_text:
+            filtered_sub_list = []
+            for damage_item in second_sub_list:
+                if 'items' in damage_item:
+                # sub_list自体を文字列に変換するのではなく、detailフィールドのみを操作する
+                    detail_damage = damage_item['items']
+                    for split_detail_damage in detail_damage:
+                        if "," in split_detail_damage:
+                            join_detail_damage = ""
+                            middle_damage = split_detail_damage.split(",")
+                            join_detail_damage = middle_damage
+                        else:
+                            join_detail_damage = detail_damage
+                            
+                    filtered_sub_list.append(join_detail_damage)
+            second_items.append(filtered_sub_list)
 
-        # リスト内の各文字列に対して処理を行う
-        for second_over in second:
-            # アルファベット(aからe)と直後に続く特定の丸数字の間にコンマを挿入
-            if second_over == "":
-                second_items.append(None)
-            else:
-                second_item = re.sub(f'([a-e])([{circle_numbers}])', r'\1,\2', second_over)
-                second_split = second_item.split(",")
-                second_items.append(second_split)
-                
-# << ◆写真番号-00(third)、Defpoints(bottom)、旗揚げ座標(damage_coordinate)、Def座標(picture_coordinate)の要素◆ >>
         third_items = []
         bottom_item = []
         damage_coordinate = []
         picture_coordinate = []
-        for sub_list in extracted_text:
-            list_count = sum(isinstance(item, list) for item in sub_list) # リストの中にリストがいくつあるか数える
+        for other_sub_list in extracted_text:
+            list_count = sum(isinstance(item, list) for item in other_sub_list) # リストの中にリストがいくつあるか数える
             
             if list_count == 2: # 座標が2つのとき=Defpointsが存在するとき
-                bottom_item.append(sub_list[-3]) # 最後から3番目の要素を抽出（写真番号-00）
-                third_items.append(sub_list[-4]) # 最後から4番目の要素を抽出（Defpoints）
-                damage_coordinate.append(sub_list[-2])
-                picture_coordinate.append(sub_list[-1])
+                bottom_item.append(other_sub_list[-3]) # 最後から3番目の要素を抽出（写真番号-00）
+                third_items.append(other_sub_list[-4]) # 最後から4番目の要素を抽出（Defpoints）
+                damage_coordinate.append(other_sub_list[-2])
+                picture_coordinate.append(other_sub_list[-1])
             else: # Defpointsがない時
                 bottom_item.append("") # bottom:写真番号なし
                 third_items.append(None) # third:Defpointsなし
-                damage_coordinate.append(sub_list[-1]) # damage:
+                damage_coordinate.append(other_sub_list[-1]) # damage:
                 picture_coordinate.append(None) # picture:写真指定なし
-
+        #print(other_sub_list)
+        
         result_items = []# 配列を作成
         for item in bottom_item:# text_itemsの要素を1つずつitem変数に入れてforループする
             if ',' in item:# 要素の中にカンマが含まれている場合に実行
-                sub_items = item.split(',')# カンマが含まれている場合カンマで分割
+                pattern = r',(?![^(]*\))'
+                sub_items = re.split(pattern, item)# カンマが含まれている場合カンマで分割
                 extracted_item = []# 配列を作成
                 for item in sub_items:# bottom_itemの要素を1つずつitem変数に入れてforループする
                     for p in range(len(item)):#itemの文字数をiに代入
@@ -567,7 +654,7 @@ def table_view(request):
             else:# ifがfalseの場合(カンマが含まれていない場合)
                 non_extracted_item = ''
                 for j in range(len(item)):
-                    if item[j].isalpha() and j < len(item) - 1 and item[j+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
+                    if "A" <= item[j].upper() <= "Z" and j < len(item) - 1 and item[j+1].isnumeric():#i文字目がアルファベットかつ、次の文字が数字の場合
                         non_extracted_item = item[:j+1]+"*/*"+item[j+1:]#アルファベットまでをextracted_itemに代入
                     elif non_extracted_item == '':
                         non_extracted_item = item
@@ -582,7 +669,7 @@ def table_view(request):
 
         damage_table = []  # 空のリストを作成
 
-    # ループで各要素を辞書型に変換し、空のリストに追加
+        # first_itemの要素の数だけループ処理
         for i in range(len(first_item)):
             try:
                 third = third_items[i]
@@ -599,12 +686,14 @@ def table_view(request):
                 name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
             # name_item に格納されるのは 'NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253'のいずれかです。リストのi番目の文字列になります。
 
-            dis_items = name_item.split(',') #「9月8日 S*/*117」,「9月8日 S*/*253」
+            pattern = r',(?![^(]*\))'
+            dis_items = re.split(pattern, name_item)#「9月8日 S*/*117」,「9月8日 S*/*253」
             # コンマが付いていたら分割
             
             time_result = []
             current_date = ''  # 現在の日付を保持する変数
             for time_item in dis_items:
+                #print(f"このデータは：{time_item}")
                 # 先頭が数字で始まるかチェック（日付として扱えるか）
                 if re.match(r'^\d', time_item):
                     current_date = re.match(r'^\d+月\d+日', time_item).group(0)  # 日付を更新
@@ -614,25 +703,29 @@ def table_view(request):
                     time_result.append(''.join([current_date, '　', time_item]))
 
             sub_dis_items = ['infra/static/infra/img/' + item + ".jpg" for item in time_result]
+            #print(sub_dis_items)
             # dis_itemsの要素の数だけ、分割した各文字の先頭に「infra/static/infra/img/」各文字の後ろに「.jpg」を追加
             # ['infra/static/infra/img/9月8日 S*/*117.jpg', 'infra/static/infra/img/9月8日 S*/*253.jpg']
+            # print(f"このデータは：{sub_dis_items}")
             photo_paths = []
             # photo_pathsリストを作成
             for item in sub_dis_items:
                 sub_photo_paths = glob.glob(item)
                 photo_paths.extend(sub_photo_paths)
                 # photo_pathsリストにsub_photo_pathsを追加
-         
+            # print(photo_paths)
             if len(photo_paths) > 0:# photo_pathにはリストが入るため、[i]番目の要素が0より大きい場合
                 picture_urls = [''.join(photo_path).replace('infra/static/', '') for photo_path in photo_paths]
+                
                 # photo_pathsの要素の数だけphoto_pathという変数に代入し、forループを実行
                 # photo_pathという1つの要素の'infra/static/'を空白''に置換し、中間文字なしで結合する。
                 # picture_urlsという新規配列に格納する。
             else:# それ以外の場合
                 picture_urls = None
                 #picture_urlsの値は[None]とする。
-                
-# << ◆写真メモを作成するコード◆ >>
+
+    # << ◆写真メモを作成するコード◆ >>
+
             bridge_damage = [] # すべての"bridge"辞書を格納するリスト
 
             bridge = {
@@ -640,12 +733,62 @@ def table_view(request):
                 "second": second_items[i] if i < len(second_items) else None  # second_itemsが足りない場合にNoneを使用
             }
             bridge_damage.append(bridge)
+            #print(bridge_damage)
+            
+    # << ◆1つ1つの部材に対して損傷を紐付けるコード◆ >>
+            first_element = bridge_damage[0]
+
+            # 'first'キーの値にアクセス
+            first_value = first_element['first']
+
+            first_and_second = []
+            #<<◆ 部材名が1種類かつ部材名の要素が1種類の場合 ◆>>
+            if len(first_value) == 1: # 部材名称が1つの場合
+                if len(first_value[0]) == 1: # 要素が1つの場合
+                    # カッコを1つ減らすためにリストをフラットにする
+                    flattened_first = [first_buzai_item for first_buzai_sublist in first_value for first_buzai_item in first_buzai_sublist]
+                    first_element['first'] = flattened_first
+                    # 同様に 'second' の値もフラットにする
+                    second_value = first_element['second']
+                    flattened_second = [second_name_item for second_name_sublist in second_value for second_name_item in second_name_sublist]
+                    first_element['second'] = flattened_second
+                    
+                    first_and_second.append(first_element)
+                    #print(first_and_second) # [{'first': ['排水管 Dp0102'], 'second': ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']}]
+                    
+                #<<◆ 部材名が1種類かつ部材名の要素が複数の場合 ◆>>
+                else: # 別の部材に同じ損傷が紐付く場合
+                        # 元のリストから各要素を取得
+                    for first_buzai_item in bridge_damage:
+                        #print(item)
+                        first_elements = first_buzai_item['first'][0]  # ['床版 Ds0201', '床版 Ds0203']
+                        second_elements = first_buzai_item['second'][0]  # ['⑦剥離・鉄筋露出-d']
+                        #print(second_elements)
+                        
+                        # first の要素と second を一対一で紐付け
+                        for first_buzai_second_name in first_elements:
+                            first_and_second.append({'first': [first_buzai_second_name], 'second': second_elements})
+
+                #print(first_and_second) # [{'first': '床版 Ds0201', 'second': '⑦剥離・鉄筋露出-d'}, {'first': '床版 Ds0203', 'second': '⑦剥離・鉄筋露出-d'}]
+
+            #<<◆ 部材名が複数の場合 ◆>>
+            else:
+                for double_item in bridge_damage:
+                    first_double_elements = double_item['first'] # [['支承本体 Bh0101'], ['沓座モルタル Bm0101']]
+                    second_double_elements = double_item['second'] # [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c']]
+                    
+                    for break_first, break_second in zip(first_double_elements, second_double_elements):
+                        first_and_second.append({'first': break_first, 'second': break_second})
 
             replacement_patterns = {
                 "①腐食(小小)-b": "腐食", # 1
                 "①腐食(小大)-c": "拡がりのある腐食",
                 "①腐食(大小)-d": "板厚減少を伴う腐食",
                 "①腐食(大大)-e": "板厚減少を伴う拡がりのある腐食",
+                "③ゆるみ・脱落-c": "ボルト、ナットにゆるみ・脱落（●本中●本）",
+                "③ゆるみ・脱落-e": "ボルト、ナットにゆるみ・脱落（●本中●本）", # 3
+                "④破断-e": "鋼材の破断", # 4
+                "⑤防食機能の劣化(分類1)-e": "点錆", # 5
                 "⑥ひびわれ(小小)-b": "最大幅0.0mmのひびわれ", # 6
                 "⑥ひびわれ(小大)-c": "最大幅0.0mmかつ間隔0.5m未満のひびわれ",
                 "⑥ひびわれ(中小)-c": "最大幅0.0mmのひびわれ",
@@ -659,127 +802,233 @@ def table_view(request):
                 "⑧漏水・遊離石灰-d": "遊離石灰",
                 "⑧漏水・遊離石灰-e": "著しい遊離石灰・泥や錆汁の混入を伴う漏水",
                 "⑨抜け落ち-e": "コンクリート塊の抜け落ち", # 9
+                "⑪床版ひびわれ-b": "最大幅0.0mmの1方向ひびわれ",
+                "⑪床版ひびわれ-c": "最大幅0.0mmの1方向ひびわれ",
+                "⑪床版ひびわれ-d": "最大幅0.0mmの1方向ひびわれ",
+                "⑪床版ひびわれ-e": "最大幅0.0mmの角落ちを伴う1方向ひびわれ", # 11
                 "⑫うき-e": "コンクリートのうき", # 12
-                "⑮舗装の異常-c": "最大幅0.0mmのひびわれ", # 15
-                "⑮舗装の異常-e": "最大幅0.0mmのひびわれ・舗装の土砂化",
+                "⑮舗装の異常-c": "最大幅0.0mmのひびわれ",
+                "⑮舗装の異常-e": "最大幅0.0mmのひびわれ・舗装の土砂化", # 15
+                "⑯定着部の異常-c": "定着部の損傷。",
+                "⑯定着部の異常(分類2)-e": "定着部の著しい損傷", # 16
                 "⑳漏水・滞水-e": "漏水・滞水", # 20
                 "㉓変形・欠損-c": "変形・欠損", # 23
                 "㉓変形・欠損-e": "著しい変形・欠損",
                 "㉔土砂詰まり-e": "土砂詰まり", # 24
             }
 
-            pavement_items = []
+
             for damage_parts in bridge_damage:
-                for damage_name_text in damage_parts:
-                    pavement_items.append(str(damage_name_text))
-
-                updated_second_items = []  # 更新されたsecond_itemsを格納するための新しいリスト
-
-                for damage_number_items in second_items:#◆
-                    if damage_number_items is None:#◆
-                        updated_second_items.append(damage_number_items)#◆
-                        continue
-
-                    # '①'で始まる要素があるか確認
-                    has_item_starting_with_1 = any(item.startswith('①') for item in damage_number_items)#◆
-
-                    # '①'で始まる要素がある場合、'⑤'で始まる要素を削除
-                    if has_item_starting_with_1:
-                        updated_items = [damage_five_item for damage_five_item in damage_number_items if not damage_five_item.startswith('⑤')]#◆#★★★
-                    else:
-                        updated_items = damage_number_items.copy()  # items自体を直接変更しないためのコピー#◆
-
-                    # '⑰'で始まる要素があるか確認
-                    if any(seventeen_item.startswith('⑰') for seventeen_item in updated_items):#★★
-                        new_sublist = []
-                        # '⑰'で始まる要素がある場合、'⑰'のカッコ内の値のみ抽出
-                        for inside_name_item in updated_items:#★
-                            if inside_name_item.startswith('⑰'):#★
-                                match = re.search(r'(?<=:)(.*?)(?=\)-e)', inside_name_item)#★
-                                if match:
-                                    new_sublist.append(match.group(1))
-                                else:
-                                    new_sublist.append(inside_name_item)  # マッチしなかった場合は元のアイテムを保持#★
+                # print(damage_parts)
+                if isinstance(damage_parts["second"], list):  # "second"がリストの場合
+                    filtered_second_items = []
+                    for sublist in damage_parts["second"]:
+                        if isinstance(sublist, list):  # サブリストがリストである場合
+                            if any(item.startswith('①') for item in sublist) and any(item.startswith('⑤') for item in sublist):
+                                # ⑤で始まる要素を取り除く
+                                filtered_sublist = [item for item in sublist if not item.startswith('⑤')]
+                                filtered_second_items.append(filtered_sublist)
                             else:
-                                new_sublist.append(inside_name_item)  # '⑰'で始まらないアイテムはそのまま追加#★
-                        updated_items = new_sublist  # 更新されたサブリストを反映
-
-                    updated_second_items.append(updated_items)
-                        
-
-            # 処理結果を確認
-            # first_itemとsecond_itemsを組み合わせて結果を表示する
-            combined_list = []
-            # second_itemsのリストが存在するか、またはNoneであるかをチェック
-            combined_second = updated_second_items[i] if i < len(updated_second_items) else None
-            
-            # 組み合わせをリストに追加
-            combined = {"first": first_item[i], "second": combined_second}
-            combined_list.append(combined)
-
-            # 結果の印刷
-            for first_second_joinitem in combined_list:#★
-                # item['first']のスペースまでの文字を抽出
-                first_part = ""
-                clean_text = str(first_second_joinitem['first']).replace("</br>", "")#★
-                if "," in clean_text:
-                    pattern = ',(\d|,)*(?=\s|$)' # 「,」の後に(「数字」か「,」)の場合
-                    # 条件に一致するかチェック
-                    if re.search(pattern, clean_text):
-                        first_part = clean_text.split(" ")[0]
-                    else:
-                        sub_pattern = r'[A-Za-z0-9/ /]'
-                        # 置換処理を行い、日本語のみ抽出
-                        result = re.sub(sub_pattern, '', clean_text)
-                        first_part = result  # 数字、アルファベット、コンマを削除
-                else:
-                    first_part = clean_text.split(" ")[0]
-                
-                # item['second']を置換
-                second_parts = []
-                if first_second_joinitem['second'] is not None:#★
-                    for element in first_second_joinitem['second']:#★
-                        if element in replacement_patterns:
-                            second_parts.append(replacement_patterns[element])
+                                filtered_second_items.append(sublist)
                         else:
-                            second_parts.append(element)
-                
-                # second_partsが複数要素を持つ可能性も考えられるので、','.join()で文字列に変換
-                second_part_joined = ', '.join(second_parts)
-                
-                # 結果の表示
-                if first_second_joinitem['second'] == None: # 損傷種類がNoneのとき
-                    combined_data = None
-                elif len(second_items[i]) == 1:
-                    combined_data = f"{first_part}に{second_part_joined}が見られる。"
-                else:
-                    item_str = ', '.join(second_items[i]) # ['①腐食-b']を①腐食-bに変更
-                    start_special_text = item_str.find(",")+1 # 最初のコンマ位置を検索
-                    combined_data = f"{first_part}に{second_part_joined}が見られる。\n【関連損傷】\n{item_str[start_special_text:]}"
-                    # \n文字列のときの改行文字
-                items = {'first': first_item[i], 'second': second_items[i], 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
-                # {'first': Markup('排水管 Dp0102'), 'second': ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e'], 'third': '写真番号-32', /
-                # 'last': ['infra/img\\9月7日\u3000佐藤\u3000地上\\P9070486.JPG'], 'picture': 'infra/noImage.png', /
-                # 'textarea_content': '排水管に拡がりのある腐食が見られる。\n【関連損傷】\n ⑤防食機能の劣化(分類1)-e', /
-                # 'damage_coordinate': ['547059.1990495767', '229268.8593029478'], /
-                # 'picture_coordinate': ['549204.9604817769', '229256.3408485695']}
+                            filtered_second_items.append([sublist])
+                    
+                    # フィルタリング後のsecond_itemsに対して置換を行う                
+                    #pavement_items = {"first": first_item[i], "second": filtered_second_items}
 
+            def update_items(items):
+                new_items = []
+                for item in items:
+                    if isinstance(item, list):
+                        new_items.append(update_items(item))
+                    elif isinstance(item, str):
+                        if item.startswith('⑰'):
+                            match = re.search(r'(?<=:)(.*?)(?=\)-e)', item)
+                            if match:
+                                new_items.append(match.group(1))
+                            else:
+                                new_items.append(item)
+                        else:
+                            new_items.append(item)
+                return new_items
+
+            updated_second_items = update_items(damage_parts["second"])
+                        
+            combined_list = []
+            if damage_parts["second"] is not None:
+                combined_second = updated_second_items #if i < len(updated_second_items) else None
+            else:
+                combined_second = None
+            
+            combined = {"first": first_item[i], "second": combined_second, "third": third}
+            combined_list.append(combined)
+            #print(combined_list)
+            
+
+    #<< ◆損傷メモの作成◆ >>
+            # 部材名を表示
+            def extract_before_space(text):
+                return text.split(' ')[0]  # スペースより前の部分を抽出
+            
+            def recursive_join(elements):
+                if isinstance(elements, list):
+                    # 各要素を再帰的に処理して、再びリストに結合
+                    return ", ".join(recursive_join(elem) if isinstance(elem, list) else str(elem) for elem in elements)
+                else:
+                    return str(elements)
+
+            for first_second_joinitem in combined_list:
+                #print(first_second_joinitem)
+                # 写真番号がない場合(メモがない場合)以外
+                third = first_second_joinitem.get('third')  # 'third' の存在を確認し、変数に格納
+                if third:
+                    first_part = []
+                    
+                    # firstの各要素からスペースより前の部分を抽出
+                    for parts in first_second_joinitem['first']:
+                        for part in parts:
+                            first_part.append(extract_before_space(part))
+                
+                #print(first_second_joinitem)
+                # item['second']を置換        
+                second_parts = []
+                if first_second_joinitem['second'] is not []:#★
+                    for part_element in first_second_joinitem['second']:#★
+                        if isinstance(part_element, list):  # part_element がリストの場合
+                            new_sublist = []
+                            for sub_elem in part_element:
+                                if sub_elem in replacement_patterns:
+                                    new_sublist.append(replacement_patterns[sub_elem])
+                                else:
+                                    new_sublist.append(sub_elem)
+                            second_parts.append(new_sublist)
+                        else:
+                        #print(part_element)
+                            if part_element in replacement_patterns: # 変換辞書にある場合
+                                second_parts.append(replacement_patterns[part_element]) # 変換して格納
+                                #print(second_parts)
+                            else:
+                                second_parts.append(part_element)
+                                #print(second_parts)
+                #print(second_parts)
+
+                # second_partsが複数要素を持つ可能性も考えられるので、','.join()で文字列に変換
+                second_part_joined = recursive_join(second_parts)
+
+                # 損傷名をコンマでつなげる
+                
+                join_damagename_result = [",".join(join_damagename_sublist) for join_damagename_sublist in second_items[i]]
+
+
+                # 準備したfirst_part（部材名）とsecond_part_joined（損傷名）の合体
+                if second_items[i] is None: # 損傷種類がNoneのとき
+                    combined_data = None # 損傷メモはNone
+                else:
+                    parts_item_str = ','.join(first_part) # リストから文字列に変換
+                    special_text = '' # デフォルトの特別テキストは空文字列
+
+                    if len(second_items[i]) == 1: # 損傷種類が1つにまとまっている場合
+                        memo_special_text = None
+                        for result in join_damagename_result:
+                            if "," in result:
+                                memo_special_text = result.find(",") + 1  # 最初のコンマ位置を検索してその次の文字位置を取得
+                                special_text = f"\n【関連損傷】\n{result[memo_special_text:]}"
+                                break
+                        
+                        # parts_item_strの重複がある場合、削除
+                        duplication = parts_item_str.split(",")
+                        unique_duplication = list(set(duplication)) # setを使って重複を削除
+                        duplication_result = ",".join(unique_duplication) # リストを再度文字列に変換
+                        
+                        combined_data = f"{duplication_result}に{second_part_joined}が見られる。{special_text}"
+                        #print(combined_data)
+                        #print(" ")
+                        
+                    else: # 複数部材で異なる損傷がある場合
+                        # 先頭の部分（主桁）のテキスト
+                        changed_damage_name = []
+                        # 置換パターンに基づいて置換する関数を定義
+                        def replace_patterns(text, patterns):
+                            for old, new in patterns.items():
+                                text = text.replace(old, new)
+                            return text
+
+                        # 各ダメージ名を置換
+                        for damage in join_damagename_result:
+                            changed_damage_name.append(replace_patterns(damage, replacement_patterns))
+
+                        # 先頭の部分（主桁）のテキスト
+                        combined_result = f"{first_part[0]}に{changed_damage_name[0]}が見られる。"
+
+                        combined_result += f"また、{first_part[1]}に{changed_damage_name[1]}"
+
+                        # 2つ目以降の要素を結合
+                        if len(first_part) >= 3:
+                            for i in range(2, len(first_part)):
+                                combined_result += f"、{first_part[i]}に{changed_damage_name[i]}"
+                        else:
+                            None
+
+                        if len(first_part) >= 2:
+                            combined_result += "が見られる。"
+
+                        # 1つ目の要素にカンマがあるかどうかをチェック
+                        if "," in join_damagename_result[0]:
+                            # カンマがある場合、1つ目のpartsと1つ目のjoin_damagename_resultを結合し、残りはそのまま結合
+                            tokki_1 = f"\n【関連損傷】\n{parts[0]}:{join_damagename_result[0]}"
+                            for cma in range(1, len(parts)):
+                                tokki_1 += f"、{parts[cma]}:{join_damagename_result[cma]}"
+                        else:
+                            # カンマがない場合、2つ目以降のpartsとjoin_damagename_resultを結合
+                            tokki_1 = "\n【関連損傷】\n"
+                            for cma in range(len(parts)):
+                                if cma > 0:
+                                    if tokki_1:
+                                        tokki_1 += ""
+                                    tokki_1 += f"{parts[cma]}:{join_damagename_result[cma]}、"
+                        combined_result += tokki_1
+                        combined_data = combined_result[:-1]
+                        
+                
+    # << ◆ ここまで ◆ >>                   
+                    # \n文字列のときの改行文字
+                items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
+                    
                 #優先順位の指定
                 order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
                 order_number = {"None": 0, "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10, "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15, "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20, "㉑": 21, "㉒": 22, "㉓": 23, "㉔": 24, "㉕": 25, "㉖": 26}
                 order_lank = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}
                         
                 def sort_category(text): # sort_category関数を定義
-                    # ',' でテキストを分割し、最初の部分のみを考慮する
-                    first_part = text.split(',')[0]
+                    # テキストがリスト形式で渡される場合を想定
+                    if isinstance(text, list) and len(text) > 0:
+                        first_part = text[0][0]  # リストの最初の要素を取得
+                    else:
+                        first_part = text  # それ以外の場合はそのまま使用
                     for key, val in order_dict.items(): # keyがキー(主桁～防護柵)、valが値(1～6)
-                        if first_part.startswith(key): # textの1文字目がキー(主桁～防護柵)の場合
+                        if str(first_part).startswith(key): # textの1文字目がキー(主桁～防護柵)の場合
                             return val # 値(1～6)を返す
                     return max(order_dict.values()) + 1
                 
-                def extract_numbers(s):
                     # 文字列から数値部分だけを抽出してリストに格納する
-                    return [int(''.join(filter(str.isdigit, part))) for part in s.split(',') if ''.join(filter(str.isdigit, part))]
+                def extract_numbers(s):
+                    # 文字列をカンマで分割してリストにする
+                    if "," in item:
+                        parts = [item.split(',') for item in s]
+                    else:
+                        parts = item
+                    # 抽出された数値部分を格納するリスト
+                    numbers = []
+                    # カンマで分割した各部分について処理を行う
+                    for part in parts:
+                        # 各部分から数字だけを抽出する
+                        digit_str = ''.join(filter(str.isdigit, part))
+                        # 抽出された数字部分が空でない場合
+                        if digit_str:
+                            # 数字部分を整数に変換してリストに追加する
+                            number = int(digit_str)
+                            numbers.append(number)
+                    return numbers
 
                 def get_first_key(first):
                     num_parts = extract_numbers(first)
@@ -816,7 +1065,7 @@ def table_view(request):
     # sorted(並び替えるオブジェクト, lamda式(無名関数)で並び替え 各要素: (text[0]で始まる要素を並び替え、その中でtext[0]の並び替え))
 
     context = {'damage_table': sorted_text_list}  # テンプレートに渡すデータ
-    print(sorted_text_list) # sorted_text_list（itemsの内容を並び替え）をすべて表示
+    #print(sorted_text_list) # sorted_text_list（itemsの内容を並び替え）をすべて表示
     return render(request, 'table.html', context)
 
 def ajax_file_send(request):

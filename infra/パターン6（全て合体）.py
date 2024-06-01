@@ -450,7 +450,7 @@ for index, data in enumerate(extracted_text):
         }
         bridge_damage.append(bridge)
         #print(bridge_damage)
-        #print(first_item[i])
+        
 # << ◆1つ1つの部材に対して損傷を紐付けるコード◆ >>
         first_element = bridge_damage[0]
 
@@ -479,7 +479,7 @@ for index, data in enumerate(extracted_text):
                     #print(item)
                     first_elements = first_buzai_item['first'][0]  # ['床版 Ds0201', '床版 Ds0203']
                     second_elements = first_buzai_item['second'][0]  # ['⑦剥離・鉄筋露出-d']
-                    #print(second_elements)
+
                     
                     # first の要素と second を一対一で紐付け
                     for first_buzai_second_name in first_elements:
@@ -496,6 +496,73 @@ for index, data in enumerate(extracted_text):
                 for break_first, break_second in zip(first_double_elements, second_double_elements):
                     first_and_second.append({'first': break_first, 'second': break_second})
 
+        for damage_parts in bridge_damage:
+            # print(damage_parts)
+            if isinstance(damage_parts["second"], list):  # "second"がリストの場合
+                filtered_second_items = []
+                for sublist in damage_parts["second"]:
+                    if isinstance(sublist, list):  # サブリストがリストである場合
+                        if any(item.startswith('①') for item in sublist) and any(item.startswith('⑤') for item in sublist):
+                            # ⑤で始まる要素を取り除く
+                            filtered_sublist = [item for item in sublist if not item.startswith('⑤')]
+                            filtered_second_items.append(filtered_sublist)
+                        else:
+                            filtered_second_items.append(sublist)
+                    else:
+                        filtered_second_items.append([sublist])
+                
+                # フィルタリング後のsecond_itemsに対して置換を行う                
+                #pavement_items = {"first": first_item[i], "second": filtered_second_items}
+                    
+        combined_list = []
+        if damage_parts["second"] is not None:
+            combined_second = filtered_second_items #if i < len(updated_second_items) else None
+        else:
+            combined_second = None
+        
+        combined = {"first": first_item[i], "second": combined_second}
+        combined_list.append(combined)
+        request_list = combined_list[0]
+        # <<◆ secondの多重リストを統一させる ◆>>
+        try:
+            # データを取得する
+            check_request_list = request_list['first'][1]
+
+            # 条件分岐
+            if isinstance(check_request_list, list):
+                test = request_list
+                #print(request_list)
+                
+        except (KeyError, IndexError) as e:
+            # KeyError や IndexError の例外が発生した場合の処理
+
+            # secondの多重リストをフラットなリストに変換
+            flat_list = [item for sublist in request_list['second'] for item in sublist]
+            # フラットなリストを再びサブリストに変換して格納
+            request_list['second'] = [flat_list]
+            # 完成目標の確認
+            
+            test = request_list['second'][0]
+
+            # 先頭が文字（日本語やアルファベットなど）の場合
+        def all_match_condition(lst):
+            """
+            リスト内のすべての項目が特定条件に一致するか確認します。
+            ただし、空のリストの場合、Falseを返します。
+            """
+            # 空のリストの場合は False を返す
+            if not lst:
+                return False
+            
+            pattern = re.compile(r'\A[^\W\d_]', re.UNICODE)
+            return all(pattern.match(item) for item in lst)
+
+        if all_match_condition(test):
+            request_list
+        else:
+            request_list['second'] = [request_list['second']]
+
+        #<< ◆損傷メモの作成◆ >>
         replacement_patterns = {
             "①腐食(小小)-b": "腐食", # 1
             "①腐食(小大)-c": "拡がりのある腐食",
@@ -504,6 +571,7 @@ for index, data in enumerate(extracted_text):
             "③ゆるみ・脱落-c": "ボルト、ナットにゆるみ・脱落（●本中●本）",
             "③ゆるみ・脱落-e": "ボルト、ナットにゆるみ・脱落（●本中●本）", # 3
             "④破断-e": "鋼材の破断", # 4
+            "⑤防食機能の劣化(分類1)-e": "点錆", # 5
             "⑥ひびわれ(小小)-b": "最大幅0.0mmのひびわれ", # 6
             "⑥ひびわれ(小大)-c": "最大幅0.0mmかつ間隔0.5m未満のひびわれ",
             "⑥ひびわれ(中小)-c": "最大幅0.0mmのひびわれ",
@@ -532,44 +600,220 @@ for index, data in enumerate(extracted_text):
             "㉔土砂詰まり-e": "土砂詰まり", # 24
         }
 
-
-        def replace_patterns(text, patterns):
-            for key, value in patterns.items():
-                text = re.sub(key, value, text)
-            return text
-
-        pavement_items = []
-
-        for damage_parts in bridge_damage:
-            # print(damage_parts)
-            if isinstance(damage_parts["second"], list):  # "second"がリストの場合
-                filtered_second_items = []
-                for sublist in damage_parts["second"]:
-                    if isinstance(sublist, list):  # サブリストがリストである場合
-                        if any(item.startswith('①') for item in sublist) and any(item.startswith('⑤') for item in sublist):
-                            # ⑤で始まる要素を取り除く
-                            filtered_sublist = [item for item in sublist if not item.startswith('⑤')]
-                            filtered_second_items.append(filtered_sublist)
-                        elif any(item.startswith('⑰') for item in sublist):
-                                    # サブリスト内の全アイテムを再度チェック
-                                    seventn = []
-                                    for item in sublist:
-                                        if item.startswith('⑰'):
-                                            match = re.search(r"⑰.*?\(.*?:(.*?)\)-e", item)
-                                            if match:
-                                                extracted_text = match.group(1)
-                                                seventn.append(extracted_text)
-                                    filtered_second_items.append(seventn)
-                        else:
-                            filtered_second_items.append(sublist)
+        def describe_damage(unified_request_list):
+            described_list = []
+            
+            for damage in unified_request_list:
+                if damage in replacement_patterns:
+                    described_list.append(replacement_patterns[damage])
+                elif damage.startswith('⑰'):
+                    match = re.search(r'(?<=:)(.*?)(?=\)-e)', damage)
+                    if match:
+                        described_list.append(match.group(1))
+                else:
+                    pattern = r'[\u3248-\u3257](.*?)-'
+                    match = re.search(pattern, damage)
+                    if match:
+                        described_list.append(match.group(1))
                     else:
-                        filtered_second_items.append([sublist])
+                        described_list.append(damage)  # フォールバックとしてそのまま返す
+            return ','.join(described_list)
+
+        # 各ケースに対して出力を確認:
+        def generate_report(unified_request_list):
+            primary_damages = []
+            processed_related_damages = []
+            #print(f"unified_request_list：{unified_request_list}")
+            first_items = unified_request_list['first']
+            #print(first_items) # [['支承本体 Bh0101'], ['沓座モルタル Bm0101']]
+            second_items = unified_request_list['second']
+            #print(second_items) # [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c']]
+            primary_damages_dict = {}
+
+            for first_item, second_item in zip(first_items, second_items):
+                #print(f"first_items：{first_items}")
+                #print(f"second_items：{second_items}")
+                #print(f"first_item：{first_item}")
+                #print(f"second_item：{second_item}")
+                element_names = [f.split()[0] for f in first_item] # カッコ内の要素について、スペースより前を抽出
+                #print(f"element_names：{element_names}") # ['支承本体'], ['沓座モルタル']
+                damage_descriptions = describe_damage(second_item) # 辞書で置換
+                #print(f"damage_descriptions：{damage_descriptions}") # 腐食,点錆, 剥離
                 
-                # フィルタリング後のsecond_itemsに対して置換を行う
-                replaced_items = []
-                for sublist in filtered_second_items:
-                    replaced_sublist = [replace_patterns(item, replacement_patterns) for item in sublist]
-                    replaced_items.append(replaced_sublist)
+                if len(element_names) == 1: # ['主桁', '横桁', '対傾構']：これはだめ
+                    primary_damages.append(f"{element_names[0]}に{damage_descriptions}が見られる。")
+                    #print(f"primary_damages：{primary_damages}") # ['支承本体に腐食,点錆が見られる。', '沓座モルタルに剥離が見られる。']
+                else:
+                    element_names = list(dict.fromkeys(element_names))            
+                    joined_elements = "および".join(element_names[:-1]) + "," + element_names[-1]
+                    if joined_elements.startswith(","):
+                        new_joined_elements = joined_elements[1:]
+                    else:
+                        new_joined_elements = joined_elements
+                    primary_damages.append(f"{new_joined_elements}に{damage_descriptions}が見られる。")
+
+                for elem in first_item:
+                    primary_damages_dict[elem] = second_item[:]
+
+            primary_description = "また".join(primary_damages)
                 
-                combined = {"first": first_item[i], "second": replaced_items}
-                print(combined)
+            for elem_name, elem_number in zip(first_items, second_items): # 主桁 Mg0101
+                #print(f"{first_items}-{elem_name}")
+                #print(f"{second_items}-{elem_number}")
+                #print(len(first_items))
+                #print(len(second_items))
+                #print(" ")
+                # リストをフラットにする関数
+                def flatten_list(nested_list):
+                    return [item for sublist in nested_list for item in sublist]
+                
+                # 辞書から 'first' と 'second' の値を取り出す
+                first_list = request_list['first']
+                second_list = request_list['second']
+
+                # 'first' の要素数を数える
+                first_count = sum(len(sublist) for sublist in first_list)
+
+                # 'second' の要素数を数える
+                second_count = sum(len(sublist) for sublist in second_list)
+                # フラットにしたリストを比較
+                if flatten_list(first_items) != elem_name and flatten_list(second_items) != elem_number:
+                    #print(f"{flatten_list(first_items)}-{elem_name}")
+                    #print(f"{flatten_list(second_items)}-{elem_number}")
+                    sub_related_damages = []
+                    for first_item in first_items:
+                        for elem in first_item:
+                            if elem in primary_damages_dict:
+                                formatted_damages = ",".join(list(dict.fromkeys(primary_damages_dict[elem])))
+                                sub_related_damages.append(f"{elem}:{formatted_damages}")
+                                #print(f"sub_related_damages：{sub_related_damages}") # ['支承本体 Bh0101:①腐食(小小)-b,⑤防食機能の劣化(分類1)-e', '沓座モルタル Bm0101:⑦剥離・鉄筋露出-c']
+
+                    # 処理後のリストを格納するための新しいリスト
+                    second_related_damages = []
+
+                    # リスト内の各要素をループする
+                    for i, damage in enumerate(sub_related_damages):
+                        # コロンの位置を取得
+                        colon_index = damage.find(":")
+                        
+                        if colon_index != -1:
+                            if i == 0:
+                                # 1番目の要素の場合
+                                parts = damage.split(',')
+                                
+                                if len(parts) > 1:
+                                    first_damage = parts[0].split(':')[0]
+                                    after_damage = ':' + parts[1].strip()
+                                    create_damage = first_damage + after_damage
+                                    second_related_damages.append(create_damage)
+
+                            else:
+                                # 2つ目以降の要素の場合
+                                parts = damage.split(',')
+                                second_related_damages.append(damage)
+                                
+
+                    # 処理後のリストを格納するための新しいリスト
+                    processed_related_damages = []
+                    #print(f"second_related_damages：{second_related_damages}")
+                    for damage in second_related_damages:
+                        colon_index = damage.find(":")
+                        if colon_index != -1:
+                            before_colon_part = damage[:colon_index].strip()
+                            after_colon_part = damage[colon_index + 1:].strip()
+                            #print(f"damage[colon_index + 1:]：{damage}")
+                            if before_colon_part and after_colon_part:
+                                processed_damage = f"{before_colon_part}:{after_colon_part}"
+                                processed_related_damages.append(processed_damage)
+                    #print(f"after_colon_part：{processed_related_damages}")
+                    
+                elif first_count < 2 and second_count < 2: # {'first': [['横桁 Cr0803']], 'second': [['⑦剥離・鉄筋露出-d']]}
+                    None
+                elif first_count > 1 and second_count < 2: # {'first': [['床版 Ds0201', '床版 Ds0203']], 'second': [['⑦剥離・鉄筋露出-d']]}
+                    #print(f"first_item：{first_item}") # ['床版 Ds0201', '床版 Ds0203']
+                    #print(f"second_item：{second_item}") # ['⑦剥離・鉄筋露出-d']
+                    first_items_from_first = first_item[1:]
+                    #print(first_items_from_first) # ['橋台[竪壁] Ac0101', '伸縮装置 Ej0101']
+                    related_damage_list = ','.join(first_items_from_first)# カンマ区切りの文字列に結合
+                    #print(related_damage_list) # 橋台[竪壁] Ac0101,伸縮装置 Ej0101
+                    related_second_item = ','.join(second_item)
+                    processed_related_damages.append(f"{related_damage_list}:{related_second_item}")
+                    #print(f"2-1_processed_related_damages：{processed_related_damages}")
+                elif first_count < 2 and second_count > 1: # {'first': [['横桁 Cr0503']], 'second': [['⑦剥離・鉄筋露出-d', '⑰その他(分類6:施工不良)-e']]}
+                    #print(first_item) # ['横桁 Cr0503']
+                    #print(second_item) # ['⑦剥離・鉄筋露出-d', '⑰その他(分類6:施工不良)-e']
+                    second_items_from_second = second_item[1:]
+                    related_damage_list = ','.join(second_items_from_second)# カンマ区切りの文字列に結合
+                    #print(related_damage_list)
+                    processed_related_damages.append(f"{','.join(elem_name)}:{related_damage_list}")
+                    #print(f"1-2_processed_related_damages：{processed_related_damages}")
+                else:#  len(elem_name) > 1 and len(elem_number) > 1: # {'first': [['排水管 Dp0101', '排水管 Dp0102']], 'second': [['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']]}
+                    #print(first_item) # ['排水管 Dp0101', '排水管 Dp0102']
+                    #print(second_item) # ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']
+                    related_damage_list = ','.join(second_item)
+                    #print(related_damage_list)
+                    processed_related_damages.append(f"{','.join(elem_name)}:{related_damage_list}")
+                    #print(f"0-0_processed_related_damages：{processed_related_damages}")
+
+
+            related_description = ""
+            if processed_related_damages:
+                related_description = "\n【関連損傷】\n" + ", ".join(processed_related_damages)
+
+            return f"{primary_description} {related_description}".strip()
+
+        combined_data = generate_report(request_list)
+        #print(combined_data)
+
+        # << ◆ ここまで ◆ >>                   
+                # \n文字列のときの改行文字
+        items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
+        
+        damage_table.append(items)
+    #print(damage_table)# 並び替え前が表示
+#<<◆ ここまではOK ◆>>
+
+    #優先順位の指定
+    order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
+    order_number = {"None": 0, "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10, "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15, "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20, "㉑": 21, "㉒": 22, "㉓": 23, "㉔": 24, "㉕": 25, "㉖": 26}
+    order_lank = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}
+            
+    # <<◆ リストの並び替え ◆>>
+    def sort_key_function(sort_item):
+        first_value = sort_item['first'][0][0] # firstキーの最初の要素
+        #print(first_value) # 主桁 Mg0901
+
+        if " " in first_value:
+            # 部材記号の前にスペースが「含まれている」場合
+            first_value_split = first_value.split()
+            #print(first_value_split) # ['主桁', 'Mg0901']
+        else:
+            # 部材記号の前にスペースが「含まれていない」場合
+            first_value_split = re.split(r'(?<=[^a-zA-Z])(?=[a-zA-Z])', first_value) # アルファベット以外とアルファベットの並びで分割
+            first_value_split = [x for x in first_value_split if x] # re.split()の結果には空文字が含まれるので、それを取り除く
+            #print(first_value_split) # ['主桁', 'Mg0901']
+
+        first_name_key = order_dict.get(first_value_split[0], float('inf'))
+        #print(first_name_key) # 1
+
+        first_number_key = int(first_value_split[1][2:])
+        #print(first_number_key) # 901
+
+        if sort_item['second'][0][0]:  # `second`キーが存在する場合
+            second_value = sort_item['second'][0][0] # secondキーの最初の要素
+            #print(second_value) # ⑰その他(分類6:異物混入)-e
+            second_number_key = order_number.get(second_value[0], float('inf'))  # 先頭の文字を取得してorder_numberに照らし合わせる
+            #print(second_number_key) # 17
+            second_lank_key = order_lank.get(second_value[-1], float('inf'))  # 末尾の文字を取得してorder_lankに照らし合わせる
+            #print(second_lank_key) # 5
+        else:
+            second_number_key = float('inf')
+            second_lank_key = float('inf')
+                
+        return (first_name_key, first_number_key, second_number_key, second_lank_key)
+
+    sorted_items = sorted(damage_table, key=sort_key_function)
+
+# ソート結果を表示
+for item in sorted_items:
+    print(item)

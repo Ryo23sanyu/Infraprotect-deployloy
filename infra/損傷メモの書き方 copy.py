@@ -1,39 +1,46 @@
 import re
 
-request_list = {'first': [['排水管 Dp0102']], 'second': [['①腐食(小大)-c'], ['⑤防食機能の劣化(分類1)-e']]}
 
-#<< ◆損傷メモの作成◆ >>
 replacement_patterns = {
+    "①腐食(小小)-b": "腐食", # 1
+    "①腐食(小大)-c": "拡がりのある腐食",
+    "①腐食(大小)-d": "板厚減少を伴う腐食",
+    "①腐食(大大)-e": "板厚減少を伴う拡がりのある腐食",
+    "③ゆるみ・脱落-c": "ボルト、ナットにゆるみ・脱落（●本中●本）",
+    "③ゆるみ・脱落-e": "ボルト、ナットにゆるみ・脱落（●本中●本）", # 3
+    "④破断-e": "鋼材の破断", # 4
+    "⑤防食機能の劣化(分類1)-e": "点錆", # 5
+    "⑥ひびわれ(小小)-b": "最大幅0.0mmのひびわれ", # 6
+    "⑥ひびわれ(小大)-c": "最大幅0.0mmかつ間隔0.5m未満のひびわれ",
+    "⑥ひびわれ(中小)-c": "最大幅0.0mmのひびわれ",
+    "⑥ひびわれ(中大)-d": "最大幅0.0mmかつ間隔0.5m未満のひびわれ",
+    "⑥ひびわれ(大小)-d": "最大幅0.0mmのひびわれ",
+    "⑥ひびわれ(大大)-e": "最大幅0.0mmかつ間隔0.5m未満のひびわれ",
+    "⑦剥離・鉄筋露出-c": "コンクリートの剥離", # 7
+    "⑦剥離・鉄筋露出-d": "鉄筋露出",
+    "⑦剥離・鉄筋露出-e": "断面減少を伴う鉄筋露出",
+    "⑧漏水・遊離石灰-c": "漏水", # 8
+    "⑧漏水・遊離石灰-d": "遊離石灰",
+    "⑧漏水・遊離石灰-e": "著しい遊離石灰・泥や錆汁の混入を伴う漏水",
+    "⑨抜け落ち-e": "コンクリート塊の抜け落ち", # 9
+    "⑪床版ひびわれ-b": "最大幅0.0mmの1方向ひびわれ",
+    "⑪床版ひびわれ-c": "最大幅0.0mmの1方向ひびわれ",
+    "⑪床版ひびわれ-d": "最大幅0.0mmの1方向ひびわれ",
+    "⑪床版ひびわれ-e": "最大幅0.0mmの角落ちを伴う1方向ひびわれ", # 11
+    "⑫うき-e": "コンクリートのうき", # 12
+    "⑮舗装の異常-c": "最大幅0.0mmのひびわれ",
+    "⑮舗装の異常-e": "最大幅0.0mmのひびわれ・舗装の土砂化", # 15
+    "⑯定着部の異常-c": "定着部の損傷。",
+    "⑯定着部の異常(分類2)-e": "定着部の著しい損傷", # 16
+    "⑳漏水・滞水-e": "漏水・滞水", # 20
+    "㉓変形・欠損-c": "変形・欠損", # 23
+    "㉓変形・欠損-e": "著しい変形・欠損",
+    "㉔土砂詰まり-e": "土砂詰まり", # 24
 }
 
-def describe_increase_damage(request_list):
-    # 新しい辞書を作成する
-    unified_request_list = {}
-
-    for key, damages in request_list.items():
-        # 各キーに対する新しい統一されたリスト
-        unified_damage_list = []
-
-        for damage in damages:
-            if isinstance(damage, str):
-                # 文字列の場合はリストに変換して追加
-                unified_damage_list.append([damage])
-            else:
-                # 既にリスト形式の場合はそのまま追加
-                unified_damage_list.append(damage)
-
-        # 新しい辞書に追加
-        unified_request_list[key] = unified_damage_list
-
-    # 結果を表示
-    print(unified_request_list)
-
-describe_increase_damage(request_list)
-
-def describe_damage(unified_request_list):
+def describe_damage(damage_list):
     described_list = []
-    
-    for damage in unified_request_list:
+    for damage in damage_list:
         if damage in replacement_patterns:
             described_list.append(replacement_patterns[damage])
         elif damage.startswith('⑰'):
@@ -48,31 +55,41 @@ def describe_damage(unified_request_list):
             else:
                 described_list.append(damage)  # フォールバックとしてそのまま返す
     return ','.join(described_list)
-
+  
 # 各ケースに対して出力を確認:
-def generate_report(unified_request_list):
+request_list = {'first': [['横桁 Cr0803']], 'second': [['⑦剥離・鉄筋露出-d']]}
+
+#request_list = {'first': [['床版 Ds0201', '床版 Ds0203']], 'second': [['⑦剥離・鉄筋露出-d']]}
+
+#request_list = {'first': [['横桁 Cr0503']], 'second': [['⑦剥離・鉄筋露出-d', '⑰その他(分類6:施工不良)-e']]}
+
+#request_list = {'first': [['排水管 Dp0101', '排水管 Dp0102']], 'second': [['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']]}
+
+#request_list = {'first': [['主桁 Mg0101', '横桁 Cr0102', '対傾構 Cf0102']], 'second': [['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']]}
+
+#request_list = {'first': [['支承本体 Bh0101'], ['沓座モルタル Bm0101']], 'second': [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c']]}
+
+#request_list = {'first': [['支承本体 Bh0101'], ['沓座モルタル Bm0101']], 'second': [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c', '⑰その他(分類6:穴ぼこ)-e']]}
+
+def generate_report(request_list):
     primary_damages = []
     processed_related_damages = []
-    print(f"unified_request_list：{unified_request_list}")
-    first_items = unified_request_list['first']
+
+    first_items = request_list['first']
     #print(first_items) # [['支承本体 Bh0101'], ['沓座モルタル Bm0101']]
-    second_items = unified_request_list['second']
+    second_items = request_list['second']
     #print(second_items) # [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c']]
     primary_damages_dict = {}
 
     for first_item, second_item in zip(first_items, second_items):
-        #print(f"first_items：{first_items}")
-        #print(f"second_items：{second_items}")
-        #print(f"first_item：{first_item}")
-        print(f"second_item：{second_item}")
         element_names = [f.split()[0] for f in first_item] # カッコ内の要素について、スペースより前を抽出
-        print(f"element_names：{element_names}") # ['支承本体'], ['沓座モルタル']
+        #print(element_names) # ['支承本体'], ['沓座モルタル']
         damage_descriptions = describe_damage(second_item) # 辞書で置換
-        print(f"damage_descriptions：{damage_descriptions}") # 腐食,点錆, 剥離
+        #print(damage_descriptions) # 腐食,点錆, 剥離
         
         if len(element_names) == 1: # ['主桁', '横桁', '対傾構']：これはだめ
             primary_damages.append(f"{element_names[0]}に{damage_descriptions}が見られる。")
-            #print(f"primary_damages：{primary_damages}") # ['支承本体に腐食,点錆が見られる。', '沓座モルタルに剥離が見られる。']
+            #print(primary_damages) # ['支承本体に腐食,点錆が見られる。', '沓座モルタルに剥離が見られる。']
         else:
             element_names = list(dict.fromkeys(element_names))            
             joined_elements = "および".join(element_names[:-1]) + "," + element_names[-1]
@@ -173,12 +190,4 @@ def generate_report(unified_request_list):
 
     return f"{primary_description} {related_description}".strip()
 
-combined_data = generate_report(request_list)
-print(combined_data)
-
-# << ◆ ここまで ◆ >>                   
-        # \n文字列のときの改行文字
-#items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
-#items = {'first': first_item[i], 'second': second_items[i]}
-#print(items)
-#print("")
+print(generate_report(request_list))
