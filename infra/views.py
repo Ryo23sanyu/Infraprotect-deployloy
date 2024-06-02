@@ -1,29 +1,22 @@
-import glob
-import pprint
+# アプリ内からインポート
 import re
-from django.views import View
-import pandas as pd
 import os
+import glob
+# サードパーティー製モジュール
 import ezdxf
-import tkinter
-import tkinter.filedialog
-from django import forms
+import pandas as pd
+from markupsafe import Markup
+# django内からインポート
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
-from markupsafe import Markup
-from requests import Response
-from .models import Approach, Article, DamageReport, Infra, LoadGrade, LoadWeight, Photo, Panorama, Number, Regulation, Rulebook, Thirdparty, UnderCondition
-from django.db import models
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from django.views import View
+from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
+from .models import Approach, Article, DamageReport, Infra, LoadGrade, LoadWeight, Photo, Panorama, Number, Regulation, Rulebook, Thirdparty, UnderCondition
 from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
-from django.views.generic.edit import FormView
-from ezdxf.entities.mtext import MText
-from PIL import Image, ImageTk
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -56,153 +49,144 @@ class DetailInfraView(LoginRequiredMixin, DetailView):
         return super().get_context_data(**kwargs)
   
 class CreateInfraView(LoginRequiredMixin, CreateView):
-  template_name = 'infra/infra_create.html' # 対応するhtmlの名前
-  model = Infra # models.pyのどのモデルと紐付くか
-  # form_class = BridgeCreateForm # forms.pyのどのクラスと紐付くか
-  fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
-  success_url = reverse_lazy('detail-infra')
+    template_name = 'infra/infra_create.html' # 対応するhtmlの名前
+    model = Infra # models.pyのどのモデルと紐付くか
+    # form_class = BridgeCreateForm # forms.pyのどのクラスと紐付くか
+    fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
+    success_url = reverse_lazy('detail-infra')
 
-  def form_valid(self, form):
-    #ここのobjectはデータベースに登録を行うmodelつまりInfraの１レコードです。
-    #formはModelFormと呼ばれるフォームの仕組みで、saveを実行すると関連付いているモデルとして登録を行う動きをします。
-    object = form.save(commit=False)
-    #ここでのobjectは登録対象のInfraモデル１件です。登録処理を行いPKが払い出された情報がobjectです
-    #今回はarticle_id、つまりarticleオブジェクトが無いのでこれをobjectに設定します。
-    #articleオブジェクトを検索しobjectに代入する事で登録できます。
-    article = Article.objects.get( id = self.kwargs["pk"] )
-    # id = 1 のarticleを検索
-        # article = Article.objects.get(id = 1 )
-    object.案件名 = article
-    # titleの項目に「A」を設定
-        # article.title = "A"
-    #設定したのちsaveを実行し更新します。
-    object.save()
-    return super().form_valid(form)
+    def form_valid(self, form):
+        #ここのobjectはデータベースに登録を行うmodelつまりInfraの１レコードです。
+        #formはModelFormと呼ばれるフォームの仕組みで、saveを実行すると関連付いているモデルとして登録を行う動きをします。
+        object = form.save(commit=False)
+        #ここでのobjectは登録対象のInfraモデル１件です。登録処理を行いPKが払い出された情報がobjectです
+        #今回はarticle_id、つまりarticleオブジェクトが無いのでこれをobjectに設定します。
+        #articleオブジェクトを検索しobjectに代入する事で登録できます。
+        article = Article.objects.get( id = self.kwargs["pk"] )
+        # id = 1 のarticleを検索
+            # article = Article.objects.get(id = 1 )
+        object.案件名 = article
+        # titleの項目に「A」を設定
+            # article.title = "A"
+        #設定したのちsaveを実行し更新します。
+        object.save()
+        return super().form_valid(form)
 
-  def get_success_url(self):
-    return reverse_lazy('list-infra', kwargs={'pk': self.kwargs["pk"]})
+    def get_success_url(self):
+        return reverse_lazy('list-infra', kwargs={'pk': self.kwargs["pk"]})
 
-  #新規作成時、交通規制の全データをコンテキストに含める。
-  def get_context_data(self, **kwargs):
-    context = super().get_context_data(**kwargs)
-    context["loadWeights"] = LoadWeight.objects.all()
-    context["loadGrades"] = LoadGrade.objects.all()
-    context["rulebooks"] = Rulebook.objects.all()
-    context["approachs"] = Approach.objects.all()
-    context["regulations"] = Regulation.objects.all()
-    context["thirdpartys"] = Thirdparty.objects.all()
-    context["underconditions"] = UnderCondition.objects.all()
-    return context
-    
-  def keikan_create_view(request): # keikan_create_view関数を定義
-    if request.method == "POST": # リクエストメソッドがpostの場合
-        form = BridgeCreateForm(request.POST) # BridgeCreateFormというフォームクラスのインスタンスを生成
-        if form.is_valid(): # formが正常の場合
-            keikan_number = form.cleaned_data['径間数'] # form.cleaned_dataから'径間数'キーに対応するデータを取得
-            request.session['keikan_number'] = keikan_number # 取得した"径間数"を現在のユーザーセッションに保存
-            return redirect('table') # 「table」という名前のURLにリダイレクト
-        else:
-            form = BridgeCreateForm() # 新しい空のフォームインスタンスを生成
-    return render(request, 'infra/infra_create.html', {'form': form}) # 'infra_create.html'テンプレートをレンダリング
-  def damage_view(request): # damage_view関数を定義
-    keikan_number = request.session.get('keikan_number', 1) # request.session.getメソッドを使い、セッションから"径間数"を取得、デフォルト値は1
-    keikan_range = list(range(keikan_number)) # 1からkeikan_number（"径間数"）までの連続する整数列を生成
-    return render(request, 'table.html', {'keikan_range': keikan_range}) # 'table.html'テンプレートをレンダリング
+    #新規作成時、交通規制の全データをコンテキストに含める。
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["loadWeights"] = LoadWeight.objects.all()
+        context["loadGrades"] = LoadGrade.objects.all()
+        context["rulebooks"] = Rulebook.objects.all()
+        context["approachs"] = Approach.objects.all()
+        context["regulations"] = Regulation.objects.all()
+        context["thirdpartys"] = Thirdparty.objects.all()
+        context["underconditions"] = UnderCondition.objects.all()
+        return context
+        
+    def keikan_create_view(request): # keikan_create_view関数を定義
+        if request.method == "POST": # リクエストメソッドがpostの場合
+            form = BridgeCreateForm(request.POST) # BridgeCreateFormというフォームクラスのインスタンスを生成
+            if form.is_valid(): # formが正常の場合
+                keikan_number = form.cleaned_data['径間数'] # form.cleaned_dataから'径間数'キーに対応するデータを取得
+                request.session['keikan_number'] = keikan_number # 取得した"径間数"を現在のユーザーセッションに保存
+                return redirect('table') # 「table」という名前のURLにリダイレクト
+            else:
+                form = BridgeCreateForm() # 新しい空のフォームインスタンスを生成
+        return render(request, 'infra/infra_create.html', {'form': form}) # 'infra_create.html'テンプレートをレンダリング
+    def damage_view(request): # damage_view関数を定義
+        keikan_number = request.session.get('keikan_number', 1) # request.session.getメソッドを使い、セッションから"径間数"を取得、デフォルト値は1
+        keikan_range = list(range(keikan_number)) # 1からkeikan_number（"径間数"）までの連続する整数列を生成
+        return render(request, 'table.html', {'keikan_range': keikan_range}) # 'table.html'テンプレートをレンダリング
 
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
-  template_name = 'infra/infra_delete.html'
-  model = Infra
-  success_url = reverse_lazy('list-infra')
+    template_name = 'infra/infra_delete.html'
+    model = Infra
+    success_url = reverse_lazy('list-infra')
   
 class UpdateInfraView(LoginRequiredMixin, UpdateView):
-  template_name = 'infra/infra_update.html'
-  model = Infra
-  fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
-  success_url = reverse_lazy('detail-infra')
-  def get_success_url(self):
-    return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
+    template_name = 'infra/infra_update.html'
+    model = Infra
+    fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
+    success_url = reverse_lazy('detail-infra')
+    def get_success_url(self):
+        return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
 
-  #新規作成時、交通規制の全データをコンテキストに含める。
-  def get_context_data(self, **kwargs):
-    context = super().get_context_data(**kwargs)
-    # 編集中のインスタンスに紐づく交通規制のIDをリストとして取得
-    # コンテキストに追加
-    selected_regulations = self.object.交通規制.values_list('id', flat=True)# 選択状態を保持
-    context['selected_regulations'] = list(selected_regulations)# 選択状態を保持
-    context["regulations"] = Regulation.objects.all()
-    
-    selected_loadWeights = self.object.活荷重.values_list('id', flat=True)
-    context['selected_loadWeights'] = list(selected_loadWeights)
-    context["loadWeights"] = LoadWeight.objects.all()
-    
-    selected_loadGrades = self.object.等級.values_list('id', flat=True)
-    context['selected_loadGrades'] = list(selected_loadGrades)
-    context["loadGrades"] = LoadGrade.objects.all()
-    
-    selected_rulebooks = self.object.適用示方書.values_list('id', flat=True)
-    context['selected_rulebooks'] = list(selected_rulebooks)
-    context["rulebooks"] = Rulebook.objects.all()
-    
-    selected_approachs = self.object.近接方法.values_list('id', flat=True)
-    context['selected_approachs'] = list(selected_approachs)
-    context["approachs"] = Approach.objects.all()
-    
-    selected_thirdpartys = self.object.第三者点検.values_list('id', flat=True)
-    context['selected_thirdpartys'] = list(selected_thirdpartys)
-    context["thirdpartys"] = Thirdparty.objects.all()
-    
-    selected_underconditions = self.object.路下条件.values_list('id', flat=True)
-    context['selected_underconditions'] = list(selected_underconditions)
-    context["underconditions"] = UnderCondition.objects.all()
-    return context
+    #新規作成時、交通規制の全データをコンテキストに含める。
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # 編集中のインスタンスに紐づく交通規制のIDをリストとして取得
+        # コンテキストに追加
+        selected_regulations = self.object.交通規制.values_list('id', flat=True)# 選択状態を保持
+        context['selected_regulations'] = list(selected_regulations)# 選択状態を保持
+        context["regulations"] = Regulation.objects.all()
+        
+        selected_loadWeights = self.object.活荷重.values_list('id', flat=True)
+        context['selected_loadWeights'] = list(selected_loadWeights)
+        context["loadWeights"] = LoadWeight.objects.all()
+        
+        selected_loadGrades = self.object.等級.values_list('id', flat=True)
+        context['selected_loadGrades'] = list(selected_loadGrades)
+        context["loadGrades"] = LoadGrade.objects.all()
+        
+        selected_rulebooks = self.object.適用示方書.values_list('id', flat=True)
+        context['selected_rulebooks'] = list(selected_rulebooks)
+        context["rulebooks"] = Rulebook.objects.all()
+        
+        selected_approachs = self.object.近接方法.values_list('id', flat=True)
+        context['selected_approachs'] = list(selected_approachs)
+        context["approachs"] = Approach.objects.all()
+        
+        selected_thirdpartys = self.object.第三者点検.values_list('id', flat=True)
+        context['selected_thirdpartys'] = list(selected_thirdpartys)
+        context["thirdpartys"] = Thirdparty.objects.all()
+        
+        selected_underconditions = self.object.路下条件.values_list('id', flat=True)
+        context['selected_underconditions'] = list(selected_underconditions)
+        context["underconditions"] = UnderCondition.objects.all()
+        return context
 
 def infra_view(request):
-  if request.method == 'POST':
-    等級 = request.POST.get('等級', None)
-    # load_gradeを使って必要な処理を行う
-    # 例えば、選択されたload_gradeに基づいてデータをフィルタリングして表示するなど
+    if request.method == 'POST':
+        等級 = request.POST.get('等級', None)
+        # load_gradeを使って必要な処理を行う
+        # 例えば、選択されたload_gradeに基づいてデータをフィルタリングして表示するなど
 
-  # 通常のビューロジック
-  return render(request, 'infra/infra_detail.html')
+    # 通常のビューロジック
+    return render(request, 'infra/infra_detail.html')
 
 def index_view(request):
-  order_by = request.GET.get('order_by', '案件名')
-  object_list = Article.objects.order_by(order_by)
-  return render(request, 'infra/index.html', {'object_list': object_list})
-
-# def index_view(request):
-  # order_by = request.GET.get('order_by', 'span_number')
-  # object_list = Infra.objects.order_by(order_by)
-  # return render(request, 'infra/index.html', {'object_list': object_list})
+    order_by = request.GET.get('order_by', '案件名')
+    object_list = Article.objects.order_by(order_by)
+    return render(request, 'infra/index.html', {'object_list': object_list})
 
 class ListArticleView(LoginRequiredMixin, ListView):
-  template_name = 'infra/article_list.html'
-  model = Article
+    template_name = 'infra/article_list.html'
+    model = Article
   
 class DetailArticleView(LoginRequiredMixin, DetailView):
-  template_name = 'infra/article_detail.html'
-  model = Article
+    template_name = 'infra/article_detail.html'
+    model = Article
   
 class CreateArticleView(LoginRequiredMixin, CreateView):
-  template_name = 'infra/article_create.html'
-  model = Article
-  fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
-  success_url = reverse_lazy('list-article')
+    template_name = 'infra/article_create.html'
+    model = Article
+    fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
+    success_url = reverse_lazy('list-article')
   
 class DeleteArticleView(LoginRequiredMixin, DeleteView):
-  template_name = 'infra/article_delete.html'
-  model = Article
-  success_url = reverse_lazy('list-article')
+    template_name = 'infra/article_delete.html'
+    model = Article
+    success_url = reverse_lazy('list-article')
   
 class UpdateArticleView(LoginRequiredMixin, UpdateView):
-  template_name = 'infra/article_update.html'
-  model = Article
-  fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
-  success_url = reverse_lazy('list-article')
-  
-# class ArticleInfraView(LoginRequiredMixin, DetailView):
- # template_name = 'infra/infra_article.html'
- #  model = Article
+    template_name = 'infra/article_update.html'
+    model = Article
+    fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
+    success_url = reverse_lazy('list-article')
  
 def file_upload(request):
     if request.method == 'POST':
@@ -226,20 +210,6 @@ def selected_photos(request):
     selected_photos = Photo.objects.filter(id__in=selected_photo_ids)
     return render(request, 'infra/selected_photos.html', {'selected_photos': selected_photos})
 
-# 会社別に表示
-
-#@login_required
-#def my_view(request):
-    #user = request.user
-    # 会社情報を使ってコンテンツをフィルタリングする処理
-    #filtered_data = Data.objects.filter(company=user.company)
-    #return render(request, 'template.html', {'filtered_data': filtered_data})
-  
-# 全景写真
-
-# def panorama_list(request):
-#     panorama = Panorama.objects.all()
-#     return render(request, 'panorama_list.html', {'panorama': panorama})
 
 def panorama_list(request):
     panoramas = Panorama.objects.all()
@@ -437,12 +407,9 @@ def table_view(request):
         y_end  = mtext_insertion[1] - mtext.dxf.char_height * (text_lines_count + 1) # 文字の高さ×(行数+1)
         
         # MTextの下、もしくは右に特定のプロパティで描かれた文字が存在するかどうかを判定する(座標：右が大きく、上が大きい)
-        if (
-            neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end
-        ):
-            if ( #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
-                neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start
-            ):
+        if (neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end):
+            #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
+            if (neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start):
                 return True
         
         return False
@@ -1152,8 +1119,8 @@ def upload_directory_path(instance, filename):
     # 'documents/プライマリーキー/filename' のパスを返す
     return 'uploads/{}/{}'.format(primary_key, filename)
 
-class Upload(models.Model):
-    file = models.FileField(upload_to=upload_directory_path)
+# class Upload(models.Model):
+#     file = models.FileField(upload_to=upload_directory_path)
     
 # <<センサス調査>>
 def census_view(request):

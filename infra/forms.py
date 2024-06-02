@@ -1,10 +1,12 @@
+# アプリ内からインポート
 import datetime
-from multiprocessing import context
+# django内からインポート
 from django import forms
+from django.core.files.storage import default_storage
+
 from .models import CustomUser, Image, Infra, Number, Regulation, UploadedFile
 from .models import Photo, Company
-from django.core.files.storage import default_storage
-from .models import 交通規制_CHOICES, 活荷重_CHOICES, 等級_CHOICES, 適用示方書_CHOICES, 近接方法_CHOICES, 第三者点検_CHOICES, 路下条件_CHOICES
+
 
 class FileUploadForm(forms.ModelForm):
     class Meta:

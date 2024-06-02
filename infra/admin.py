@@ -13,3 +13,6 @@ admin.site.register(Rulebook) # 適用示方書
 admin.site.register(Approach) # 近接方法
 admin.site.register(Thirdparty) # 第三者点検の有無
 admin.site.register(UnderCondition) # 路下条件
+
+# 管理サイトを自動的に作る。
+# == This code was created by https://noauto-nolife.com/post/django-auto-create-models-forms-admin/ == #
