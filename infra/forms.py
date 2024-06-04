@@ -7,7 +7,7 @@ from django.core.files.storage import default_storage
 from .models import CustomUser, Image, Infra, Number, Regulation, UploadedFile
 from .models import Photo, Company
 
-
+# <<ファイルアップロード>>
 class FileUploadForm(forms.ModelForm):
     class Meta:
         model = UploadedFile

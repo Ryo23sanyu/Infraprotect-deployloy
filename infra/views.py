@@ -257,8 +257,14 @@ def number_view(request):
 
 # <<テーブルの作成>>
 def table_view(request):
-    #dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_損傷橋.dxf'
-    dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_チェック橋.dxf'
+    #if request.method == 'POST': # HTTPリクエストのメソッドがPOST(送信用)の場合
+    #    form = FileUploadForm(request.POST, request.FILES) # forms.pyの「FileUploadForm」クラス
+    # 　 # FileUploadFormインスタンスを作成し、リクエストから送信されたデータを格納する。
+    #    if form.is_valid(): # フォームに渡されたデータがバリデーションルールに適合しているかをチェック
+    #        uploaded_file_instance = form.save() # フォームをデータベースに保存し、そのインスタンスを取得
+    #        file_path = uploaded_file_instance.file.path # 保存されたファイルのパスを取得
+    #dxf_filename = file_path # 
+    dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_省略橋.dxf'
     search_title_text = "1径間" # 複数径間の場合は"1径間"
     second_search_title_text = "損傷図"
 
@@ -729,7 +735,51 @@ def table_view(request):
                         # 元のリストから各要素を取得
                     for first_buzai_item in bridge_damage:
                         #print(item)
-                        first_elements = first_buzai_item['first'][0]  # ['床版 Ds0201', '床版 Ds0203']
+                        before_first_elements = first_buzai_item['first'][0]  # ['床版 Ds0201', '床版 Ds0203']
+                        first_elements = []
+
+                        for first_buzai_second_name in before_first_elements:
+                            if "～" in first_buzai_second_name:
+
+                                first_step = first_buzai_second_name
+
+                                if " " in first_step:
+                                    # 部材記号の前にスペースが「含まれている」場合
+                                    first_step_split = first_step.split()
+
+                                else:
+                                    # 部材記号の前にスペースが「含まれていない」場合
+                                    first_step_split = re.split(r'(?<=[^a-zA-Z])(?=[a-zA-Z])', first_step) # アルファベット以外とアルファベットの並びで分割
+                                    first_step_split = [kara for kara in first_step_split if kara] # re.split()の結果には空文字が含まれるので、それを取り除く
+
+                                # 正規表現
+                                number = first_step_split[1]
+                                # マッチオブジェクトを取得
+                                number_part = re.search(r'[A-Za-z]*(\d+～\d+)', number).group(1)
+
+                                one = number_part.find("～")
+
+                                start_number = number_part[:one]
+                                end_number = number_part[one+1:]
+
+                                # 最初の2桁と最後の2桁を取得
+                                start_prefix = start_number[:2]
+                                start_suffix = start_number[2:]
+                                end_prefix = end_number[:2]
+                                end_suffix = end_number[2:]
+
+                                # 「主桁 Mg」を抽出
+                                prefix_text = first_step_split[0] + " " + re.match(r'[A-Za-z]+', number).group(0)
+
+                                # 決められた範囲内の番号を一つずつ追加
+                                for prefix in range(int(start_prefix), int(end_prefix)+1):
+                                    for suffix in range(int(start_suffix), int(end_suffix)+1):
+                                        number_items = "{}{:02d}{:02d}".format(prefix_text, prefix, suffix)
+                                        first_elements.append(number_items)
+                            else:
+                                first_elements.append(first_buzai_second_name)
+                        
+                        
                         second_elements = first_buzai_item['second'][0]  # ['⑦剥離・鉄筋露出-d']
 
                         
@@ -1043,12 +1093,16 @@ def table_view(request):
                 # 部材記号の前にスペースが「含まれていない」場合
                 first_value_split = re.split(r'(?<=[^a-zA-Z])(?=[a-zA-Z])', first_value) # アルファベット以外とアルファベットの並びで分割
                 first_value_split = [x for x in first_value_split if x] # re.split()の結果には空文字が含まれるので、それを取り除く
-                #print(first_value_split) # ['主桁', 'Mg0901']
+                print(f"first_value_split：{first_value_split}") # ['主桁', 'Mg0901']
 
             first_name_key = order_dict.get(first_value_split[0], float('inf'))
             #print(first_name_key) # 1
-
-            first_number_key = int(first_value_split[1][2:])
+            if "～" in first_value_split[1]:
+                match = re.search(r'[A-Za-z]+(\d{2,})(\D)', first_value_split[1])
+                if match:
+                    first_number_key = int(match.group(1))
+            else:
+                first_number_key = int(first_value_split[1][2:])
             #print(first_number_key) # 901
 
             if sort_item['second'][0][0]:  # `second`キーが存在する場合

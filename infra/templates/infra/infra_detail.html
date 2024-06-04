@@ -157,7 +157,7 @@
                 if (results[0]) {
                   var formattedAddress = results[0].formatted_address;
                   // 地図のURLを更新
-                  var iframeUrl = `https://www.mlit.go.jp/road/ir/ir-data/census_visualizationR3/index.html#16/${lat}/${lng}`;
+                  var iframeUrl = `https://www.mlit.go.jp/road/ir/ir-data/census_visualizationR3/webmap.html#16/${lat}/${lng}`;
                   document.getElementById('mapFrame').src = iframeUrl;
           
                   // 地図の位置情報を表示

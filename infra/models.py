@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+# <<案件作成のモデル>>
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 class Article(models.Model):
     案件名 = models.CharField(max_length=100)# 顧客名
@@ -13,10 +14,8 @@ class Article(models.Model):
     def __str__(self):
         return self.案件名
     
-CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
-# LOADGRADE = (('one', '一等橋'),('two', '二等橋'),('three', '三等橋'),('unknown', '不明'))
 
-# 交通規制のモデル
+# <<交通規制のモデル>>
 交通規制_CHOICES = (('無し', '無し'),('片側交互通行', '片側交互通行'),('車線減少', '車線減少'),('歩道規制', '歩道規制'),('通行止め', '通行止め'))
 class Regulation(models.Model):
     交通規制 = models.CharField(max_length=50, choices=交通規制_CHOICES)
@@ -62,6 +61,7 @@ class UnderCondition(models.Model):
     def __str__(self):
         return self.路下条件
 
+# <<橋梁緒言作成のモデル>>
 class Infra(models.Model):
     title = models.CharField(max_length=100)# 橋名
     径間数 = models.IntegerField()# 径間数
@@ -90,7 +90,8 @@ class Infra(models.Model):
     
     def __str__(self):
         return self.title
-#
+
+# <<ファイルアップロード>>
 class UploadedFile(models.Model):
     file = models.FileField(upload_to='uploads/')
 

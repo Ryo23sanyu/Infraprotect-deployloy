@@ -3,7 +3,7 @@ import re
 import ezdxf
 from markupsafe import Markup
 
-dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_損傷橋.dxf'
+dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_省略橋.dxf'
 search_title_text = "1径間" # 複数径間の場合は"1径間"
 second_search_title_text = "損傷図"
 
@@ -152,12 +152,9 @@ def entity_extension(mtext, neighbor):
     y_end  = mtext_insertion[1] - mtext.dxf.char_height * (text_lines_count + 1) # 文字の高さ×(行数+1)
     
     # MTextの下、もしくは右に特定のプロパティで描かれた文字が存在するかどうかを判定する(座標：右が大きく、上が大きい)
-    if (
-        neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end
-    ):
-        if ( #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
-            neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start
-        ):
+    if (neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end):
+        #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
+        if (neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start):
             return True
     
     return False
@@ -477,11 +474,10 @@ for index, data in enumerate(extracted_text):
                     # 元のリストから各要素を取得
                 for first_buzai_item in bridge_damage:
                     #print(item)
-                    first_elements = first_buzai_item['first'][0]  # ['床版 Ds0201', '床版 Ds0203']
-                    second_elements = first_buzai_item['second'][0]  # ['⑦剥離・鉄筋露出-d']
-                    
-                    # first の要素と second を一対一で紐付け
-                    for first_buzai_second_name in first_elements:
+                    before_first_elements = first_buzai_item['first'][0]  # ['床版 Ds0201', '床版 Ds0203']
+                    first_elements = []
+
+                    for first_buzai_second_name in before_first_elements:
                         if "～" in first_buzai_second_name:
 
                             first_step = first_buzai_second_name
@@ -497,8 +493,6 @@ for index, data in enumerate(extracted_text):
 
                             # 正規表現
                             number = first_step_split[1]
-                            # マッチオブジェクトを取得
-
                             # マッチオブジェクトを取得
                             number_part = re.search(r'[A-Za-z]*(\d+～\d+)', number).group(1)
 
@@ -516,15 +510,22 @@ for index, data in enumerate(extracted_text):
                             # 「主桁 Mg」を抽出
                             prefix_text = first_step_split[0] + " " + re.match(r'[A-Za-z]+', number).group(0)
 
-                            number_arrangement = []
+                            # 決められた範囲内の番号を一つずつ追加
                             for prefix in range(int(start_prefix), int(end_prefix)+1):
                                 for suffix in range(int(start_suffix), int(end_suffix)+1):
                                     number_items = "{}{:02d}{:02d}".format(prefix_text, prefix, suffix)
-                                    first_and_second = [{'first': [number_items], 'second': second_elements}]
-                                    #print(first_and_second)
+                                    first_elements.append(number_items)
                         else:
-                            first_and_second = [{'first': [first_buzai_second_name], 'second': second_elements}]
-                            #print(first_and_second)
+                            first_elements.append(first_buzai_second_name)
+                    
+                    
+                    second_elements = first_buzai_item['second'][0]  # ['⑦剥離・鉄筋露出-d']
+
+                    
+                    # first の要素と second を一対一で紐付け
+                    for first_buzai_second_name in first_elements:
+                        first_and_second.append({'first': [first_buzai_second_name], 'second': second_elements})
+
             #print(first_and_second) # [{'first': '床版 Ds0201', 'second': '⑦剥離・鉄筋露出-d'}, {'first': '床版 Ds0203', 'second': '⑦剥離・鉄筋露出-d'}]
 
         #<<◆ 部材名が複数の場合 ◆>>
@@ -808,7 +809,56 @@ for index, data in enumerate(extracted_text):
         # << ◆ ここまで ◆ >>                   
                 # \n文字列のときの改行文字
         items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
-        
+            
         damage_table.append(items)
-    print(damage_table)# 並び替え前が表示
+    #print(damage_table)# 並び替え前が表示
 #<<◆ ここまではOK ◆>>
+
+    #優先順位の指定
+    order_dict = {"主桁": 1, "横桁": 2, "床版": 3, "PC定着部": 4, "橋台[胸壁]": 5, "橋台[竪壁]": 6, "支承本体": 7, "沓座モルタル": 8, "防護柵": 9, "地覆": 10, "伸縮装置": 11, "舗装": 12, "排水ます": 13, "排水管": 14}
+    order_number = {"None": 0, "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5, "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10, "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15, "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20, "㉑": 21, "㉒": 22, "㉓": 23, "㉔": 24, "㉕": 25, "㉖": 26}
+    order_lank = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}
+            
+    # <<◆ リストの並び替え ◆>>
+    def sort_key_function(sort_item):
+        first_value = sort_item['first'][0][0] # firstキーの最初の要素
+        #print(first_value) # 主桁 Mg0901
+
+        if " " in first_value:
+            # 部材記号の前にスペースが「含まれている」場合
+            first_value_split = first_value.split()
+            #print(first_value_split) # ['主桁', 'Mg0901']
+        else:
+            # 部材記号の前にスペースが「含まれていない」場合
+            first_value_split = re.split(r'(?<=[^a-zA-Z])(?=[a-zA-Z])', first_value) # アルファベット以外とアルファベットの並びで分割
+            first_value_split = [x for x in first_value_split if x] # re.split()の結果には空文字が含まれるので、それを取り除く
+            print(f"first_value_split：{first_value_split}") # ['主桁', 'Mg0901']
+
+        first_name_key = order_dict.get(first_value_split[0], float('inf'))
+        #print(first_name_key) # 1
+        if "～" in first_value_split[1]:
+            match = re.search(r'[A-Za-z]+(\d{2,})(\D)', first_value_split[1])
+            if match:
+                first_number_key = int(match.group(1))
+        else:
+            first_number_key = int(first_value_split[1][2:])
+        #print(first_number_key) # 901
+
+        if sort_item['second'][0][0]:  # `second`キーが存在する場合
+            second_value = sort_item['second'][0][0] # secondキーの最初の要素
+            #print(second_value) # ⑰その他(分類6:異物混入)-e
+            second_number_key = order_number.get(second_value[0], float('inf'))  # 先頭の文字を取得してorder_numberに照らし合わせる
+            #print(second_number_key) # 17
+            second_lank_key = order_lank.get(second_value[-1], float('inf'))  # 末尾の文字を取得してorder_lankに照らし合わせる
+            #print(second_lank_key) # 5
+        else:
+            second_number_key = float('inf')
+            second_lank_key = float('inf')
+                
+        return (first_name_key, first_number_key, second_number_key, second_lank_key)
+
+    sorted_items = sorted(damage_table, key=sort_key_function)
+
+# ソート結果を表示
+for item in sorted_items:
+    print(item)

@@ -9,40 +9,39 @@
     </div>
     {{ form.as_p }}
     <button type="submit">アップロード</button>
+    {% comment %} <div id="fileList">登録したファイル</div> {% endcomment %}
   </form>
 
   <script>
     const dropArea = document.getElementById('dropArea');
-    
-    dropArea.addEventListener('dragover', (event) => {
+    const fileList = document.getElementById('fileList');
+
+    dropArea.addEventListener('dragover', (event) => { //ドロップボックスと重なったとき
       event.preventDefault();
-      dropArea.style.border = '2px dashed blue';
+      dropArea.style.border = '2px dashed blue'; // 枠線のスタイルを設定
+      dropArea.style.backgroundColor = 'rgba(0, 0, 255, 0.2)';  // ここで背景色を青く設定(rgb:色の三原色 + a:透明度)
+    });
+
+    dropArea.addEventListener('dragleave', (event) => { //ドロップボックスから離れた時
+      dropArea.style.border = '2px dashed blue';  // 枠スタイルを元に戻す
+      dropArea.style.backgroundColor = '';  // 背景色を元に戻す
     });
   
-    dropArea.addEventListener('dragleave', () => {
-      dropArea.style.border = '2px dashed gray';
-    });
-  
-    dropArea.addEventListener('drop', (event) => {
+    dropArea.addEventListener('drop', (event) => { //ドロップした後
       event.preventDefault();
-      dropArea.style.border = '2px dashed gray';
+      dropArea.style.border = '2px dashed blue';  // 枠スタイルを元に戻す
+      dropArea.style.backgroundColor = '';  // 背景色を元に戻す
       const files = event.dataTransfer.files;
-      console.log(files); // 選択されたファイルの情報を取得できます
+      for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const fileElement = document.createElement('div');
+          fileElement.textContent = file.name;
+          fileList.appendChild(fileElement);
+      }
       
       // ファイルを格納する処理
       const formData = new FormData(); // フォームデータを作成
       formData.append('file', files[0]); // ファイルを追加
-      
-      // AJAXリクエストを使ってファイルをアップロード
-      //fileArea.addEventListener('drop', function(evt){
-        //evt.preventDefault();
-        //fileArea.classList.remove('dragenter');
-        //var files = evt.dataTransfer.files;
-        //console.log("DRAG & DROP");
-        //console.table(files);
-        //fileInput.files = files;
-        //photoPreview('onChenge',files[0]);  
-      //});
 
       // id_fileに対してドラッグアンドドロップをセットする
       const fileInput = document.querySelector("#id_file");
