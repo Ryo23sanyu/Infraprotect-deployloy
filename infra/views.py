@@ -15,6 +15,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import FileSystemStorage
 from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
+
+from infraproject import settings
 from .models import Approach, Article, DamageReport, Infra, LoadGrade, LoadWeight, Photo, Panorama, Number, Regulation, Rulebook, Thirdparty, UnderCondition
 from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
 
@@ -257,14 +259,15 @@ def number_view(request):
 
 # <<テーブルの作成>>
 def table_view(request):
-    #if request.method == 'POST': # HTTPリクエストのメソッドがPOST(送信用)の場合
-    #    form = FileUploadForm(request.POST, request.FILES) # forms.pyの「FileUploadForm」クラス
-    # 　 # FileUploadFormインスタンスを作成し、リクエストから送信されたデータを格納する。
-    #    if form.is_valid(): # フォームに渡されたデータがバリデーションルールに適合しているかをチェック
-    #        uploaded_file_instance = form.save() # フォームをデータベースに保存し、そのインスタンスを取得
-    #        file_path = uploaded_file_instance.file.path # 保存されたファイルのパスを取得
-    #dxf_filename = file_path # 
-    dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_省略橋.dxf'
+    if request.method == 'POST': # HTTPリクエストのメソッドがPOST(送信用)の場合
+        form = FileUploadForm(request.POST, request.FILES) # forms.pyの「FileUploadForm」クラス
+        # FileUploadFormインスタンスを作成し、リクエストから送信されたデータを格納する。
+        if form.is_valid(): # フォームに渡されたデータがバリデーションルールに適合しているかをチェック
+            uploaded_file_instance = form.save() # フォームをデータベースに保存し、そのインスタンスを取得
+            file_path = uploaded_file_instance.file.path # 保存されたファイルのパスを取得
+            dxf_filename = file_path # 
+    else:
+        dxf_filename = R'C:\work\django\myproject\program\Infraproject\media\uploads\121_省略橋.dxf'
     search_title_text = "1径間" # 複数径間の場合は"1径間"
     second_search_title_text = "損傷図"
 
@@ -1184,7 +1187,8 @@ def census_view(request):
 # <<全景写真の表示>>
 def image_list(request):
     # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。
-    save_path = r"C:\work\django\myproject\program\Infraproject\infra\static\infra\img"
+    save_path = str(settings.BASE_DIR) + "\infra\static\infra\img"
+    # 「C:\work\django\myproject\program\Infraproject」+「\infra\static\infra\img」と同意
     files_jpg = glob.glob(save_path + "\*.jpg")
     files_png = glob.glob(save_path + "\*.png")
     files = files_jpg + files_png  # 2つのリストを結合する。
@@ -1201,7 +1205,8 @@ def image_list(request):
     return render(request, 'image_list.html', {'image_files': image_files})
 
 # <<全景写真アップロード>>
-save_path = r"C:\work\django\myproject\program\Infraproject\infra\static\infra\img"
+save_path = str(settings.BASE_DIR) + "\infra\static\infra\img"
+# 「C:\work\django\myproject\program\Infraproject」+「\infra\static\infra\img」と同意
 def display_photo(request):
     print("リクエストメソッド:", request.method)  # リクエストのメソッドを表示
     if request.method == 'POST': # HTTPリクエストがPOSTメソッド(フォームの送信など)であれば、以下のコードを実行

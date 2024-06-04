@@ -166,5 +166,45 @@
         }
     }
 
+    let dragged;
+
+    document.addEventListener('dragstart', (event) => {
+        dragged = event.target;
+        event.target.style.opacity = 0.5;
+    });
+
+    document.addEventListener('dragend', (event) => {
+        event.target.style.opacity = "";
+    });
+
+    document.addEventListener('dragover', (event) => {
+        event.preventDefault();
+    });
+
+    document.addEventListener('dragenter', (event) => {
+        if (event.target.classList.contains('draggable')) {
+            event.target.classList.add('placeholder');
+        }
+    });
+
+    document.addEventListener('dragleave', (event) => {
+        if (event.target.classList.contains('draggable')) {
+            event.target.classList.remove('placeholder');
+        }
+    });
+
+    document.addEventListener('drop', (event) => {
+        event.preventDefault();
+        if (event.target.classList.contains('draggable')) {
+            event.target.classList.remove('placeholder');
+            if (event.target.id != dragged.id) {
+                let parent = dragged.parentNode;
+                dragged.parentNode.removeChild(dragged);
+                let droppedOn = event.target;
+                parent.insertBefore(dragged, droppedOn);
+            }
+        }
+    });
+
 </script>
 {% endblock content %}

@@ -108,7 +108,7 @@
         var savedLat = parseFloat(localStorage.getItem('latitude')) || 35.6812; // 指定がなければ東京駅
         var savedLng = parseFloat(localStorage.getItem('longitude')) || 139.7670; // 指定がなければ東京駅
         // iframeのsrc属性を更新
-        var iframeUrl = `https://www.mlit.go.jp/road/ir/ir-data/census_visualizationR3/index.html#16/${savedLat}/${savedLng}`;
+        var iframeUrl = `https://www.mlit.go.jp/road/ir/ir-data/census_visualizationR3/webmap.html#16/${savedLat}/${savedLng}`;
         document.getElementById('mapFrame').src = iframeUrl;
         var map = new google.maps.Map(document.getElementById('map'), {
           center: {lat: savedLat, lng: savedLng},// 中心を東京駅に設定
