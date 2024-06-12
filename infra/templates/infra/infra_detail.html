@@ -15,11 +15,11 @@
       <li><a href="3">各部材所見</a></li>
       <li><a href="3">損傷図</a></li>
       <li><a href="3">損傷写真</a></li>
-      <li><a href="3">アップロード</a></li>
+      <li><a href="{% url 'file_upload' %}">アップロード</a></li>
       <li><a href="3">データ出力</a></li>
   </ul>
   <div class="sidebar-toggle">
-    <button class="btn btn-primary">sidebar</button>
+    <button class="btn btn-primary">＜</button>
   </div>
 </div>
   <div class="p-4 m-4 bg-light border border-success rounded">
@@ -180,7 +180,7 @@
       <iframe id="mapFrame" src="https://www.mlit.go.jp/road/ir/ir-data/census_visualizationR3/index.html#13/${lat}/${lng" width="1000" height="300"></iframe>  
     </div>
     <!--<iframe src="https://www.mlit.go.jp/road/ir/ir-data/census_visualizationR3/index.html#13/35.6823/139.7550" width="1000" height="300"></iframe>-->
-      <h5>国交省:令和3年度道路交通センサス</h5>
+      <h5>国土交通省:令和3年度道路交通センサス</h5>
       <script>
       function handleOrderChange() {
                   // プルダウンメニューが変更されたときの処理をここに追加

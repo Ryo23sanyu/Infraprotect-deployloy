@@ -3,7 +3,7 @@ import re
 import ezdxf
 from markupsafe import Markup
 
-dxf_filename = R'C:\work\django\myproject\program\Infraproject\uploads\121_省略橋.dxf'
+dxf_filename = R'C:\work\django\myproject\program\Infraproject\media\uploads\001_省略橋.dxf'
 search_title_text = "1径間" # 複数径間の場合は"1径間"
 second_search_title_text = "損傷図"
 
@@ -160,6 +160,23 @@ def entity_extension(mtext, neighbor):
     return False
 
 extracted_text = find_square_around_text(dxf_filename, search_title_text, second_search_title_text) # 関数の定義
+# リストを処理して、スペースを追加する関数を定義
+def add_spaces(text):
+    # 正規表現でアルファベットと数字の間にスペースを挿入
+    return re.sub(r'(?<! )([a-zA-Z]+)(\d{2,})', r' \1\2', text)
+
+# 変更されたリストを保存するための新しいリスト
+new_extracted_text = []
+
+# 各サブリストを処理
+for sub_extracted_text in extracted_text:
+    # 先頭の文字列を修正
+    if " " not in sub_extracted_text[0]:
+        sub_extracted_text[0] = add_spaces(sub_extracted_text[0])
+    # 新しいリストに追加
+    new_extracted_text.append(sub_extracted_text)
+
+extracted_text = new_extracted_text
 
 for index, data in enumerate(extracted_text):
     # 最終項目-1まで評価
@@ -172,6 +189,7 @@ for index, data in enumerate(extracted_text):
             data.extend(next_data)
             # 次の位置の要素を削除
             extracted_text.remove(next_data)
+
 # extracted_text = [['主桁 Mg0101', '①-d', '写真番号-00', 'defpoints'], ['主桁 Mg0902', '⑦-c', '写真番号-00', 'defpoints']]
 
 # それぞれのリストから文字列のみを抽出する関数(座標以外を抽出)
@@ -808,7 +826,7 @@ for index, data in enumerate(extracted_text):
 
         # << ◆ ここまで ◆ >>                   
                 # \n文字列のときの改行文字
-        items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
+        items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': None, 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
             
         damage_table.append(items)
     #print(damage_table)# 並び替え前が表示
@@ -859,6 +877,7 @@ for index, data in enumerate(extracted_text):
 
     sorted_items = sorted(damage_table, key=sort_key_function)
 
+print(sorted_items)
 # ソート結果を表示
-for item in sorted_items:
-    print(item)
+#for item in sorted_items:
+#    print(item)

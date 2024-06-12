@@ -97,9 +97,15 @@ class UploadedFile(models.Model):
 
 class Table(models.Model):
     # ForeignKeyフィールドによってInfraとのリレーションシップを定義
-    infra = models.ForeignKey(Infra, on_delete=models.CASCADE)
-    damage_location = models.CharField(max_length=100) # 損傷箇所
-    damage_type = models.CharField(max_length=100) # 損傷種類
+    infra = models.ForeignKey(Infra, verbose_name="橋梁名", on_delete=models.CASCADE)
+    # damage_location = models.CharField(max_length=100) # 損傷箇所
+    # damage_type = models.CharField(max_length=100) # 損傷種類
+    # infraを作成するときに登録するdxfファイル用
+    # 要マイグレーション
+    # 1
+    # test.dxf
+        # ↓のフィールドを追加してマイグレーションをする。
+    dxf = models.FileField(verbose_name="dxfファイル", upload_to="infra/table/dxf/")
 
 # 会社別に表示
 

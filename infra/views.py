@@ -5,6 +5,7 @@ import glob
 # サードパーティー製モジュール
 import ezdxf
 import pandas as pd
+import urllib.parse
 from markupsafe import Markup
 # django内からインポート
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
@@ -17,7 +18,7 @@ from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 
 from infraproject import settings
-from .models import Approach, Article, DamageReport, Infra, LoadGrade, LoadWeight, Photo, Panorama, Number, Regulation, Rulebook, Thirdparty, UnderCondition
+from .models import Approach, Article, DamageReport, Infra, Table, LoadGrade, LoadWeight, Photo, Panorama, Number, Regulation, Rulebook, Thirdparty, UnderCondition
 from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
 
 class ListInfraView(LoginRequiredMixin, ListView):
@@ -27,9 +28,13 @@ class ListInfraView(LoginRequiredMixin, ListView):
         # モデル検索のクエリー。Infra.objects.all() と同じ結果で全ての Infra
         queryset = super().get_queryset(**kwargs)
         # パスパラメータpkによりarticleを求める
-        article = Article.objects.get(id = self.kwargs["pk"])
+        # 指定されたpk(idの指定)のデータを取得
+# article  = Article.objects.get(id = self.kwargs["pk"])
+        # get使用すると、存在しない場合エラーになってしまう
         # 求めたarticleを元にモデル検索のクエリーを絞り込む
-        queryset = queryset.filter(article=article)
+        # infra_objectフィルタ－
+        #queryset = queryset.filter(article=article)
+        queryset = queryset.filter(article = self.kwargs["pk"])
         # 絞り込んだクエリーをDjangoに返却し表示データとしてもらう
         return queryset
 
@@ -64,10 +69,10 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
         #ここでのobjectは登録対象のInfraモデル１件です。登録処理を行いPKが払い出された情報がobjectです
         #今回はarticle_id、つまりarticleオブジェクトが無いのでこれをobjectに設定します。
         #articleオブジェクトを検索しobjectに代入する事で登録できます。
-        article = Article.objects.get( id = self.kwargs["pk"] )
+# article = Article.objects.get( id = self.kwargs["pk"] )
         # id = 1 のarticleを検索
             # article = Article.objects.get(id = 1 )
-        object.案件名 = article
+        object.案件名 = self.kwargs["pk"]
         # titleの項目に「A」を設定
             # article.title = "A"
         #設定したのちsaveを実行し更新します。
@@ -89,20 +94,22 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
         context["underconditions"] = UnderCondition.objects.all()
         return context
         
-    def keikan_create_view(request): # keikan_create_view関数を定義
+    def keikan_create_view(request, pk): # keikan_create_view関数を定義
         if request.method == "POST": # リクエストメソッドがpostの場合
             form = BridgeCreateForm(request.POST) # BridgeCreateFormというフォームクラスのインスタンスを生成
             if form.is_valid(): # formが正常の場合
                 keikan_number = form.cleaned_data['径間数'] # form.cleaned_dataから'径間数'キーに対応するデータを取得
                 request.session['keikan_number'] = keikan_number # 取得した"径間数"を現在のユーザーセッションに保存
-                return redirect('table') # 「table」という名前のURLにリダイレクト
+                print(form.instance.pk)
+                return redirect('bridge_table', pk) # 「table」という名前のURLにリダイレクト
             else:
                 form = BridgeCreateForm() # 新しい空のフォームインスタンスを生成
         return render(request, 'infra/infra_create.html', {'form': form}) # 'infra_create.html'テンプレートをレンダリング
-    def damage_view(request): # damage_view関数を定義
+    
+    def damage_view(request, pk): # damage_view関数を定義
         keikan_number = request.session.get('keikan_number', 1) # request.session.getメソッドを使い、セッションから"径間数"を取得、デフォルト値は1
         keikan_range = list(range(keikan_number)) # 1からkeikan_number（"径間数"）までの連続する整数列を生成
-        return render(request, 'table.html', {'keikan_range': keikan_range}) # 'table.html'テンプレートをレンダリング
+        return render(request, 'bridge_table.html', {'keikan_range': keikan_range}) # 'table.html'テンプレートをレンダリング
 
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
     template_name = 'infra/infra_delete.html'
@@ -257,17 +264,21 @@ def number_view(request):
 
     return HttpResponse(result)
 
-# <<テーブルの作成>>
-def table_view(request):
-    if request.method == 'POST': # HTTPリクエストのメソッドがPOST(送信用)の場合
-        form = FileUploadForm(request.POST, request.FILES) # forms.pyの「FileUploadForm」クラス
-        # FileUploadFormインスタンスを作成し、リクエストから送信されたデータを格納する。
-        if form.is_valid(): # フォームに渡されたデータがバリデーションルールに適合しているかをチェック
-            uploaded_file_instance = form.save() # フォームをデータベースに保存し、そのインスタンスを取得
-            file_path = uploaded_file_instance.file.path # 保存されたファイルのパスを取得
-            dxf_filename = file_path # 
-    else:
-        dxf_filename = R'C:\work\django\myproject\program\Infraproject\media\uploads\121_省略橋.dxf'
+
+def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
+    context = {}
+    # プロジェクトのメディアディレクトリからdxfファイルまでの相対パス
+    table = Table.objects.filter(id=pk).first()
+    # オブジェクトディレクトリの相対パスを取得
+    encoded_url_path = table.dxf.url
+    decoded_url_path = urllib.parse.unquote(encoded_url_path)  # URLデコード
+    # 絶対パスと合体
+    dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
+    
+    context["table"] = table
+    # keikan_infra = Infra.objects.filter(id=pk).first() # 271行目と同じ
+    context["buttons"] = table.infra.径間数 * " " # Tableクラスのinfraオブジェクトから「径間数」を取り出す
+
     search_title_text = "1径間" # 複数径間の場合は"1径間"
     second_search_title_text = "損傷図"
 
@@ -424,6 +435,23 @@ def table_view(request):
         return False
 
     extracted_text = find_square_around_text(dxf_filename, search_title_text, second_search_title_text) # 関数の定義
+    # リストを処理して、スペースを追加する関数を定義
+    def add_spaces(text):
+        # 正規表現でアルファベットと数字の間にスペースを挿入
+        return re.sub(r'(?<! )([a-zA-Z]+)(\d{2,})', r' \1\2', text)
+
+    # 変更されたリストを保存するための新しいリスト
+    new_extracted_text = []
+
+    # 各サブリストを処理
+    for sub_extracted_text in extracted_text:
+        # 先頭の文字列を修正
+        if " " not in sub_extracted_text[0]:
+            sub_extracted_text[0] = add_spaces(sub_extracted_text[0])
+        # 新しいリストに追加
+        new_extracted_text.append(sub_extracted_text)
+
+    extracted_text = new_extracted_text
 
     for index, data in enumerate(extracted_text):
         # 最終項目-1まで評価
@@ -1072,7 +1100,7 @@ def table_view(request):
 
             # << ◆ ここまで ◆ >>                   
                     # \n文字列のときの改行文字
-            items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': 'infra/noImage.png', 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
+            items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': None, 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
                 
             damage_table.append(items)
         #print(damage_table)# 並び替え前が表示
@@ -1127,9 +1155,11 @@ def table_view(request):
     #for item in sorted_items:
         #print(item)
 
-    context = {'damage_table': sorted_items}  # テンプレートに渡すデータ
+    # context = {'damage_table': sorted_items}  # テンプレートに渡すデータ
+    context["damage_table"] = sorted_items
     #print(sorted_text_list) # sorted_text_list（itemsの内容を並び替え）をすべて表示
-    return render(request, 'table.html', context)
+    return render(request, "infra/bridge_table.html", context)
+    #return render(request, 'table.html', context)
 
 def ajax_file_send(request):
     if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ

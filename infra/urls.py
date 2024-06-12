@@ -1,7 +1,7 @@
 from django.urls import path
 from .import views
 from .views import file_upload, file_upload_success
-from .views import photo_list, photo_upload, selected_photos, panorama_list, panorama_upload
+from .views import photo_list, photo_upload, selected_photos, panorama_list
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -26,7 +26,10 @@ urlpatterns = [
     path('images/', views.image_list, name='image_list'),# 全景写真
     path('photo/', views.display_photo, name='photo'),# 全景写真のアップロード
     path('change-photo/', views.change_photo, name='change_photo'),# 全景写真の変更
-    path('table/', views.table_view, name='damage_table'),# 損傷写真帳
+
+    #                    ↓ 何のモデルのpkにするか？ ← Tableモデルのid
+    path('bridge_table/<int:pk>/', views.bridge_table, name="bridge_table"),
+    
     path('number/', views.number_create_view, name='number'),
     path('opinion/', views.opinion_view, name='opinion'),# 所見一覧
     path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更

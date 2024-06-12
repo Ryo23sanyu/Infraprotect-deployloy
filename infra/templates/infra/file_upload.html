@@ -9,12 +9,10 @@
     </div>
     {{ form.as_p }}
     <button type="submit">アップロード</button>
-    {% comment %} <div id="fileList">登録したファイル</div> {% endcomment %}
   </form>
 
   <script>
     const dropArea = document.getElementById('dropArea');
-    const fileList = document.getElementById('fileList');
 
     dropArea.addEventListener('dragover', (event) => { //ドロップボックスと重なったとき
       event.preventDefault();
@@ -31,13 +29,6 @@
       event.preventDefault();
       dropArea.style.border = '2px dashed blue';  // 枠スタイルを元に戻す
       dropArea.style.backgroundColor = '';  // 背景色を元に戻す
-      const files = event.dataTransfer.files;
-      for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const fileElement = document.createElement('div');
-          fileElement.textContent = file.name;
-          fileList.appendChild(fileElement);
-      }
       
       // ファイルを格納する処理
       const formData = new FormData(); // フォームデータを作成

@@ -49,13 +49,6 @@ class BridgeUpdateForm(forms.ModelForm):
             '第三者点検': forms.RadioSelect,
             '路下条件': forms.CheckboxSelectMultiple,
         }
-    # 交通規制 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=交通規制_CHOICES)
-    # 活荷重 = forms.ChoiceField(widget=forms.RadioSelect, choices=活荷重_CHOICES)
-    # 等級 = forms.ChoiceField(widget=forms.RadioSelect, choices=等級_CHOICES)
-    # 適用示方書 = forms.ChoiceField(widget=forms.RadioSelect, choices=適用示方書_CHOICES)
-    # 近接方法 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=近接方法_CHOICES)
-    # 第三者点検 = forms.ChoiceField(widget=forms.RadioSelect, choices=第三者点検_CHOICES)
-    # 路下条件 = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, choices=路下条件_CHOICES)
 
 # <<センサス調査>>
 class CensusForm(forms.Form):
@@ -97,9 +90,3 @@ class FileUploadSampleForm(forms.Form):
         upload_file = self.files['file']  # フォームからアップロードファイルを取得
         file_name = default_storage.save(now_date + "_" + upload_file.name, upload_file)  # ファイルを保存 戻り値は実際に保存したファイル名
         return default_storage.url(file_name)
-
-# 損傷写真用
-# class DamagePictureForm(forms.ModelForm): # DamagePictureFormという名前のDjangoのモデルフォームクラスを定義
-#     class Meta: # Metaクラスを定義(フォームの挙動やモデルフォームと関連付けられているモデルの指定などを行える)
-#         model = DamagePicture # models.pyのクラス名と同じ(関連付けられているモデルを指定)
-#         fields = ('description', 'document', ) # モデルフォームに含めるフィールドを指定

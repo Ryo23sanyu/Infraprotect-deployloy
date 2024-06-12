@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Approach, Infra, Article, CustomUser, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition
+from .models import Approach, Infra, Table, Article, CustomUser, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition
 from django.contrib.auth.admin import UserAdmin
 
 # models.pyのclass名とカッコの中を合わせる
@@ -13,6 +13,7 @@ admin.site.register(Rulebook) # 適用示方書
 admin.site.register(Approach) # 近接方法
 admin.site.register(Thirdparty) # 第三者点検の有無
 admin.site.register(UnderCondition) # 路下条件
+admin.site.register(Table) # 損傷写真帳
 
 # 管理サイトを自動的に作る。
 # == This code was created by https://noauto-nolife.com/post/django-auto-create-models-forms-admin/ == #
