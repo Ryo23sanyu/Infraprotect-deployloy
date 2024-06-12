@@ -130,84 +130,11 @@ for i in range(num_positions // len(picture_columns)):
     picture_cell_positions.append([f"{col}{picture_start_row + i * step}" for col in picture_columns])
     lasttime_lank_cell_positions.append([f"{col}{lasttime_lank_row + i * step}" for col in bottom_columns])
     damage_memo_cell_positions.append([f"{col}{damage_memo_row + i * step}" for col in bottom_columns])
-    
-# 最大の写真サイズ（幅、高さ）
-max_width, max_height = 240, 180 # 4:3
-
-# テストごとの位置を追跡するカウンタ
-cell_counter = 0
-
-for item in filtered_data: # リスト(data)をforループの要素(item)に代入
-    if item['last']: # リストのlastキーがある場合
-        if cell_counter % 2 == 0 and item['picture'] is not None: # 写真番号が3つ目かつ、pictureにデフォルト以外が登録されている場合
-            cell_counter += 1
-            for image_path in item['last']:
-                # 画像のパスを確認
-                if os.path.exists(image_path):
-                    # 画像の読み込み
-                    img = Image(image_path)
-                    # 画像サイズの設定
-                    img.width, img.height = max_width, max_height
-                    # 所定のセル位置
-                    cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
-                    # ワークシートに画像を追加
-                    ws.add_image(img, cell_pos)
-                    # カウンタを一つ進める
-                    cell_counter += 1
-        else:
-            for image_path in item['last']:
-                # 画像のパスを確認
-                if os.path.exists(image_path):
-                    # 画像の読み込み
-                    img = Image(image_path)
-                    # 画像サイズの設定
-                    img.width, img.height = max_width, max_height
-                    # 所定のセル位置
-                    cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
-                    # ワークシートに画像を追加
-                    ws.add_image(img, cell_pos)
-                    # カウンタを一つ進める
-                    cell_counter += 1
-            # 画像のパスを確認
-            if item['picture'] and os.path.exists(item['picture']):
-                # 画像の読み込み
-                img = Image(item['picture'])
-                # 画像サイズの設定
-                img.width, img.height = max_width, max_height
-                # 所定のセル位置
-                cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
-                # ワークシートに画像を追加
-                ws.add_image(img, cell_pos)
-                # カウンタを一つ進める
-                cell_counter += 1
                     
 number_change = {
-'①': '腐食',
-'②': '亀裂',
-'③': 'ゆるみ・脱落',
-'④': '破断',
-'⑤': '防食機能の劣化',
-'⑥': 'ひびわれ',
-'⑦': '剥離・鉄筋露出',
-'⑧': '漏水・遊離石灰',
-'⑨': '抜け落ち',
-'⑩': '補修・補強材の損傷',
-'⑪': '床版ひびわれ',
-'⑫': 'うき',
-'⑬': '遊間の異常',
-'⑭': '路面の凹凸',
-'⑮': '舗装の異常',
-'⑯': '支承部の機能障害',
-'⑰': 'その他',
-'⑱': '定着部の異常',
-'⑲': '変色・劣化',
-'⑳': '漏水・滞水',
-'㉑': '異常な音・振動',
-'㉒': '異常なたわみ',
-'㉓': '変形・欠損',
-'㉔': '土砂詰まり',
-'㉕': '沈下・移動・傾斜',
-'㉖': '洗掘',
+'①': 'A',
+'②': 'B',
+'③': 'C',
 }
 
 # データの入力
@@ -255,9 +182,6 @@ for part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos in zip(parts
         ws[memo_cell] = memo_data
         
         data_index += 1
-# `picture`がNone以外の場合、更にデータを1つ進める
-        if current_data['picture'] is not None:
-            data_index += 1
             
 # エクセルファイルを保存
 # 別名で保存するため、新しいファイル名を指定

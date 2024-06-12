@@ -60,6 +60,7 @@ def extract_images_and_save_with_photo_number(excel_file, sheet_name, output_fol
             # 画像データを保存
             with open(image_file_path, "wb") as img_file:
                 img_file.write(img_data)
+                print(img_file)
                 
         except Exception as e:
             print(f"Error processing image at row {row} and col {col}: {e}")

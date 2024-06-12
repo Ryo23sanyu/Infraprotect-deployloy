@@ -28,7 +28,6 @@ def extract_images_and_save_with_photo_number(excel_file, sheet_name, output_fol
             if photo_name_cell.value:
                 photo_name_dict[(p_row, p_col)] = photo_name_cell.value
                 #print(f"Photo name at ({p_row}, {p_col}): {photo_name_cell.value}")
-                print(photo_name_dict)
                 break
 
     # シート内の画像を収集
@@ -65,14 +64,13 @@ def extract_images_and_save_with_photo_number(excel_file, sheet_name, output_fol
         img_data = img._data()
         #image_file_path = os.path.join(output_folder, f"{photo_name}.jpg")
         # 各写真のファイル名をループで生成
-        print(f"photo_name: {photo_name}")
         # ここでphoto_nameは辞書の値を取り出している
         image_file_path = os.path.join(output_folder, f"{photo_name}.jpg")
         
         with open(image_file_path, "wb") as img_file:
             img_file.write(img_data)
-        print(f"Saved image as: {photo_name}.jpg")
-        print(photo_name_dict)
+            print(img_file)
+
 
 # 使い方
 excel_file = R'C:\work\django\myproject\program\Infraproject\uploads\たぬき橋.xlsx'
