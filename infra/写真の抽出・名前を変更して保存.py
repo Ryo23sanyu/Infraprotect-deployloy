@@ -3,7 +3,7 @@ import openpyxl
 from openpyxl.drawing.image import Image
 from io import BytesIO
 
-def extract_images_and_save_with_photo_number(excel_file, sheet_name, output_folder):
+def extract_images_and_save_with_photo_number(excel_file, sheet_name, output_folder, image_width=100, image_height=100):
     # 保存先フォルダが存在しない場合は作成
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -62,19 +62,73 @@ def extract_images_and_save_with_photo_number(excel_file, sheet_name, output_fol
 
         # 画像を保存する
         img_data = img._data()
-        #image_file_path = os.path.join(output_folder, f"{photo_name}.jpg")
-        # 各写真のファイル名をループで生成
-        # ここでphoto_nameは辞書の値を取り出している
         image_file_path = os.path.join(output_folder, f"{photo_name}.jpg")
         
         with open(image_file_path, "wb") as img_file:
             img_file.write(img_data)
-            print(img_file)
 
+        # 画像ファイルを読み込んでサイズを変更する
+        img_object = Image(image_file_path)
+        img_object.width = image_width
+        img_object.height = image_height
+        
+        # 画像をExcelシートに追加する場合
+        # img.anchor = f'{openpyxl.utils.get_column_letter(col)}{row}'
+        # sheet.add_image(img_object)
+
+    # 関数の最後でphoto_name_dictを返す
+    return photo_name_dict
 
 # 使い方
 excel_file = R'C:\work\django\myproject\program\Infraproject\uploads\たぬき橋.xlsx'
 sheet_name = 'その１０'  # 抽出したいシート名を指定
 output_folder = '前回写真'  # 保存先フォルダを指定
+image_width = 1200  # 画像の幅を指定
+image_height = 900  # 画像の高さを指定
 
-extract_images_and_save_with_photo_number(excel_file, sheet_name, output_folder)
+# 関数の戻り値を取得
+photo_name_dict = extract_images_and_save_with_photo_number(excel_file, sheet_name, output_folder, image_width, image_height)
+
+# 保存先フルパスの表示
+full_output_folder_path = os.path.abspath(output_folder)
+print(f"Images are saved in: {full_output_folder_path}")
+
+# フォルダパス
+folder_path = full_output_folder_path
+
+# 辞書の値をリストにして順番に取得
+new_names = list(photo_name_dict.values())
+print(new_names)  # [1, 2, '前回写真-3', ..., 23]
+
+# フォルダ内のファイルをリストする
+files = os.listdir(folder_path)
+files = [f for f in files if f.startswith('photo_') and f.endswith('.jpg')]
+
+# 古い名前に基づき写真ファイルを順番にソート
+files.sort(key=lambda x: (int(x.split('_')[1]), int(x.split('_')[2].split('.')[0])))
+
+# インデックスを初期化
+index = 0
+
+for file_name in files:
+    # 'photo_' で始まり、'.jpg' で終わるファイルのみを対象にする
+    if file_name.startswith('photo_') and file_name.endswith('.jpg'):
+        full_path = os.path.join(folder_path, file_name)
+        
+        try:
+            # 新しい名前を取得しインデックスを更新
+            new_name = f"{new_names[index]}.jpg"
+            new_full_path = os.path.join(folder_path, new_name)
+            
+            os.rename(full_path, new_full_path)
+            print(f"Renamed {full_path} to {new_full_path}")
+            
+            # インデックスを次に進める
+            index += 1
+
+        except Exception as e:
+            print(f"Error processing file {file_name}: {e}")
+
+        # もしファイル数が辞書の名前数を超えるならばループを抜ける
+        if index >= len(new_names):
+            break

@@ -1,3 +1,4 @@
+from itertools import zip_longest
 import re
 import openpyxl
 from openpyxl.drawing.image import Image
@@ -46,13 +47,6 @@ data = [
      'picture': None, 
      'textarea_content': '排水管に板厚減少を伴う拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0101:⑤防食機能の劣化(分類1)-e', 
      'damage_coordinate': ['538482.3557216563', '229268.8593029478'], 'picture_coordinate': ['538810.3087944178', '228910.3502713814']}
-     ,
-    {'first': [['排水管 Dp0102']], 'second': [['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']], 
-     'join': [{'first': ['排水管 Dp0102'], 'second': ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']}], 
-     'third': '写真番号-32', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070486.JPG'], 
-     'picture': None, 
-     'textarea_content': '排水管に拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0102:⑤防食機能の劣化(分類1)-e', 
-     'damage_coordinate': ['547059.1990495767', '229268.8593029478'], 'picture_coordinate': ['549204.9604817769', '229256.3408485695']}
     ,
     {'first': [['橋台[胸壁] Ap0101', '橋台[竪壁] Ac0101', '伸縮装置 Ej0101']], 'second': [['⑳漏水・滞水-e']], 
      'join': [{'first': ['橋台[胸壁] Ap0101'], 'second': ['⑳漏水・滞水-e']}, {'first': ['橋台[竪壁] Ac0101'], 'second': ['⑳漏水・滞水-e']}, {'first': ['伸縮装置 Ej0101'], 'second': ['⑳漏水・滞水-e']}], 
@@ -113,7 +107,7 @@ left_columns = ["I", "AI", "BI"]
 right_columns = ["R", "AR", "BR"]
 bottom_columns = ["T", "AT", "BT"]
 
-# セル位置のリストを動的に生成
+# セル位置のリストを生成 ↓
 partsname_cell_positions = [] # 部材名
 number_cell_positions = [] # 要素番号
 damagename_cell_positions = [] # 損傷の種類
@@ -131,56 +125,15 @@ for i in range(num_positions // len(picture_columns)):
     lasttime_lank_cell_positions.append([f"{col}{lasttime_lank_row + i * step}" for col in bottom_columns])
     damage_memo_cell_positions.append([f"{col}{damage_memo_row + i * step}" for col in bottom_columns])
     
-# 最大の写真サイズ（幅、高さ）
-max_width, max_height = 240, 180 # 4:3
+join_partsname_cell_positions = [item for sublist in partsname_cell_positions for item in sublist]
+join_number_cell_positions = [item for sublist in number_cell_positions for item in sublist]
+join_damagename_cell_positions = [item for sublist in damagename_cell_positions for item in sublist]
+join_lank_cell_positions = [item for sublist in lank_cell_positions for item in sublist]
+join_picture_cell_positions = [item for sublist in picture_cell_positions for item in sublist]
+join_lasttime_lank_cell_positions = [item for sublist in lasttime_lank_cell_positions for item in sublist]
+join_damage_memo_cell_positions = [item for sublist in damage_memo_cell_positions for item in sublist]
+# セル位置のリストを生成 ↑
 
-# テストごとの位置を追跡するカウンタ
-cell_counter = 0
-
-for item in filtered_data: # リスト(data)をforループの要素(item)に代入
-    if item['last']: # リストのlastキーがある場合
-        if cell_counter % 2 == 0 and item['picture'] is not None: # 写真番号が3つ目かつ、pictureにデフォルト以外が登録されている場合
-            cell_counter += 1
-            for image_path in item['last']:
-                # 画像のパスを確認
-                if os.path.exists(image_path):
-                    # 画像の読み込み
-                    img = Image(image_path)
-                    # 画像サイズの設定
-                    img.width, img.height = max_width, max_height
-                    # 所定のセル位置
-                    cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
-                    # ワークシートに画像を追加
-                    ws.add_image(img, cell_pos)
-                    # カウンタを一つ進める
-                    cell_counter += 1
-        else:
-            for image_path in item['last']:
-                # 画像のパスを確認
-                if os.path.exists(image_path):
-                    # 画像の読み込み
-                    img = Image(image_path)
-                    # 画像サイズの設定
-                    img.width, img.height = max_width, max_height
-                    # 所定のセル位置
-                    cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
-                    # ワークシートに画像を追加
-                    ws.add_image(img, cell_pos)
-                    # カウンタを一つ進める
-                    cell_counter += 1
-            # 画像のパスを確認
-            if item['picture'] and os.path.exists(item['picture']):
-                # 画像の読み込み
-                img = Image(item['picture'])
-                # 画像サイズの設定
-                img.width, img.height = max_width, max_height
-                # 所定のセル位置
-                cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
-                # ワークシートに画像を追加
-                ws.add_image(img, cell_pos)
-                # カウンタを一つ進める
-                cell_counter += 1
-                    
 number_change = {
 '①': '腐食',
 '②': '亀裂',
@@ -210,28 +163,58 @@ number_change = {
 '㉖': '洗掘',
 }
 
+# 最大の写真サイズ（幅、高さ）
+max_width, max_height = 240, 180 # 4:3
+
+# 位置を追跡するカウンタ
+cell_counter = 0
+
+for item in filtered_data:
+    # 3列目(インデックスが2)でpictureキーに写真が設定されている場合
+    if cell_counter % 2 == 0 and item['picture'] is not None:
+        # 3列目を空白にするため、インデックスを1つ追加
+        cell_counter += 1
+    # pictureキーに写真が設定されていても、3列目でなければOK
+    else:
+        pass
+
+    # lastの写真を張る動作
+    for image_path in item['last']:
+        if os.path.exists(image_path):
+            img = Image(image_path) # 画像の読み込み
+            img.width, img.height = max_width, max_height # 画像サイズの設定    
+            cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)] # 所定のセル位置       
+            ws.add_image(img, cell_pos) # ワークシートに画像を追加 
+            cell_counter += 1 # カウンタを一つ進める
+            
+    # pictureの写真を張る動作
+    if item['picture'] and os.path.exists(item['picture']):
+        img = Image(item['picture'])
+        img.width, img.height = max_width, max_height
+        cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
+        ws.add_image(img, cell_pos)
+        cell_counter += 1
+
 # データの入力
 data_index = 0
 
-for part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos in zip(partsname_cell_positions, number_cell_positions, damagename_cell_positions, lank_cell_positions, damage_memo_cell_positions, picture_cell_positions):
-    for idx, (part_cell, number_cell, name_cell, lank_cell, memo_cell, pic_cell) in enumerate(zip(part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos)):
-        # データ範囲内であれば処理を行う
-        if data_index >= len(filtered_data):
-            break
-
-        current_data = filtered_data[data_index]
-
-        # lastキーがNoneの場合、データをスキップ
-        if current_data['last'] is None:
-            data_index += 1
-            continue
-
-        picture_path = current_data['picture']
-        if idx == 2 and picture_path is not None:
-            continue
-
-        # データの入力処理
-        first_data = current_data.get('first', [['']])[0][0] # 例: "排水管 Dp0101"
+for item, part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos in zip_longest(filtered_data, join_partsname_cell_positions, join_number_cell_positions, join_damagename_cell_positions, join_lank_cell_positions, join_damage_memo_cell_positions, join_picture_cell_positions, fillvalue=None):
+    
+    if (data_index == 2 or data_index % 2 == 3) and item['picture'] is not None:
+        # 3列目を空白にするため、インデックスを1つ追加
+        data_index += 1
+        
+    part_cell = join_partsname_cell_positions[data_index]
+    number_cell = join_number_cell_positions[data_index]
+    name_cell = join_damagename_cell_positions[data_index]
+    post_lank_cell = join_lank_cell_positions[data_index]
+    pre_lank_cell = join_lasttime_lank_cell_positions[data_index]
+    memo_cell = join_damage_memo_cell_positions[data_index]
+    
+# メモに入れるための固定コード　↓
+    # firstキーの内容を所定の書式に変更
+    try:
+        first_data = item['first'][0][0] # 例: "排水管 Dp0101"
         split_space = first_data.split(" ")
         first_part_data = split_space[0]
         
@@ -241,28 +224,39 @@ for part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos in zip(parts
         ws[part_cell] = first_part_data # 例: "排水管"
         ws[number_cell] = first_number_data # 例: "0101"
         
-        # secondキーの内容を右側のセルに入力
-        second_data = current_data.get('second', [['']])[0][0] # 例: "①腐食(大大)-e"
+        # secondキーの内容を所定の書式に変更
+        second_data = item['second'][0][0] # 例: "①腐食(大大)-e"
         second_damage_name = second_data[0] # 例: "①"
         second_name_data = number_change.get(second_damage_name, second_damage_name)
         second_lank_data = second_data[-1]
         
         ws[name_cell] = second_name_data # 例: "腐食"
-        ws[lank_cell] = second_lank_data # 例: "e"
+        ws[post_lank_cell] = second_lank_data # 例: "e"
         
-        # memoデータを右側のセルに入力
-        memo_data = current_data.get('textarea_content', '') # 例: "排水管に拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0102:⑤防食機能の劣化(分類1)-e"
+        # textarea_contentキーの内容を所定の書式に変更
+        memo_data = item['textarea_content'] # 例: "排水管に拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0102:⑤防食機能の劣化(分類1)-e"
         ws[memo_cell] = memo_data
-        
-        data_index += 1
-# `picture`がNone以外の場合、更にデータを1つ進める
-        if current_data['picture'] is not None:
-            data_index += 1
             
+        if item['picture'] is not None:
+            data_index += 2
+        else:
+            data_index += 1
+    except (TypeError, KeyError):
+        ws[part_cell] = ""
+        ws[number_cell] = ""
+        ws[name_cell] = ""
+        ws[post_lank_cell] = ""
+        ws[memo_cell] = ""
+# メモに入れるための固定コード　↑
+        
 # エクセルファイルを保存
 # 別名で保存するため、新しいファイル名を指定
-new_file_path = 'C:/Users/dobokuka4/Desktop/tameshi.xlsx'
-# macの場合(new_file_path = '/Users/YourUsername/Desktop/example.xlsx')
+if os.name == 'nt':  # Windowsの場合
+    new_file_path = 'C:/Users/dobokuka4/Desktop/tameshi.xlsx'
+elif os.name == 'posix':  # Macの場合 (および他のUNIX系)
+    new_file_path = '/Users/YourUsername/Desktop/example.xlsx'
+else:
+    raise EnvironmentError('Unsupported platform')
 
 # 新しいファイル名で保存
 wb.save(new_file_path)
