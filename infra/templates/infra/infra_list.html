@@ -14,51 +14,33 @@
 
 {% block content %}
 <div class="mt-3">
-  <a href="{% url 'create-infra' pk=article_id %}" class="btn btn-primary">橋梁登録</a>
+  <a href="{% url 'create-infra' article_id %}" class="btn btn-primary">橋梁登録</a>
 </div>
 <div class="d-flex flex-wrap">
-    {# bodyタグ内にlinkタグは推奨されません。 #}
-    {# <link rel="stylesheet" href='style.css'> #}
-    {# <div class="sidebar"> #}
-      {# <p>インフラプロジェクト</p> #}
-      {# <ul> #}
-          {# <li><a href="1">橋梁緒言</a></li> #}
-          {# <li><a href="2">一般図</a></li> #}
-          {# <li><a href="3">全景写真</a></li> #}
-          {# <li><a href="3">番号図</a></li> #}
-          {# <li><a href="3">所見まとめ</a></li> #}
-          {# <li><a href="3">各部材所見</a></li> #}
-          {# <li><a href="3">損傷図</a></li> #}
-          {# <li><a href="3">損傷写真</a></li> #}
-          {# <li><a href="3">アップロード</a></li> #}
-          {# <li><a href="3">データ出力</a></li> #}
-      {# </ul> #}
-      {# <div class="sidebar-toggle"> #}
-        {# <button class="btn btn-primary">sidebar</button> #}
-      {# </div> #}
-    {# </div> #}
-    {# TODO: サイドバーのボタンはサイドバー本体の中に仕込む。#}
 
     {% for item in object_list %} {# forループでitemには各infraが格納されている #} 
     <div class="p-4 m-4 bg-light border border-success rounded" style="width: 19rem;">
         <h2 class="text-success">{{ item.title }}</h2><br>
         <h6 class="card-text">径間数：{{ item.径間数 }} 径間</h6>
-        <h6 class="card-text">橋長：{{ item.橋長 }} m</h6>
+        <h6 class="card-text">橋長　：{{ item.橋長 }} m</h6>
         <h6 class="card-text">全幅員：{{ item.全幅員 }} m</h6>
         <div class="mt-3">
-            <a href="{% url 'detail-infra' item.pk %}" class="btn btn-primary">詳細</a>
+          {# path('article/<int:article_pk>/infra/<int:pk>/detail/',) #}
+          {# article_pkとpkの2つの引数を設定する必要がある。#}
+          <a href="{% url 'detail-infra' article_id item.pk %}" class="btn btn-primary">詳細</a>
 
+            {% comment %} 
             {# infraに紐付いているtableのリンクを全て表示する。（逆参照を使用）#}
             {# Infra(1) Table(多) の状態で Infraに紐づくすべてのTableを取り出す方法 #}
             {# Table(models)にForeignKeyをつけた時点で紐付きが発生する #}
                 {# item.table_set #}
                 {# item は Infraのオブジェクト。item.table_set.all でInfraに紐づくTableをすべて取り出せる。 #}
             {# オブジェクト.多側のモデルの小文字.set.all で逆参照ができる #}
-
+            {% endcomment %}
             {% for table in item.table_set.all %} {# オブジェクト.多側のモデルの小文字.set.all で逆参照ができる #}
             <a href="{% url 'bridge_table' table.id %}" class="btn btn-primary">損傷写真帳{# {{ table.damage_location }} #}</a>
             {% endfor %}
-            <a href="{% url 'detail-infra' item.pk %}" class="btn btn-primary">所見</a>
+            <a href="{% url 'detail-infra' article_id item.pk %}" class="btn btn-primary">所見</a>
         </div>
     </div>
     {% endfor %}

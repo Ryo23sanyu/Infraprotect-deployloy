@@ -7,16 +7,19 @@
 <div class="sidebar">
   <p>インフラプロジェクト</p>
   <ul>
-      <li><a href="1">橋梁緒言</a></li>
-      <li><a href="2">一般図</a></li>
-      <li><a href="3">全景写真</a></li>
-      <li><a href="3">番号図</a></li>
-      <li><a href="3">所見まとめ</a></li>
-      <li><a href="3">各部材所見</a></li>
-      <li><a href="3">損傷図</a></li>
-      <li><a href="3">損傷写真</a></li>
-      <li><a href="{% url 'file_upload' %}">アップロード</a></li>
-      <li><a href="3">データ出力</a></li>
+      <li>橋梁緒言</a></li>
+      <li>一般図</a></li>
+      <li>全景写真</a></li>
+      <li>番号図</a></li>
+      <li>所見まとめ</a></li>
+      <li>各部材所見</a></li>
+      <li>損傷図</a></li>
+      <li>損傷写真</a></li>
+      <li><a href="{% url 'file-upload' object.article.pk object.pk %}">アップロード</a></li>
+      <div>article: {{ object.article.pk }}</div>
+      <div>pk: {{ object.pk }}</div>
+      {% comment %} <li><a href="{% url 'file-upload' object.article.pk object.pk %}">アップロード</a></li> {% endcomment %}
+      <li>データ出力</a></li>
   </ul>
   <div class="sidebar-toggle">
     <button class="btn btn-primary">＜</button>
@@ -36,14 +39,6 @@
         <li>{{ loadWeight.活荷重 }}</li>
         {% endfor %}
     </ul>
-    {% comment %} <form method="POST" action="{% url 'detail-infra' object.pk %}">
-      {% csrf_token %}
-      <button type="submit" name="活荷重" value="live_load_a">A活荷重</button>
-      <button type="submit" name="活荷重" value="live_load_b">B活荷重</button>
-      <button type="submit" name="活荷重" value="tl20">TL-20</button>
-      <button type="submit" name="活荷重" value="tl12">TL-12</button>
-      <button type="submit" name="活荷重" value="tl6">TL-6</button>
-    </form> {% endcomment %}
     <p>等級</p>
     <ul>
         {% for loadGrade in object.等級.all %}
@@ -224,9 +219,12 @@
           {{ form.as_p }}
       </form>
     </div>
-    <a href="{% url 'list-infra' pk=object.article.pk %}" class="btn btn-primary">一覧</a>
-    <a href="{% url 'update-infra' object.pk %}" class="btn btn-primary">編集</a>
-    <a href="{% url 'delete-infra' object.pk %}" class="btn btn-primary">削除</a>
+    <a href="{% url 'list-infra' object.article.pk %}" class="btn btn-primary">一覧</a>
+    {# path('article/<int:pk>/infra/') #}
+    <a href="{% url 'update-infra' object.article.pk object.pk %}" class="btn btn-primary">編集</a>
+    {# path('article/<int:article_pk>/infra/<int:pk>/update/) #}
+    <a href="{% url 'delete-infra' object.article.pk object.pk %}" class="btn btn-primary">削除</a>
+    {# path('article/<int:article_pk>/infra/<int:pk>/delete/) #}
     <h6 class="card-title">{{ object.カテゴリー }}</h6>
   </div>
   

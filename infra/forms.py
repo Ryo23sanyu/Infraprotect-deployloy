@@ -5,14 +5,14 @@ from django import forms
 from django.core.files.storage import default_storage
 
 from .models import CustomUser, Image, Infra, Number, Regulation, UploadedFile
-from .models import Photo, Company
+from .models import Photo, Company, Table
 
 # <<ファイルアップロード>>
 class FileUploadForm(forms.ModelForm):
     class Meta:
         model = UploadedFile
         fields = ['file']
-        
+
 # 会社別に表示
 class UserCreationForm(forms.ModelForm):
     company = forms.ModelChoiceField(queryset=Company.objects.all())
@@ -20,6 +20,12 @@ class UserCreationForm(forms.ModelForm):
     class Meta:
         model = CustomUser
         fields = ('username', 'password', 'company')
+
+# Infra毎にdxfファイルを登録
+class TableForm(forms.ModelForm):
+    class Meta:
+        model = Table
+        fields = ['dxf']
 
 # <<各橋作成時のボタン選択肢>>
 class BridgeCreateForm(forms.ModelForm):
@@ -77,9 +83,8 @@ class UploadForm(forms.ModelForm): # UploadFormという名前のFormクラス�
 class PhotoUploadForm(forms.ModelForm): # PhotoUploadFormという名前のFormクラスを定義(Modelクラスと紐付け)
     class Meta: # ModelFormと紐付ける場合に記載
         model = Photo # models.pyのPhotoクラスと紐付け
-        fields = ['image'] # このFormで扱うフィールドを指定
+        fields = ['image'] # このFormで扱うフィールドを指定        
 
-    
 # 損傷写真変更用(Ajax)
 class FileUploadSampleForm(forms.Form):
     file = forms.ImageField()

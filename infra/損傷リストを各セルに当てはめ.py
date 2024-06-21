@@ -1,96 +1,112 @@
 from itertools import zip_longest
 import re
+from django.conf import settings
 import openpyxl
 from openpyxl.drawing.image import Image
 import os
+
+"""
+1. クラスを使えば良いのでは？
+2. joinの内容はfirstとsecondから1つ目の要素を取り出しているので、メソッドで実現すれば良いのでは？
+3. 後に、①などを取り出すのであれば、文字列のインデックス番号( [0] )などを指定して取り出すのではなく、最初から分離しておけば良いのでは？
+4. forループ内で、splitなどの文字列操作をしているが、これはdataを作る時点でやっておいたほうが良いのでは？(セルの記入、データの整形を分離させる)
+5. 多次元配列にする必要があるのか？
+〇6. first second third last はキー名として適切か？ キー名を見ただけでは値が想像できない。
+7. damage_coordinate , picture_coordinate は座標であり、xとy の2つを必ず記入する必要がある。故に、要素数不定の配列ではなく、 
+   damage_coordinate_x damage_coordinate_y と分離するべきではないか？ 更にキーを短くするため、 damage_x damage_y とするほうが良いと思われる
+8. 座標は数値(浮動小数点型)で入力するものであるにも関わらず、文字列型になっているのは何故か？ 
+〇9. ①は機種依存文字なので使わない
+10. 値が配列になる場合、キー名は複数形であるべきでは？、キー名は名詞単数形もしくは名詞複数形が妥当
+
+"""
 
 # データ (サンプル)
 data = [
-    {'first': [['排水管 Dp0101']], 'second': [['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']], 
-     'join': [{'first': ['排水管 Dp0101'], 'second': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}], 
-     'third': '写真番号-31', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070422.JPG'], 
-     'picture': None, 
+    {'parts_name': [['排水管 Dp0101']], 'damage_name': [['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']], 
+     'join': [{'parts_name': ['排水管 Dp0101'], 'damage_name': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}], 
+     'picture_number': '写真番号-31', 'this_time_picture': ['infra\img\9月7日　佐藤　地上\P9070422.JPG'], 
+     'last_time_picture': None, 
      'textarea_content': '排水管に板厚減少を伴う拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0101:⑤防食機能の劣化(分類1)-e', 
      'damage_coordinate': ['538482.3557216563', '229268.8593029478'], 'picture_coordinate': ['538810.3087944178', '228910.3502713814']}
      ,
-    {'first': [['排水管 Dp0102']], 'second': [['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']], 
-     'join': [{'first': ['排水管 Dp0102'], 'second': ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']}], 
-     'third': '写真番号-32', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070486.JPG'], 
-     'picture': None, 
+    {'parts_name': [['排水管 Dp0102']], 'damage_name': [['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']], 
+     'join': [{'parts_name': ['排水管 Dp0102'], 'damage_name': ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']}], 
+     'picture_number': '写真番号-32', 'this_time_picture': ['infra\img\9月7日　佐藤　地上\P9070486.JPG'], 
+     'last_time_picture': None, 
      'textarea_content': '排水管に拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0102:⑤防食機能の劣化(分類1)-e', 
      'damage_coordinate': ['547059.1990495767', '229268.8593029478'], 'picture_coordinate': ['549204.9604817769', '229256.3408485695']}
     ,
-    {'first': [['橋台[胸壁] Ap0101', '橋台[竪壁] Ac0101', '伸縮装置 Ej0101']], 'second': [['⑳漏水・滞水-e']], 
-     'join': [{'first': ['橋台[胸壁] Ap0101'], 'second': ['⑳漏水・滞水-e']}, {'first': ['橋台[竪壁] Ac0101'], 'second': ['⑳漏水・滞水-e']}, {'first': ['伸縮装置 Ej0101'], 'second': ['⑳漏水・滞水-e']}], 
-     'third': '写真番号-18', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070438.JPG'], 
-     'picture': 'C:\work\django\myproject\program\Infraproject\media\P6100002.JPG', 
+    {'parts_name': [['橋台[胸壁] Ap0101', '橋台[竪壁] Ac0101', '伸縮装置 Ej0101']], 'damage_name': [['⑳漏水・滞水-e']], 
+     'join': [{'parts_name': ['橋台[胸壁] Ap0101'], 'damage_name': ['⑳漏水・滞水-e']}, {'parts_name': ['橋台[竪壁] Ac0101'], 'damage_name': ['⑳漏水・滞水-e']}, {'parts_name': ['伸縮装置 Ej0101'], 'damage_name': ['⑳漏水・滞水-e']}], 
+     'picture_number': '写真番号-18', 'this_time_picture': ['infra\img\9月7日　佐藤　地上\P9070438.JPG'], 
+     'last_time_picture': 'media\P6100002.JPG', 
      'textarea_content': '橋台[胸壁]および橋台[竪壁],伸縮装置に漏水・滞水が見られる。 \n【関連損傷】\n橋台[竪壁] Ac0101,伸縮装置 Ej0101:⑳漏水・滞水-e', 
      'damage_coordinate': ['535305.6406762057', '190342.4721676922'], 'picture_coordinate': ['537494.8440878117', '190371.7813098583']}
     ,
-    {'first': [['支承本体 Bh0101'], ['沓座モルタル Bm0101']], 'second': [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c'], ['⑦剥離・鉄筋露出-c']], 
-     'join': [{'first': ['支承本体 Bh0101'], 'second': ['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c']}, {'first': ['沓座モルタル Bm0101'], 'second': ['⑦剥離・鉄筋露出-c']}], 
-     'third': '写真番号-27', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070504.JPG'], 
-     'picture': None, 
+    {'parts_name': [['支承本体 Bh0101'], ['沓座モルタル Bm0101']], 'damage_name': [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c'], ['⑦剥離・鉄筋露出-c']], 
+     'join': [{'parts_name': ['支承本体 Bh0101'], 'damage_name': ['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c']}, {'parts_name': ['沓座モルタル Bm0101'], 'damage_name': ['⑦剥離・鉄筋露出-c']}], 
+     'picture_number': '写真番号-27', 'this_time_picture': ['infra\img\9月7日　佐藤　地上\P9070504.JPG'], 
+     'last_time_picture': None, 
      'textarea_content': '支承本体に腐食,変形・欠損が見られる。また沓座モルタルにコンクリートの剥離が見られる。 \n【関連損傷】\n支承本体 Bh0101:㉓変形・欠損-c, 沓座モルタル Bm0101:⑦剥離・鉄筋露出-c', 
      'damage_coordinate': ['547050.6408404222', '164535.3885015437'], 'picture_coordinate': ['549493.5416080137', '164259.8990548863']}
     ,
-    {'first': [['床版 Ds0201', '床版 Ds0203']], 'second': [['⑦剥離・鉄筋露出-d']], 
-     'join': [{'first': ['床版 Ds0201'], 'second': ['⑦剥離・鉄筋露出-d']}, {'first': ['床版 Ds0203'], 'second': ['⑦剥離・鉄筋露出-d']}], 
-     'third': None, 'last': None, 
-     'picture': None, 
+    {'parts_name': [['床版 Ds0201', '床版 Ds0203']], 'damage_name': [['⑦剥離・鉄筋露出-d']], 
+     'join': [{'parts_name': ['床版 Ds0201'], 'damage_name': ['⑦剥離・鉄筋露出-d']}, {'parts_name': ['床版 Ds0203'], 'damage_name': ['⑦剥離・鉄筋露出-d']}], 
+     'picture_number': None, 'this_time_picture': None, 
+     'last_time_picture': None, 
      'textarea_content': '床版に鉄筋露出が見られる。 \n【関連損傷】\n床版 Ds0203:⑦剥離・鉄筋露出-d', 
      'damage_coordinate': ['525003.839727268', '213095.7270112425'], 'picture_coordinate': None}
     ,
-    {'first': [['排水管 Dp0103']], 'second': [['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']], 
-     'join': [{'first': ['排水管 Dp0101'], 'second': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}], 
-     'third': '写真番号-31', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070422.JPG'], 
-     'picture': None, 
+    {'parts_name': [['排水管 Dp0103']], 'damage_name': [['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']], 
+     'join': [{'parts_name': ['排水管 Dp0101'], 'damage_name': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}], 
+     'picture_number': '写真番号-31', 'this_time_picture': ['infra\img\9月7日　佐藤　地上\P9070422.JPG'], 
+     'last_time_picture': None, 
      'textarea_content': '排水管に板厚減少を伴う拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0101:⑤防食機能の劣化(分類1)-e', 
      'damage_coordinate': ['538482.3557216563', '229268.8593029478'], 'picture_coordinate': ['538810.3087944178', '228910.3502713814']}
     ,
-    {'first': [['橋台[胸壁] Ap0101', '橋台[竪壁] Ac0101', '伸縮装置 Ej0101']], 'second': [['⑳漏水・滞水-e']], 
-     'join': [{'first': ['橋台[胸壁] Ap0101'], 'second': ['⑳漏水・滞水-e']}, {'first': ['橋台[竪壁] Ac0101'], 'second': ['⑳漏水・滞水-e']}, {'first': ['伸縮装置 Ej0101'], 'second': ['⑳漏水・滞水-e']}], 
-     'third': '写真番号-18', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070438.JPG'], 
-     'picture': 'C:\work\django\myproject\program\Infraproject\media\P6100002.JPG', 
+    {'parts_name': [['橋台[胸壁] Ap0101', '橋台[竪壁] Ac0101', '伸縮装置 Ej0101']], 'damage_name': [['⑳漏水・滞水-e']], 
+     'join': [{'parts_name': ['橋台[胸壁] Ap0101'], 'damage_name': ['⑳漏水・滞水-e']}, {'parts_name': ['橋台[竪壁] Ac0101'], 'damage_name': ['⑳漏水・滞水-e']}, {'parts_name': ['伸縮装置 Ej0101'], 'damage_name': ['⑳漏水・滞水-e']}], 
+     'picture_number': '写真番号-18', 'this_time_picture': ['infra\img\9月7日　佐藤　地上\P9070438.JPG'], 
+     'last_time_picture': 'media\P6100020.JPG', 
      'textarea_content': '橋台[胸壁]および橋台[竪壁],伸縮装置に漏水・滞水が見られる。 \n【関連損傷】\n橋台[竪壁] Ac0101,伸縮装置 Ej0101:⑳漏水・滞水-e', 
      'damage_coordinate': ['535305.6406762057', '190342.4721676922'], 'picture_coordinate': ['537494.8440878117', '190371.7813098583']}
     ,
-    {'first': [['支承本体 Bh0101'], ['沓座モルタル Bm0101']], 'second': [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c'], ['⑦剥離・鉄筋露出-c']], 
-     'join': [{'first': ['支承本体 Bh0101'], 'second': ['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c']}, {'first': ['沓座モルタル Bm0101'], 'second': ['⑦剥離・鉄筋露出-c']}], 
-     'third': '写真番号-27', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070504.JPG'], 
-     'picture': None, 
+    {'parts_name': [['支承本体 Bh0101'], ['沓座モルタル Bm0101']], 'damage_name': [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c'], ['⑦剥離・鉄筋露出-c']], 
+     'join': [{'parts_name': ['支承本体 Bh0101'], 'damage_name': ['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c']}, {'parts_name': ['沓座モルタル Bm0101'], 'damage_name': ['⑦剥離・鉄筋露出-c']}], 
+     'picture_number': '写真番号-27', 'this_time_picture': ['infra\img\9月7日　佐藤　地上\P9070504.JPG'], 
+     'last_time_picture': None, 
      'textarea_content': '支承本体に腐食,変形・欠損が見られる。また沓座モルタルにコンクリートの剥離が見られる。 \n【関連損傷】\n支承本体 Bh0101:㉓変形・欠損-c, 沓座モルタル Bm0101:⑦剥離・鉄筋露出-c', 
      'damage_coordinate': ['547050.6408404222', '164535.3885015437'], 'picture_coordinate': ['549493.5416080137', '164259.8990548863']}
     ,
-    {'first': [['床版 Ds0201', '床版 Ds0203']], 'second': [['⑦剥離・鉄筋露出-d']], 
-     'join': [{'first': ['床版 Ds0201'], 'second': ['⑦剥離・鉄筋露出-d']}, {'first': ['床版 Ds0203'], 'second': ['⑦剥離・鉄筋露出-d']}], 
-     'third': None, 'last': None, 
-     'picture': None, 
+    {'parts_name': [['床版 Ds0201', '床版 Ds0203']], 'damage_name': [['⑦剥離・鉄筋露出-d']], 
+     'join': [{'parts_name': ['床版 Ds0201'], 'damage_name': ['⑦剥離・鉄筋露出-d']}, {'parts_name': ['床版 Ds0203'], 'damage_name': ['⑦剥離・鉄筋露出-d']}], 
+     'picture_number': None, 'this_time_picture': None, 
+     'last_time_picture': None, 
      'textarea_content': '床版に鉄筋露出が見られる。 \n【関連損傷】\n床版 Ds0203:⑦剥離・鉄筋露出-d', 
      'damage_coordinate': ['525003.839727268', '213095.7270112425'], 'picture_coordinate': None}
     ,
-    {'first': [['排水管 Dp0103']], 'second': [['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']], 
-     'join': [{'first': ['排水管 Dp0101'], 'second': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}], 
-     'third': '写真番号-31', 'last': ['C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070422.JPG'], 
-     'picture': None, 
+    {'parts_name': [['排水管 Dp0103']], 'damage_name': [['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']], 
+     'join': [{'parts_name': ['排水管 Dp0101'], 'damage_name': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}], 
+     'picture_number': '写真番号-31', 'this_time_picture': ['infra\img\9月7日　佐藤　地上\P9070422.JPG'], 
+     'last_time_picture': None, 
      'textarea_content': '排水管に板厚減少を伴う拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0101:⑤防食機能の劣化(分類1)-e', 
      'damage_coordinate': ['538482.3557216563', '229268.8593029478'], 'picture_coordinate': ['538810.3087944178', '228910.3502713814']}
+    ,
+    {'parts_name': [['横桁 Cr0102']], 'damage_name': [['⑰その他(分類6:施工不良)-e']], 
+     'join': [{'parts_name': ['横桁 Cr0102'], 'damage_name': ['⑰その他(分類6:施工不良)-e']}], 
+     'picture_number': '写真番号-4,5', 'this_time_picture': ['infra/img\\9月7日\u3000佐藤\u3000地上\\P9070424.JPG', 'infra/img\\9月7日\u3000佐藤\u3000地上\\P9070430.JPG'], 
+     'last_time_picture': None, 
+     'textarea_content': '横桁に施工不良が見られる。', 
+     'damage_coordinate': ['532578.7587482664', '229268.8593029478'], 'picture_coordinate': ['532985.6409545547', '228954.2335446222']}
 ]
 
-# 指定したエクセルファイルを開く
-import re
-import openpyxl
-from openpyxl.drawing.image import Image
-import os
-
-# データ (サンプル) - ここは省略
 
 # 指定したエクセルファイルを開く
 wb = openpyxl.load_workbook('C:\work\django\myproject\program\Infraproject\macro.xlsx')
 ws = wb['その１０']  # シート名を指定
 
 # lastがNoneでないデータを残す
-filtered_data = [item for item in data if item['last'] is not None]
+filtered_data = [item for item in data if item['this_time_picture'] is not None]
 
 # 行の開始地点と増加するステップを定義
 partsname_and_number_row = 10 # 部材名・要素番号
@@ -171,7 +187,7 @@ cell_counter = 0
 
 for item in filtered_data:
     # 3列目(インデックスが2)でpictureキーに写真が設定されている場合
-    if cell_counter % 2 == 0 and item['picture'] is not None:
+    if cell_counter % 2 == 0 and item['last_time_picture'] is not None:
         # 3列目を空白にするため、インデックスを1つ追加
         cell_counter += 1
     # pictureキーに写真が設定されていても、3列目でなければOK
@@ -179,7 +195,7 @@ for item in filtered_data:
         pass
 
     # lastの写真を張る動作
-    for image_path in item['last']:
+    for image_path in item['this_time_picture']:
         if os.path.exists(image_path):
             img = Image(image_path) # 画像の読み込み
             img.width, img.height = max_width, max_height # 画像サイズの設定    
@@ -188,8 +204,8 @@ for item in filtered_data:
             cell_counter += 1 # カウンタを一つ進める
             
     # pictureの写真を張る動作
-    if item['picture'] and os.path.exists(item['picture']):
-        img = Image(item['picture'])
+    if item['last_time_picture'] and os.path.exists(item['last_time_picture']):
+        img = Image(item['last_time_picture'])
         img.width, img.height = max_width, max_height
         cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
         ws.add_image(img, cell_pos)
@@ -200,7 +216,7 @@ data_index = 0
 
 for item, part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos in zip_longest(filtered_data, join_partsname_cell_positions, join_number_cell_positions, join_damagename_cell_positions, join_lank_cell_positions, join_damage_memo_cell_positions, join_picture_cell_positions, fillvalue=None):
     
-    if (data_index == 2 or data_index % 2 == 3) and item['picture'] is not None:
+    if (data_index == 2 or data_index % 2 == 3) and item['last_time_picture'] is not None:
         # 3列目を空白にするため、インデックスを1つ追加
         data_index += 1
         
@@ -214,7 +230,7 @@ for item, part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos in zip
 # メモに入れるための固定コード　↓
     # firstキーの内容を所定の書式に変更
     try:
-        first_data = item['first'][0][0] # 例: "排水管 Dp0101"
+        first_data = item['parts_name'][0][0] # 例: "排水管 Dp0101"
         split_space = first_data.split(" ")
         first_part_data = split_space[0]
         
@@ -225,7 +241,7 @@ for item, part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos in zip
         ws[number_cell] = first_number_data # 例: "0101"
         
         # secondキーの内容を所定の書式に変更
-        second_data = item['second'][0][0] # 例: "①腐食(大大)-e"
+        second_data = item['damage_name'][0][0] # 例: "①腐食(大大)-e"
         second_damage_name = second_data[0] # 例: "①"
         second_name_data = number_change.get(second_damage_name, second_damage_name)
         second_lank_data = second_data[-1]
@@ -237,7 +253,7 @@ for item, part_pos, number_pos, name_pos, lank_pos, memo_pos, picture_pos in zip
         memo_data = item['textarea_content'] # 例: "排水管に拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0102:⑤防食機能の劣化(分類1)-e"
         ws[memo_cell] = memo_data
             
-        if item['picture'] is not None:
+        if item['last_time_picture'] is not None:
             data_index += 2
         else:
             data_index += 1

@@ -13,6 +13,8 @@
 
   <script>
     const dropArea = document.getElementById('dropArea');
+    const fileInput = document.querySelector("#id_dxf");
+    const form = document.getElementById('uploadForm');
 
     dropArea.addEventListener('dragover', (event) => { //ドロップボックスと重なったとき
       event.preventDefault();
@@ -30,13 +32,32 @@
       dropArea.style.border = '2px dashed blue';  // 枠スタイルを元に戻す
       dropArea.style.backgroundColor = '';  // 背景色を元に戻す
       
+      // event.dataTransferからファイルを取得
+      const files = event.dataTransfer.files;
+      
       // ファイルを格納する処理
-      const formData = new FormData(); // フォームデータを作成
-      formData.append('file', files[0]); // ファイルを追加
+      //const formData = new FormData(); // フォームデータを作成
+      //formData.append('file', files[0]); // ファイルを追加
 
       // id_fileに対してドラッグアンドドロップをセットする
-      const fileInput = document.querySelector("#id_file");
-      fileInput.files = files;
+      //const fileInput = document.querySelector("#id_file");
+      //fileInput.files = files;
+
+      if (files.length > 0) {
+        fileInput.files = files;
+        
+        // 自動的にフォームを送信
+        form.submit();
+      }
+      dropArea.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', () => {
+        // ファイルを選択したら自動的にフォームを送信
+        form.submit();
+      });
+
     });
   </script>
   

@@ -6,6 +6,14 @@
 {% block h1 %}損傷一覧{% endblock %}
 
 {% block content %}
+    {# ここで径間ボタンを生成 #}
+    <form action="{% url 'bridge_table' table.pk %}">
+        {% for button in buttons %}
+        <button name="search_title_text" value="{{ forloop.counter }}径間">{{ forloop.counter }}径間</button>
+        {% endfor %}
+    </form>
+    {# HTMLのtableタグのルールとして、table系のタグ以外(formタグなど)が使われた時、中の要素だけ外に追い出される。 #}
+
     <table class="my-table" border="1">
         <thead>
             <tr>
@@ -13,12 +21,7 @@
                 <th>損傷写真</th>
             </tr>
         </thead>
-        {# ここで動的にボタンを生成 #}
-        {% for button in buttons %}
-        <form action="{% url 'bridge_table' table.pk %}">
-            <button name="search_title_text" value="{{ forloop.counter }}径間">{{ forloop.counter }}径間</button>
-        </form>
-        {% endfor %}
+
         <tbody id="sortable">
             {% for bridge in damage_table %}
             <form id="ajax-file-send" action="#" method="post" enctype="multipart/form-data">
@@ -28,13 +31,13 @@
                     <td>
                         {% for item in bridge.join %}
                             <div style="border: 1px solid black; padding: 5px; margin-bottom: 10px; width: 410px;">
-                                {% for first_item in item.first %}
-                                    <span style="background-color: Pink;">{{ first_item }}</span> <!-- first項目に色付け -->
+                                {% for parts_name_item in item.parts_name %}
+                                    <span style="background-color: Pink;">{{ parts_name_item }}</span> <!-- first項目に色付け -->
                                     <br>
                                 {% endfor %}
-                                {% for second_item in item.second %}
-                                    {{ second_item }}
-                                    {% if "NON-a" not in second_item %} <!-- NON-aを含まない場合 -->
+                                {% for damage_name_item in item.damage_name %}
+                                    {{ damage_name_item }}
+                                    {% if "NON-a" not in damage_name_item %} <!-- NON-aを含まない場合 -->
                                         <br>
                                         <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)" style="width: 100px;">
                                             <option value=""></option>
@@ -62,17 +65,17 @@
                     </td>
                     <td class="center-align">
                         <ul class="vert"> 
-                            {% if bridge.last is not None %}
-                                    {% for item in bridge.last %}
+                            {% if bridge.this_time_picture is not None %}
+                                    {% for this_time_picture_item in bridge.this_time_picture %}
                                             <ul class="side">
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                                     <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
                                                         <div>
-                                                            <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static item %}" width="200" height="150" style="margin:0 10px;">
+                                                            <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static this_time_picture_item %}" width="200" height="150" style="margin:0 10px;">
                                                         </div>
                                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
                                                             <input id="upload-file-{{ forloop.parentloop.counter }}" name="upload-file" type="file" style="display: none">
-                                                            <button id="fileSelect-{{ forloop.parentloop.counter }}" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
+                                                            <button id="fileSelect-{{ forloop.parentloop.counter }}" type="button" style="margin-bottom: 10px;" value="{% static this_time_picture_item %}">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
                                                             <button style="margin-bottom: 10px;">追加</button>
                                                             <button>削除</button> <!--縦文字に変更-->
                                                         </div>
@@ -81,10 +84,10 @@
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                                     <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
                                                         <div>
-                                                            {% if bridge.picture is None %}
+                                                            {% if bridge.last_time_picture is None %}
                                                                 <img id="before-image" src="{% static 'infra/noImage.png' %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
                                                             {% else %}
-                                                                <img id="before-image" src="{% static bridge.picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                                <img id="before-image" src="{% static bridge.last_time_picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
                                                             {% endif %}
                                                         </div>
                                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->

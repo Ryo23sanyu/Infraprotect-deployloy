@@ -19,7 +19,7 @@ from django.views.generic import ListView, DetailView, CreateView, DeleteView, U
 
 from infraproject import settings
 from .models import Approach, Article, DamageReport, Infra, Table, LoadGrade, LoadWeight, Photo, Panorama, Number, Regulation, Rulebook, Thirdparty, UnderCondition
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NumberForm, UploadForm, PhotoUploadForm, NameForm
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -34,14 +34,14 @@ class ListInfraView(LoginRequiredMixin, ListView):
         # 求めたarticleを元にモデル検索のクエリーを絞り込む
         # infra_objectフィルタ－
         #queryset = queryset.filter(article=article)
-        queryset = queryset.filter(article = self.kwargs["pk"])
+        queryset = queryset.filter(article = self.kwargs["article_pk"])
         # 絞り込んだクエリーをDjangoに返却し表示データとしてもらう
         return queryset
 
     def get_context_data(self, **kwargs):
         # HTMLテンプレートでの表示変数として「article_id」を追加。
         # 値はパスパラメータpkの値→取り扱うarticle.idとなる
-        kwargs["article_id"] = self.kwargs["pk"]
+        kwargs["article_id"] = self.kwargs["article_pk"]
         return super().get_context_data(**kwargs)
 
 
@@ -72,7 +72,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
 # article = Article.objects.get( id = self.kwargs["pk"] )
         # id = 1 のarticleを検索
             # article = Article.objects.get(id = 1 )
-        object.案件名 = self.kwargs["pk"]
+        object.案件名 = self.kwargs["article_pk"]
         # titleの項目に「A」を設定
             # article.title = "A"
         #設定したのちsaveを実行し更新します。
@@ -80,7 +80,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('list-infra', kwargs={'pk': self.kwargs["pk"]})
+        return reverse_lazy('list-infra', kwargs={'article_pk': self.kwargs["article_pk"]})
 
     #新規作成時、交通規制の全データをコンテキストに含める。
     def get_context_data(self, **kwargs):
@@ -115,14 +115,16 @@ class DeleteInfraView(LoginRequiredMixin, DeleteView):
     template_name = 'infra/infra_delete.html'
     model = Infra
     success_url = reverse_lazy('list-infra')
-  
+    def get_success_url(self):
+        return reverse_lazy('list-infra', kwargs={'article_pk': self.kwargs["article_pk"]})
+      
 class UpdateInfraView(LoginRequiredMixin, UpdateView):
     template_name = 'infra/infra_update.html'
     model = Infra
     fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
     success_url = reverse_lazy('detail-infra')
     def get_success_url(self):
-        return reverse_lazy('detail-infra', kwargs={'pk': self.kwargs["pk"]})
+        return reverse_lazy('detail-infra', kwargs={'article_pk': self.kwargs["article_pk"], 'pk': self.kwargs["pk"]})
 
     #新規作成時、交通規制の全データをコンテキストに含める。
     def get_context_data(self, **kwargs):
@@ -179,7 +181,7 @@ class ListArticleView(LoginRequiredMixin, ListView):
 class DetailArticleView(LoginRequiredMixin, DetailView):
     template_name = 'infra/article_detail.html'
     model = Article
-  
+    
 class CreateArticleView(LoginRequiredMixin, CreateView):
     template_name = 'infra/article_create.html'
     model = Article
@@ -196,16 +198,30 @@ class UpdateArticleView(LoginRequiredMixin, UpdateView):
     model = Article
     fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
     success_url = reverse_lazy('list-article')
- 
-def file_upload(request):
+
+# ファイルのアップロード・各infraに紐付け
+def file_upload(request, article_pk, pk):
     if request.method == 'POST':
-        form = FileUploadForm(request.POST, request.FILES)
+                #                   ↓  request.POST の中にdxfファイルの名前が入っているだけ。.copy() を実行して編集可能にする。
+        copied          = request.POST.copy()
+
+        # ここで Infraのid(pk)を指定する。
+        copied["infra"] = pk
+        
+        # バリデーション
+        form = TableForm(copied, request.FILES)
+        
+        # 既存のオブジェクトに対して新しいファイルを上書きする処理
+        if Table.objects.filter(infra_id=pk).exists():
+            obj = Table.objects.get(infra_id=pk)
+            form = TableForm(request.POST, request.FILES, instance=obj)
+            
         if form.is_valid():
             form.save()
             return redirect('file_upload_success')
     else:
-        form = FileUploadForm()
-    return render(request, 'infra/file_upload.html', {'form': form})
+        form = TableForm()
+    return render(request, 'infra/file_upload.html', {'form': form, 'article_pk': article_pk, 'pk': pk})
 
 def file_upload_success(request):
     return render(request, 'infra/file_upload_success.html')
@@ -264,7 +280,6 @@ def number_view(request):
 
     return HttpResponse(result)
 
-
 def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
     context = {}
     # プロジェクトのメディアディレクトリからdxfファイルまでの相対パス
@@ -278,8 +293,14 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
     context["table"] = table
     # keikan_infra = Infra.objects.filter(id=pk).first() # 271行目と同じ
     context["buttons"] = table.infra.径間数 * " " # Tableクラスのinfraオブジェクトから「径間数」を取り出す
+    
+    if "search_title_text" in request.GET:
+        # request.GET：検索URL（http://127.0.0.1:8000/article/1/infra/bridge_table/?search_title_text=1径間） 
+        search_title_text = request.GET["search_title_text"]
+        # 検索URL内のsearch_title_textの値（1径間）を取得する
+    else:
+        search_title_text = "1径間" # 検索URLにsearch_title_textがない場合
 
-    search_title_text = "1径間" # 複数径間の場合は"1径間"
     second_search_title_text = "損傷図"
 
     def find_square_around_text(dxf_filename, target_text, second_target_text):
@@ -734,8 +755,8 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
             bridge_damage = [] # すべての"bridge"辞書を格納するリスト
 
             bridge = {
-                "first": first_item[i],
-                "second": second_items[i] if i < len(second_items) else None  # second_itemsが足りない場合にNoneを使用
+                "parts_name": first_item[i],
+                "damage_name": second_items[i] if i < len(second_items) else None  # second_itemsが足りない場合にNoneを使用
             }
             bridge_damage.append(bridge)
             #print(bridge_damage)
@@ -744,7 +765,7 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
             first_element = bridge_damage[0]
 
             # 'first'キーの値にアクセス
-            first_value = first_element['first']
+            first_value = first_element['parts_name']
 
             first_and_second = []
             #<<◆ 部材名が1種類かつ部材名の要素が1種類の場合 ◆>>
@@ -752,11 +773,11 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                 if len(first_value[0]) == 1: # 要素が1つの場合
                     # カッコを1つ減らすためにリストをフラットにする
                     flattened_first = [first_buzai_item for first_buzai_sublist in first_value for first_buzai_item in first_buzai_sublist]
-                    first_element['first'] = flattened_first
+                    first_element['parts_name'] = flattened_first
                     # 同様に 'second' の値もフラットにする
-                    second_value = first_element['second']
+                    second_value = first_element['damage_name']
                     flattened_second = [second_name_item for second_name_sublist in second_value for second_name_item in second_name_sublist]
-                    first_element['second'] = flattened_second
+                    first_element['damage_name'] = flattened_second
                     
                     first_and_second.append(first_element)
                     #print(first_and_second) # [{'first': ['排水管 Dp0102'], 'second': ['①腐食(小大)-c', '⑤防食機能の劣化(分類1)-e']}]
@@ -766,7 +787,7 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                         # 元のリストから各要素を取得
                     for first_buzai_item in bridge_damage:
                         #print(item)
-                        before_first_elements = first_buzai_item['first'][0]  # ['床版 Ds0201', '床版 Ds0203']
+                        before_first_elements = first_buzai_item['parts_name'][0]  # ['床版 Ds0201', '床版 Ds0203']
                         first_elements = []
 
                         for first_buzai_second_name in before_first_elements:
@@ -811,29 +832,29 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                                 first_elements.append(first_buzai_second_name)
                         
                         
-                        second_elements = first_buzai_item['second'][0]  # ['⑦剥離・鉄筋露出-d']
+                        second_elements = first_buzai_item['damage_name'][0]  # ['⑦剥離・鉄筋露出-d']
 
                         
                         # first の要素と second を一対一で紐付け
                         for first_buzai_second_name in first_elements:
-                            first_and_second.append({'first': [first_buzai_second_name], 'second': second_elements})
+                            first_and_second.append({'parts_name': [first_buzai_second_name], 'damage_name': second_elements})
 
                 #print(first_and_second) # [{'first': '床版 Ds0201', 'second': '⑦剥離・鉄筋露出-d'}, {'first': '床版 Ds0203', 'second': '⑦剥離・鉄筋露出-d'}]
 
             #<<◆ 部材名が複数の場合 ◆>>
             else:
                 for double_item in bridge_damage:
-                    first_double_elements = double_item['first'] # [['支承本体 Bh0101'], ['沓座モルタル Bm0101']]
-                    second_double_elements = double_item['second'] # [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c']]
+                    first_double_elements = double_item['parts_name'] # [['支承本体 Bh0101'], ['沓座モルタル Bm0101']]
+                    second_double_elements = double_item['damage_name'] # [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c']]
                     
                     for break_first, break_second in zip(first_double_elements, second_double_elements):
-                        first_and_second.append({'first': break_first, 'second': break_second})
+                        first_and_second.append({'parts_name': break_first, 'damage_name': break_second})
 
             for damage_parts in bridge_damage:
                 # print(damage_parts)
-                if isinstance(damage_parts["second"], list):  # "second"がリストの場合
+                if isinstance(damage_parts["damage_name"], list):  # "second"がリストの場合
                     filtered_second_items = []
-                    for sublist in damage_parts["second"]:
+                    for sublist in damage_parts["damage_name"]:
                         if isinstance(sublist, list):  # サブリストがリストである場合
                             if any(item.startswith('①') for item in sublist) and any(item.startswith('⑤') for item in sublist):
                                 # ⑤で始まる要素を取り除く
@@ -848,18 +869,18 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                     #pavement_items = {"first": first_item[i], "second": filtered_second_items}
                         
             combined_list = []
-            if damage_parts["second"] is not None:
+            if damage_parts["damage_name"] is not None:
                 combined_second = filtered_second_items #if i < len(updated_second_items) else None
             else:
                 combined_second = None
             
-            combined = {"first": first_item[i], "second": combined_second}
+            combined = {"parts_name": first_item[i], "damage_name": combined_second}
             combined_list.append(combined)
             request_list = combined_list[0]
             # <<◆ secondの多重リストを統一させる ◆>>
             try:
                 # データを取得する
-                check_request_list = request_list['first'][1]
+                check_request_list = request_list['parts_name'][1]
 
                 # 条件分岐
                 if isinstance(check_request_list, list):
@@ -870,12 +891,12 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                 # KeyError や IndexError の例外が発生した場合の処理
 
                 # secondの多重リストをフラットなリストに変換
-                flat_list = [item for sublist in request_list['second'] for item in sublist]
+                flat_list = [item for sublist in request_list['damage_name'] for item in sublist]
                 # フラットなリストを再びサブリストに変換して格納
-                request_list['second'] = [flat_list]
+                request_list['damage_name'] = [flat_list]
                 # 完成目標の確認
                 
-                test = request_list['second'][0]
+                test = request_list['damage_name'][0]
 
             # 先頭が文字（日本語やアルファベットなど）の場合
             def all_match_condition(lst):
@@ -893,7 +914,7 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
             if all_match_condition(test):
                 request_list
             else:
-                request_list['second'] = [request_list['second']]
+                request_list['damage_name'] = [request_list['damage_name']]
 
             #<< ◆損傷メモの作成◆ >>
             replacement_patterns = {
@@ -957,9 +978,9 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                 primary_damages = []
                 processed_related_damages = []
                 #print(f"unified_request_list：{unified_request_list}")
-                first_items = unified_request_list['first']
+                first_items = unified_request_list['parts_name']
                 #print(first_items) # [['支承本体 Bh0101'], ['沓座モルタル Bm0101']]
-                second_items = unified_request_list['second']
+                second_items = unified_request_list['damage_name']
                 #print(second_items) # [['①腐食(小小)-b', '⑤防食機能の劣化(分類1)-e'], ['⑦剥離・鉄筋露出-c']]
                 primary_damages_dict = {}
 
@@ -1001,8 +1022,8 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                         return [item for sublist in nested_list for item in sublist]
                     
                     # 辞書から 'first' と 'second' の値を取り出す
-                    first_list = request_list['first']
-                    second_list = request_list['second']
+                    first_list = request_list['parts_name']
+                    second_list = request_list['damage_name']
 
                     # 'first' の要素数を数える
                     first_count = sum(len(sublist) for sublist in first_list)
@@ -1100,7 +1121,9 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
 
             # << ◆ ここまで ◆ >>                   
                     # \n文字列のときの改行文字
-            items = {'first': first_item[i], 'second': second_items[i], 'join': first_and_second, 'third': third, 'last': picture_urls, 'picture': None, 'textarea_content': combined_data, 'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
+            items = {'parts_name': first_item[i], 'damage_name': second_items[i], 'join': first_and_second, 
+                     'picture_number': third, 'this_time_picture': picture_urls, 'last_time_picture': None, 'textarea_content': combined_data, 
+                     'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
                 
             damage_table.append(items)
         #print(damage_table)# 並び替え前が表示
@@ -1113,7 +1136,7 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                 
         # <<◆ リストの並び替え ◆>>
         def sort_key_function(sort_item):
-            first_value = sort_item['first'][0][0] # firstキーの最初の要素
+            first_value = sort_item['parts_name'][0][0] # firstキーの最初の要素
             #print(first_value) # 主桁 Mg0901
 
             if " " in first_value:
@@ -1136,8 +1159,8 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
                 first_number_key = int(first_value_split[1][2:])
             #print(first_number_key) # 901
 
-            if sort_item['second'][0][0]:  # `second`キーが存在する場合
-                second_value = sort_item['second'][0][0] # secondキーの最初の要素
+            if sort_item['damage_name'][0][0]:  # `second`キーが存在する場合
+                second_value = sort_item['damage_name'][0][0] # secondキーの最初の要素
                 #print(second_value) # ⑰その他(分類6:異物混入)-e
                 second_number_key = order_number.get(second_value[0], float('inf'))  # 先頭の文字を取得してorder_numberに照らし合わせる
                 #print(second_number_key) # 17
@@ -1319,7 +1342,12 @@ def number_create_view(request): # number_create_view関数を定義
 
 # << 所見一覧 >>
 def opinion_view(request):
-    return render(request, 'opinion.html')
+    data = [
+        {'parts_name': ['排水管'], 'damage_name': ['腐食'], 'damage_lank': ['b', 'c', 'e']}, 
+        {'parts_name': ['排水管'], 'damage_name': ['防食機能の劣化'], 'damage_lank': ['e']}, 
+        {'parts_name': ['添架物'], 'damage_name': ['ゆるみ・脱落'], 'damage_lank': ['e']}
+    ]
+    return render(request, 'opinion.html', {'data': data})
 
 # << 橋梁緒言の選択肢 >>
 def infraregulations_view(request):

@@ -13,38 +13,40 @@ order_lank = {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5}
 # <<◆ リストの並び替え ◆>>
 def sort_key_function(item):
     first_value = item['join'][0]['first'][0]
+    #print(first_value) # 排水管 Dp0101
 
     if " " in first_value:
         first_name, first_code = first_value.split()
-    else:
-        first_name, first_code = first_value, ""
+        #print(first_name) # 排水管
+        #print(first_code) # Dp0101
 
     first_name_key = order_dict.get(first_name, float('inf'))
+    #print(first_name_key) # 排水管をorder_dictの番号に変更 # 14
 
-    match = re.search(r'[A-Za-z]+(\d{2,})(\D)?', first_code)
+    match = re.search(r'[A-Za-z]+(\d{2,})(\D)?', first_code) # アルファベット+2文字以上の数字+数字以外が0回もしくは1回
     if match:
         first_number_key = int(match.group(1))
-    else:
-        first_number_key = float('inf')
+        #print(first_number_key) # 101
 
     second_list = item['join'][0]['second']
+    #print(second_list) # ['㉓変形・欠損-c', '①腐食(小大)-c', '①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']
+    
     second_values = []
     for second_value in second_list:
         match = re.match(r"([①-⑳㉑-㉖])[^-]*-([a-e])", second_value)
-        if match:
-            number, rank = match.groups()
-            second_number_key = order_number.get(number, float('inf'))
-            second_rank_key = order_lank.get(rank, float('inf'))
-        else:
-            second_number_key = float('inf')
-            second_rank_key = float('inf')
-        second_values.append((second_number_key, second_rank_key, second_value))
+        number, lank = match.groups() #①～㉖ # a-e
+        second_number_key = order_number.get(number, float('inf')) # 1～26
+        second_lank_key = order_lank.get(lank, float('inf')) # 1～5(a:1、e:5)
 
+        second_values.append((second_number_key, second_lank_key, second_value))
+    #print(second_values) # [(23, 3, '㉓変形・欠損-c'), (1, 3, '①腐食(小大)-c'), (1, 5, '①腐食(大大)-e'), (5, 5, '⑤防食機能の劣化(分類1)-e')]
     if second_values:
         second_values = sorted(second_values)
+        print(second_values) # [(1, 3, '①腐食(小大)-c'), (1, 5, '①腐食(大大)-e'), (5, 5, '⑤防食機能の劣化(分類1)-e'), (23, 3, '㉓変形・欠損-c')]
         second_values_sorted = [val[2] for val in second_values]
+        print(second_values_sorted) # ['①腐食(小大)-c', '①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e', '㉓変形・欠損-c']
     else:
-        second_number_key, second_rank_key = float('inf'), float('inf')
+        second_number_key, second_lank_key = float('inf'), float('inf')
         second_values_sorted = []
 
     item['join'][0]['second'] = second_values_sorted

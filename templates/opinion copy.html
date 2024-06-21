@@ -1,0 +1,165 @@
+<!-- opinion.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}所見一覧{% endblock title %}
+{% block h1 %}所見一覧{% endblock %}
+
+{% block content %}
+<style>
+  table.bordered-table {
+    border-collapse: collapse;  /* セルの重複枠線を取り除く */
+    width: 100%;
+  }
+  table.bordered-table th, table.bordered-table td {
+    border: 1px solid black;  /* 枠線の追加 */
+    padding: 8px;  /* 内側の余白 */
+    text-align: center;  /* テキスト中央揃え */
+  }
+  table.bordered-table th {
+    background-color: #f2f2f2;  /* ヘッダーの背景色 */
+  }
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4列 */
+    gap: 10px; /* ボタン間の間隔 */
+    margin: 10px 0; /* グリッド周りの間隔 */
+  }
+.grid-container button {
+    width: 100%; /* ボタンの幅をセルに合わせる */
+    height: 40px; /* ボタンの高さを適宜調整 */
+  }
+</style>
+
+<table class="bordered-table">
+  <thead>
+    <tr>
+        <th>主要部材</th>
+        <th>損傷箇所</th>
+        <th>損傷種類</th>
+        <th>損傷写真</th>
+        <th>対策区分</th>
+        <th>損傷原因</th>
+        <th>所見</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+        <td>●</td>
+        <td>主桁 01</td>
+        <td>防食機能の劣化<br>(分類1)<br>(e～c)</td>
+        <td><img src="{% static 'images/sample.jpg' %}" alt="サンプル画像"></td>
+        <td>
+          <div class="grid-container">
+            <button>B</button>
+            <button>M</button>
+            <button>C1</button>
+            <button>S1</button>
+            <button>C2</button>
+            <button>S2</button>
+            <button>E2</button>
+            <button>E1</button>
+          </div>
+        </td>
+        <td>
+        <button>疲労</button>
+        <button>塩害</button>
+        <button>凍害</button>
+        <button>アルカリ骨材反応</button>
+        <button>中性化</button>
+        <button>材料劣化</button></p>
+        <button>想定外の荷重</button>
+        <button>衝突</button>
+        <button>偏土圧・圧密沈下</button>
+        <button>洗掘・浸食</button>
+        <button>地震</button></p>
+        <button>乾燥収縮・温度応力</button>
+        <button>科学的腐食</button>
+        <button>品質の経年変化</button>
+        <button>製作・施工不良</button></p>
+        <button>防水・排水工不良</button>
+        <button>構造形式・形状不良</button>
+        <button>自由記述</button>
+        </td>
+        <td>点錆が見られる。</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>防護柵 00</td>
+      <td>腐食<br>(b～e)</td>
+      <td><img src="{% static 'images/sample.jpg' %}" alt="サンプル画像"></td>
+      <td>
+        <div class="grid-container">
+          <button>B</button>
+          <button>M</button>
+          <button>C1</button>
+          <button>S1</button>
+          <button>C2</button>
+          <button>S2</button>
+          <button>E2</button>
+          <button>E1</button>
+        </div>
+      </td>
+      <td>
+      <button>疲労</button>
+      <button>塩害</button>
+      <button>凍害</button>
+      <button>アルカリ骨材反応</button>
+      <button>中性化</button>
+      <button>材料劣化</button></p>
+      <button>想定外の荷重</button>
+      <button>衝突</button>
+      <button>偏土圧・圧密沈下</button>
+      <button>洗掘・浸食</button>
+      <button>地震</button></p>
+      <button>乾燥収縮・温度応力</button>
+      <button>科学的腐食</button>
+      <button>品質の経年変化</button>
+      <button>製作・施工不良</button></p>
+      <button>防水・排水工不良</button>
+      <button>構造形式・形状不良</button>
+      <button>自由記述</button>
+      </td>
+      <td>板厚減少を伴う腐食が見られる。</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>防護柵 00</td>
+      <td>変形・欠損<br>(e)</td>
+      <td><img src="{% static 'images/sample.jpg' %}" alt="サンプル画像"></td>
+      <td>
+        <div class="grid-container">
+          <button>B</button>
+          <button>M</button>
+          <button>C1</button>
+          <button>S1</button>
+          <button>C2</button>
+          <button>S2</button>
+          <button>E2</button>
+          <button>E1</button>
+        </div>
+      </td>
+      <td>
+      <button>疲労</button>
+      <button>塩害</button>
+      <button>凍害</button>
+      <button>アルカリ骨材反応</button>
+      <button>中性化</button>
+      <button>材料劣化</button></p>
+      <button>想定外の荷重</button>
+      <button>衝突</button>
+      <button>偏土圧・圧密沈下</button>
+      <button>洗掘・浸食</button>
+      <button>地震</button></p>
+      <button>乾燥収縮・温度応力</button>
+      <button>科学的腐食</button>
+      <button>品質の経年変化</button>
+      <button>製作・施工不良</button></p>
+      <button>防水・排水工不良</button>
+      <button>構造形式・形状不良</button>
+      <button>自由記述</button>
+      </td>
+      <td>欠損が見られる。</td>
+    </tr>
+</table>
+{% endblock content %}
