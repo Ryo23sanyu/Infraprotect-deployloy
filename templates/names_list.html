@@ -1,0 +1,78 @@
+<!--names_list.html-->
+{% extends "base.html" %}
+
+{% block title %}名前登録{% endblock title %}
+{% block h1 %}名前登録{% endblock %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>入力フォームの追加</title>
+    <style>
+      .input-set {
+          display: flex;
+          margin-bottom: 10px;
+      }
+      .input-item {
+          margin-right: 10px;
+      }
+      @media (max-width: 600px) {
+          .input-set {
+              flex-direction: column;
+              margin-bottom: 20px;
+          }
+          .input-item {
+              margin-bottom: 10px;
+              margin-right: 0;
+          }
+      }
+    </style>
+
+    <form id="input-form" method="POST" action="">
+        {% csrf_token %}
+        <div id="input-container">
+            {% for form in formset %}
+                <div class="input-set">
+                    {{ form.name }}
+                    {{ form.alphabet }}
+                </div>
+            {% endfor %}
+        </div>
+        <button type="button" id="add-button">追加</button>
+        <button type="submit">送信</button>
+    </form>
+
+    <script>
+        document.getElementById('add-button').addEventListener('click', function() {
+            const container = document.getElementById('input-container');
+            const formCount = container.children.length;
+
+            for (let i = 0; i < 3; i++) {
+                const inputSet = document.createElement('div');
+                inputSet.className = 'input-set';
+
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.className = 'input-item';
+                nameInput.name = `form-${formCount + i}-name`;
+                nameInput.placeholder = '名前';
+
+                const alphabetInput = document.createElement('input');
+                alphabetInput.type = 'text';
+                alphabetInput.className = 'input-item';
+                alphabetInput.name = `form-${formCount + i}-alphabet`;
+                alphabetInput.placeholder = 'アルファベット';
+
+                inputSet.appendChild(nameInput);
+                inputSet.appendChild(alphabetInput);
+
+                container.appendChild(inputSet);
+            }
+
+            // 総フォーム数を更新
+            document.getElementById('id_form-TOTAL_FORMS').value = formCount + 3;
+        });
+    </script>
+
+{% endblock %}

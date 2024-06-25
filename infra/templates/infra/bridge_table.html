@@ -7,7 +7,7 @@
 
 {% block content %}
     {# ここで径間ボタンを生成 #}
-    <form action="{% url 'bridge_table' table.pk %}">
+    <form action="{% url 'bridge_table' article_id item.pk %}">
         {% for button in buttons %}
         <button name="search_title_text" value="{{ forloop.counter }}径間">{{ forloop.counter }}径間</button>
         {% endfor %}

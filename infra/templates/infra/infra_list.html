@@ -38,9 +38,9 @@
             {# オブジェクト.多側のモデルの小文字.set.all で逆参照ができる #}
             {% endcomment %}
             {% for table in item.table_set.all %} {# オブジェクト.多側のモデルの小文字.set.all で逆参照ができる #}
-            <a href="{% url 'bridge_table' table.id %}" class="btn btn-primary">損傷写真帳{# {{ table.damage_location }} #}</a>
+            <a href="{% url 'bridge_table' article_id, item.pk %}" class="btn btn-primary">損傷写真帳{# {{ table.damage_location }} #}</a>
+            <a href="{% url 'opinion' %}" class="btn btn-primary">所見</a>
             {% endfor %}
-            <a href="{% url 'detail-infra' article_id item.pk %}" class="btn btn-primary">所見</a>
         </div>
     </div>
     {% endfor %}

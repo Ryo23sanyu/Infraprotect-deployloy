@@ -7,19 +7,20 @@
 <div class="sidebar">
   <p>インフラプロジェクト</p>
   <ul>
-      <li>橋梁緒言</a></li>
-      <li>一般図</a></li>
-      <li>全景写真</a></li>
-      <li>番号図</a></li>
-      <li>所見まとめ</a></li>
-      <li>各部材所見</a></li>
-      <li>損傷図</a></li>
+      <li><a href="{% url 'detail-infra' object.article.pk object.pk %}">橋梁緒言</a></li>
+      <li>✕一般図</a></li>
+      <li>✕全景写真</a></li>
+      <li>✕番号図</a></li>
+      <li>✕所見まとめ</a></li>
+      <li>✕各部材所見</a></li>
+      <li>✕損傷図</a></li>
       <li>損傷写真</a></li>
       <li><a href="{% url 'file-upload' object.article.pk object.pk %}">アップロード</a></li>
-      <div>article: {{ object.article.pk }}</div>
-      <div>pk: {{ object.pk }}</div>
       {% comment %} <li><a href="{% url 'file-upload' object.article.pk object.pk %}">アップロード</a></li> {% endcomment %}
-      <li>データ出力</a></li>
+      <li><a href="{% url 'data-output' object.article.pk object.pk %}">データ出力</a></li>
+      <li></li>
+      <div>案件番号: {{ object.article.pk }}</div>
+      <div>橋梁番号: {{ object.pk }}</div>
   </ul>
   <div class="sidebar-toggle">
     <button class="btn btn-primary">＜</button>

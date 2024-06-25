@@ -94,7 +94,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
         context["underconditions"] = UnderCondition.objects.all()
         return context
         
-    def keikan_create_view(request, pk): # keikan_create_view関数を定義
+    def keikan_create_view(request, article_pk, pk): # keikan_create_view関数を定義
         if request.method == "POST": # リクエストメソッドがpostの場合
             form = BridgeCreateForm(request.POST) # BridgeCreateFormというフォームクラスのインスタンスを生成
             if form.is_valid(): # formが正常の場合
@@ -106,7 +106,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
                 form = BridgeCreateForm() # 新しい空のフォームインスタンスを生成
         return render(request, 'infra/infra_create.html', {'form': form}) # 'infra_create.html'テンプレートをレンダリング
     
-    def damage_view(request, pk): # damage_view関数を定義
+    def damage_view(request, article_pk, pk): # damage_view関数を定義
         keikan_number = request.session.get('keikan_number', 1) # request.session.getメソッドを使い、セッションから"径間数"を取得、デフォルト値は1
         keikan_range = list(range(keikan_number)) # 1からkeikan_number（"径間数"）までの連続する整数列を生成
         return render(request, 'bridge_table.html', {'keikan_range': keikan_range}) # 'table.html'テンプレートをレンダリング
@@ -212,9 +212,9 @@ def file_upload(request, article_pk, pk):
         form = TableForm(copied, request.FILES)
         
         # 既存のオブジェクトに対して新しいファイルを上書きする処理
-        if Table.objects.filter(infra_id=pk).exists():
-            obj = Table.objects.get(infra_id=pk)
-            form = TableForm(request.POST, request.FILES, instance=obj)
+        if Table.objects.filter(infra=pk).first():
+            obj = Table.objects.get(infra=pk)
+            form = TableForm(copied, request.FILES, instance=obj)
             
         if form.is_valid():
             form.save()
@@ -302,7 +302,368 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
         search_title_text = "1径間" # 検索URLにsearch_title_textがない場合
 
     second_search_title_text = "損傷図"
+    
+    sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
 
+    # ソート結果を表示
+    #for item in sorted_items:
+        #print(item)
+
+    # context = {'damage_table': sorted_items}  # テンプレートに渡すデータ
+    context["damage_table"] = sorted_items
+    #print(sorted_text_list) # sorted_text_list（itemsの内容を並び替え）をすべて表示
+    return render(request, "infra/bridge_table.html", context)
+    #return render(request, 'table.html', context)
+
+def ajax_file_send(request):
+    if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ
+        if 'upload-file' in request.FILES: # アップロードされたファイルがrequest.FILESに入っている場合
+            myfile = request.FILES['upload-file'] # 受け取ったファイルをmyfileという変数に代入
+            fs = FileSystemStorage() # FileSystemStorageのインスタンスを生成(システム上にファイルを保存する準備)
+            filename = fs.save(myfile.name, myfile) # myfileを指定した名前で保存し、保存したファイルの名前をfilename変数に格納
+            uploaded_file_url = fs.url(filename) # 保存したファイルにアクセスするためのURLを生成
+            # success時のレスポンスはJSON形式で返すならこちらを使う
+            return JsonResponse({'upload_file_url': uploaded_file_url})
+            # HTMLページを返す場合はこちらを使う
+            # context = {'damage_table': sorted_text_list}
+            # return render(request, 'table.html', context)
+        else:
+            # ファイルがPOSTされていない場合はエラーレスポンスを返す
+            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。') # File is not attached
+    else:
+        # POSTメソッドでない場合はエラーレスポンスを返す
+        return HttpResponseBadRequest('無効な作業です。') # Invalid request method
+
+# 番号表示
+def sample_view(request):# 追加
+    start = "0101"
+    end = "0206"
+
+# 最初の2桁と最後の2桁を取得
+    start_prefix = start[:2]
+    start_suffix = start[2:]
+    end_prefix = end[:2]
+    end_suffix = end[2:]
+
+# 抽出した数字を表示
+    result = ""# 追加
+    for prefix in range(int(start_prefix), int(end_prefix)+1):
+        for suffix in range(int(start_suffix), int(end_suffix)+1):
+            result += "{:02d}{:02d}".format(prefix, suffix)
+        
+    return HttpResponse(result)# 追加
+
+# <<ファイルアップロード(プライマリーキーで分類分け)>>
+def upload_directory_path(instance, filename):
+    # プライマリーキーを取得する
+    primary_key = instance.pk
+    # 'documents/プライマリーキー/filename' のパスを返す
+    return 'uploads/{}/{}'.format(primary_key, filename)
+
+# class Upload(models.Model):
+#     file = models.FileField(upload_to=upload_directory_path)
+    
+# <<センサス調査>>
+def census_view(request):
+    form = CensusForm()
+    return render(request, 'infra_detail.html', {'form': form})
+
+# <<全景写真の表示>>
+def image_list(request):
+    # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。
+    save_path = str(settings.BASE_DIR) + "\infra\static\infra\img"
+    # 「C:\work\django\myproject\program\Infraproject」+「\infra\static\infra\img」と同意
+    files_jpg = glob.glob(save_path + "\*.jpg")
+    files_png = glob.glob(save_path + "\*.png")
+    files = files_jpg + files_png  # 2つのリストを結合する。
+    # ページに表示する際、"infra/static/" を削除する。
+
+    web_base_path = "infra/img/"  # ウェブからアクセスする際のベースパス
+
+    image_files = []
+    for file_path in files:
+        # OSの絶対パスからウェブアクセス可能な相対パスへ変換
+        relative_path = file_path.replace(save_path, web_base_path).replace("\\", "/")
+        image_files.append(relative_path)
+    # テンプレートに画像ファイルの一覧を渡してレンダリングする
+    return render(request, 'image_list.html', {'image_files': image_files})
+
+# <<全景写真アップロード>>
+save_path = str(settings.BASE_DIR) + "\infra\static\infra\img"
+# 「C:\work\django\myproject\program\Infraproject」+「\infra\static\infra\img」と同意
+def display_photo(request):
+    print("リクエストメソッド:", request.method)  # リクエストのメソッドを表示
+    if request.method == 'POST': # HTTPリクエストがPOSTメソッド(フォームの送信など)であれば、以下のコードを実行
+        form = UploadForm(request.POST, request.FILES) # UploadFormを使用して、送信されたデータ(request.POST)とファイル(request.FILES)を取得
+        print("フォームが有効か？:", form.is_valid())  # フォームの有効性を表示
+        if form.is_valid(): # formのis_valid()メソッドを呼び出して、フォームのバリデーション(検証)を実行
+    # フォームが有効な場合は、選択された写真を特定のフォルダに保存します
+            # print("フォームが有効")
+            photo = form.cleaned_data['photo'] # バリデーションを通過したデータから、'photo'キーに対応するデータを取得しphoto変数に格納
+            print("アップロードされた写真の名前:", photo.name)  # アップロードされた写真の名前を表示
+            file_name = photo.name  # アップロードされたファイルの名前をfile_name変数に格納
+            file_path = os.path.join(save_path, file_name)
+            #設定された保存パス（save_path）とファイル名（file_name）を組み合わせ、フルパスをfile_path変数に格納
+
+            with open(file_path, 'wb') as f: # file_pathで指定されたパスにファイルをバイナリ書き込みモード('wb')で開く
+                for chunk in photo.chunks(): # アップロードされたファイル(photo)をchunks()メソッドを使用して分割し、ループ処理を行う
+                    f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む
+            return redirect('image_list')
+        else:
+            print("フォームエラー:", form.errors)  # フォームのエラーを表示
+        # フォームが有効・無効 共通
+            print(form.errors)  # コンソールにエラーメッセージを出力
+            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。 エラー: {}'.format(form.errors))
+            #return HttpResponseBadRequest('添付ファイルが見つかりませんでした。')
+    else:
+        form = UploadForm() # Forms.pyの「UploadForm」を呼び出し
+    return render(request, 'upload_photo.html', {'form': form})
+
+def photo_upload(request):
+    if request.method == 'POST':
+        form = PhotoUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('image_list')
+    else:
+        form = PhotoUploadForm()
+    return render(request, 'image_list.html', {'form': form})
+
+# <<全景写真の変更>>
+def change_photo(request):
+    if request.method == 'POST':
+        form = UploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # ここで、古い写真の削除や新しい写真の保存処理を行います。
+            # 例: image_idを使用して特定のレコードを探し、そのレコードに新しい画像を保存
+            image_id = request.POST.get('image_id', None)  # 画像ID取得
+            if image_id:
+                image_instance = UploadForm.objects.get(id=image_id)
+                image_instance.photo = form.cleaned_data['photo']
+                image_instance.save()
+                return redirect('image_list')
+            else:
+                # エラー処理
+                pass
+        else:
+            # フォームのバリデーションに失敗したときの処理
+            pass
+    else:
+        form = UploadForm()  # GETリクエストの場合、空のフォームを表示
+
+    return render(request, 'upload_photo.html', {'form': form})
+
+# 番号図用
+def number_create_view(request): # number_create_view関数を定義
+# この行ではnumber_create_viewという名前の関数を定義しています。この関数はrequestという引数を受け取ります。
+# requestはユーザーからのHTTPリクエストを表し、Djangoが自動的に関数に渡します。
+    if request.method == 'POST': # HTTPリクエストメソッドがPOSTメソッド(データをサーバーに送る役割)の場合
+        form = NumberForm(request.POST) # 
+
+        if form.is_valid(): # POSTメソッドがform.pyで定めたfieldsに従っている場合
+            form.save() # DBに保存する。
+        else:
+            print(form.errors) # エラーの理由を出す。
+
+        return redirect('/') # 
+    else:
+        form = NumberForm() # GETリクエストの場合、空のフォームを表示します。
+
+    return render(request, 'select_item.html', {'form': form})
+
+# << 所見一覧 >>
+def opinion_view(request):
+    data = [
+        {'parts_name': ['排水管'], 'damage_name': ['腐食'], 'damage_lank': ['b', 'c', 'e']}, 
+        {'parts_name': ['排水管'], 'damage_name': ['防食機能の劣化'], 'damage_lank': ['e']}, 
+        {'parts_name': ['添架物'], 'damage_name': ['ゆるみ・脱落'], 'damage_lank': ['e']}
+    ]
+    return render(request, 'opinion.html', {'data': data})
+
+# << 名前とアルファベットの紐付け >>
+def names_list_view(request):
+    return render(request, 'names_list.html')
+
+# << 番号登録 >>
+def number_entry_view(request):
+    return render(request, 'number_entry.html')
+
+# << 橋梁緒言の選択肢 >>
+def infraregulations_view(request):
+    form = BridgeCreateForm()
+    regulations = Regulation.objects.all()
+    context = {
+        'form': form,
+        'regulations': regulations,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraloadWeights_view(request):
+    form = BridgeCreateForm()
+    loadWeights = LoadWeight.objects.all()
+    context = {
+        'form': form,
+        'loadWeights': loadWeights,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraloadGrades_view(request):
+    form = BridgeCreateForm()
+    loadGrades = LoadGrade.objects.all()
+    context = {
+        'form': form,
+        'loadGrades': loadGrades,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infrarulebooks_view(request):
+    form = BridgeCreateForm()
+    rulebooks = Rulebook.objects.all()
+    context = {
+        'form': form,
+        'rulebooks': rulebooks,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraapproachs_view(request):
+    form = BridgeCreateForm()
+    approachs = Approach.objects.all()
+    context = {
+        'form': form,
+        'approachs': approachs,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infrathirdpartys_view(request):
+    form = BridgeCreateForm()
+    thirdpartys = Thirdparty.objects.all()
+    context = {
+        'form': form,
+        'thirdpartys': thirdpartys,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraunderConditions_view(request):
+    form = BridgeCreateForm()
+    underConditions = UnderCondition.objects.all()
+    context = {
+        'form': form,
+        'underConditions': underConditions,
+    }
+    return render(request, 'infra_create.html', context)
+
+def infraregulations_view(request):
+    form = BridgeUpdateForm()
+    regulations = Regulation.objects.all()
+    context = {
+        'form': form,
+        'regulations': regulations,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infraloadWeights_view(request):
+    form = BridgeUpdateForm()
+    loadWeights = LoadWeight.objects.all()
+    context = {
+        'form': form,
+        'loadWeights': loadWeights,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infraloadGrades_view(request):
+    form = BridgeUpdateForm()
+    loadGrades = LoadGrade.objects.all()
+    context = {
+        'form': form,
+        'loadGrades': loadGrades,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infrarulebooks_view(request):
+    form = BridgeUpdateForm()
+    rulebooks = Rulebook.objects.all()
+    context = {
+        'form': form,
+        'rulebooks': rulebooks,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infraapproachs_view(request):
+    form = BridgeUpdateForm()
+    approachs = Approach.objects.all()
+    context = {
+        'form': form,
+        'approachs': approachs,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infrathirdpartys_view(request):
+    form = BridgeUpdateForm()
+    thirdpartys = Thirdparty.objects.all()
+    context = {
+        'form': form,
+        'thirdpartys': thirdpartys,
+    }
+    return render(request, 'infra_update.html', context)
+
+def infraunderConditions_view(request):
+    form = BridgeUpdateForm()
+    underConditions = UnderCondition.objects.all()
+    context = {
+        'form': form,
+        'underConditions': underConditions,
+    }
+    return render(request, 'infra_update.html', context)
+
+# 指定したInfra(pk)に紐づくTableのエクセル出力処理をする。 
+def data_output(request, article_pk, pk):
+    # 指定したInfraに紐づく Tableを取り出す
+    table = Table.objects.filter(infra=pk).first()
+    print(table.dxf.url) # 相対パス
+    
+    # 絶対パスに変換
+    encoded_url_path = table.dxf.url
+    decoded_url_path = urllib.parse.unquote(encoded_url_path) # URLデコード
+    dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
+    print(dxf_filename)
+#         ↑ を読んでエクセルファイルを作る
+    """
+    # TODO: エクセルファイルを新規作成するが、 既存のファイルを読み込む方向で修正。
+    wb  = px.Workbook()
+
+
+    # 径間の数だけシートを作る。
+    infra   = Infra.objects.filter(id=pk).first()
+    amount  = infra.径間数
+
+    for number in range(1,amount+1):
+
+        # TODO: ↓ 後でクライアント側から指定できるようにする。
+        search_title_text           = f"{number}径間"
+        second_search_title_text    = "損傷図"
+
+        # 1回の実行で作れるのは、径間の1個分しか作れない。エクセルのシート1枚。
+        sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
+
+
+
+    # TODO: できあがったエクセルファイルをレスポンスする
+
+    #メモリ空間内に保存
+    virtual     = BytesIO()
+    wb.save(virtual)
+
+    #バイト文字列からバイナリを作る
+    binary      = BytesIO(virtual.getvalue())
+
+    #レスポンスをする
+    return FileResponse( binary, filename="download.xlsx" )
+
+    """
+    return redirect("index")
+
+def create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text):
+    
     def find_square_around_text(dxf_filename, target_text, second_target_text):
         doc = ezdxf.readfile(dxf_filename)
         msp = doc.modelspace()
@@ -1173,305 +1534,5 @@ def bridge_table(request, pk):# idの紐付け infra/bridge_table.htmlに表示
             return (first_name_key, first_number_key, second_number_key, second_lank_key)
 
         sorted_items = sorted(damage_table, key=sort_key_function)
-
-    # ソート結果を表示
-    #for item in sorted_items:
-        #print(item)
-
-    # context = {'damage_table': sorted_items}  # テンプレートに渡すデータ
-    context["damage_table"] = sorted_items
-    #print(sorted_text_list) # sorted_text_list（itemsの内容を並び替え）をすべて表示
-    return render(request, "infra/bridge_table.html", context)
-    #return render(request, 'table.html', context)
-
-def ajax_file_send(request):
-    if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ
-        if 'upload-file' in request.FILES: # アップロードされたファイルがrequest.FILESに入っている場合
-            myfile = request.FILES['upload-file'] # 受け取ったファイルをmyfileという変数に代入
-            fs = FileSystemStorage() # FileSystemStorageのインスタンスを生成(システム上にファイルを保存する準備)
-            filename = fs.save(myfile.name, myfile) # myfileを指定した名前で保存し、保存したファイルの名前をfilename変数に格納
-            uploaded_file_url = fs.url(filename) # 保存したファイルにアクセスするためのURLを生成
-            # success時のレスポンスはJSON形式で返すならこちらを使う
-            return JsonResponse({'upload_file_url': uploaded_file_url})
-            # HTMLページを返す場合はこちらを使う
-            # context = {'damage_table': sorted_text_list}
-            # return render(request, 'table.html', context)
-        else:
-            # ファイルがPOSTされていない場合はエラーレスポンスを返す
-            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。') # File is not attached
-    else:
-        # POSTメソッドでない場合はエラーレスポンスを返す
-        return HttpResponseBadRequest('無効な作業です。') # Invalid request method
-
-# 番号表示
-def sample_view(request):# 追加
-    start = "0101"
-    end = "0206"
-
-# 最初の2桁と最後の2桁を取得
-    start_prefix = start[:2]
-    start_suffix = start[2:]
-    end_prefix = end[:2]
-    end_suffix = end[2:]
-
-# 抽出した数字を表示
-    result = ""# 追加
-    for prefix in range(int(start_prefix), int(end_prefix)+1):
-        for suffix in range(int(start_suffix), int(end_suffix)+1):
-            result += "{:02d}{:02d}".format(prefix, suffix)
         
-    return HttpResponse(result)# 追加
-
-# <<ファイルアップロード(プライマリーキーで分類分け)>>
-def upload_directory_path(instance, filename):
-    # プライマリーキーを取得する
-    primary_key = instance.pk
-    # 'documents/プライマリーキー/filename' のパスを返す
-    return 'uploads/{}/{}'.format(primary_key, filename)
-
-# class Upload(models.Model):
-#     file = models.FileField(upload_to=upload_directory_path)
-    
-# <<センサス調査>>
-def census_view(request):
-    form = CensusForm()
-    return render(request, 'infra_detail.html', {'form': form})
-
-# <<全景写真の表示>>
-def image_list(request):
-    # 特定のディレクトリ内の全てのファイルパスをリストで取得したい場合はglobを使うと良い。
-    save_path = str(settings.BASE_DIR) + "\infra\static\infra\img"
-    # 「C:\work\django\myproject\program\Infraproject」+「\infra\static\infra\img」と同意
-    files_jpg = glob.glob(save_path + "\*.jpg")
-    files_png = glob.glob(save_path + "\*.png")
-    files = files_jpg + files_png  # 2つのリストを結合する。
-    # ページに表示する際、"infra/static/" を削除する。
-
-    web_base_path = "infra/img/"  # ウェブからアクセスする際のベースパス
-
-    image_files = []
-    for file_path in files:
-        # OSの絶対パスからウェブアクセス可能な相対パスへ変換
-        relative_path = file_path.replace(save_path, web_base_path).replace("\\", "/")
-        image_files.append(relative_path)
-    # テンプレートに画像ファイルの一覧を渡してレンダリングする
-    return render(request, 'image_list.html', {'image_files': image_files})
-
-# <<全景写真アップロード>>
-save_path = str(settings.BASE_DIR) + "\infra\static\infra\img"
-# 「C:\work\django\myproject\program\Infraproject」+「\infra\static\infra\img」と同意
-def display_photo(request):
-    print("リクエストメソッド:", request.method)  # リクエストのメソッドを表示
-    if request.method == 'POST': # HTTPリクエストがPOSTメソッド(フォームの送信など)であれば、以下のコードを実行
-        form = UploadForm(request.POST, request.FILES) # UploadFormを使用して、送信されたデータ(request.POST)とファイル(request.FILES)を取得
-        print("フォームが有効か？:", form.is_valid())  # フォームの有効性を表示
-        if form.is_valid(): # formのis_valid()メソッドを呼び出して、フォームのバリデーション(検証)を実行
-    # フォームが有効な場合は、選択された写真を特定のフォルダに保存します
-            # print("フォームが有効")
-            photo = form.cleaned_data['photo'] # バリデーションを通過したデータから、'photo'キーに対応するデータを取得しphoto変数に格納
-            print("アップロードされた写真の名前:", photo.name)  # アップロードされた写真の名前を表示
-            file_name = photo.name  # アップロードされたファイルの名前をfile_name変数に格納
-            file_path = os.path.join(save_path, file_name)
-            #設定された保存パス（save_path）とファイル名（file_name）を組み合わせ、フルパスをfile_path変数に格納
-
-            with open(file_path, 'wb') as f: # file_pathで指定されたパスにファイルをバイナリ書き込みモード('wb')で開く
-                for chunk in photo.chunks(): # アップロードされたファイル(photo)をchunks()メソッドを使用して分割し、ループ処理を行う
-                    f.write(chunk) # 各チャンクを開かれたファイル(f)に書き込む
-            return redirect('image_list')
-        else:
-            print("フォームエラー:", form.errors)  # フォームのエラーを表示
-        # フォームが有効・無効 共通
-            print(form.errors)  # コンソールにエラーメッセージを出力
-            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。 エラー: {}'.format(form.errors))
-            #return HttpResponseBadRequest('添付ファイルが見つかりませんでした。')
-    else:
-        form = UploadForm() # Forms.pyの「UploadForm」を呼び出し
-    return render(request, 'upload_photo.html', {'form': form})
-
-def photo_upload(request):
-    if request.method == 'POST':
-        form = PhotoUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('image_list')
-    else:
-        form = PhotoUploadForm()
-    return render(request, 'image_list.html', {'form': form})
-
-# <<全景写真の変更>>
-def change_photo(request):
-    if request.method == 'POST':
-        form = UploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            # ここで、古い写真の削除や新しい写真の保存処理を行います。
-            # 例: image_idを使用して特定のレコードを探し、そのレコードに新しい画像を保存
-            image_id = request.POST.get('image_id', None)  # 画像ID取得
-            if image_id:
-                image_instance = UploadForm.objects.get(id=image_id)
-                image_instance.photo = form.cleaned_data['photo']
-                image_instance.save()
-                return redirect('image_list')
-            else:
-                # エラー処理
-                pass
-        else:
-            # フォームのバリデーションに失敗したときの処理
-            pass
-    else:
-        form = UploadForm()  # GETリクエストの場合、空のフォームを表示
-
-    return render(request, 'upload_photo.html', {'form': form})
-
-# 番号図用
-def number_create_view(request): # number_create_view関数を定義
-# この行ではnumber_create_viewという名前の関数を定義しています。この関数はrequestという引数を受け取ります。
-# requestはユーザーからのHTTPリクエストを表し、Djangoが自動的に関数に渡します。
-    if request.method == 'POST': # HTTPリクエストメソッドがPOSTメソッド(データをサーバーに送る役割)の場合
-        form = NumberForm(request.POST) # 
-
-        if form.is_valid(): # POSTメソッドがform.pyで定めたfieldsに従っている場合
-            form.save() # DBに保存する。
-        else:
-            print(form.errors) # エラーの理由を出す。
-
-        return redirect('/') # 
-    else:
-        form = NumberForm() # GETリクエストの場合、空のフォームを表示します。
-
-    return render(request, 'select_item.html', {'form': form})
-
-# << 所見一覧 >>
-def opinion_view(request):
-    data = [
-        {'parts_name': ['排水管'], 'damage_name': ['腐食'], 'damage_lank': ['b', 'c', 'e']}, 
-        {'parts_name': ['排水管'], 'damage_name': ['防食機能の劣化'], 'damage_lank': ['e']}, 
-        {'parts_name': ['添架物'], 'damage_name': ['ゆるみ・脱落'], 'damage_lank': ['e']}
-    ]
-    return render(request, 'opinion.html', {'data': data})
-
-# << 橋梁緒言の選択肢 >>
-def infraregulations_view(request):
-    form = BridgeCreateForm()
-    regulations = Regulation.objects.all()
-    context = {
-        'form': form,
-        'regulations': regulations,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraloadWeights_view(request):
-    form = BridgeCreateForm()
-    loadWeights = LoadWeight.objects.all()
-    context = {
-        'form': form,
-        'loadWeights': loadWeights,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraloadGrades_view(request):
-    form = BridgeCreateForm()
-    loadGrades = LoadGrade.objects.all()
-    context = {
-        'form': form,
-        'loadGrades': loadGrades,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infrarulebooks_view(request):
-    form = BridgeCreateForm()
-    rulebooks = Rulebook.objects.all()
-    context = {
-        'form': form,
-        'rulebooks': rulebooks,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraapproachs_view(request):
-    form = BridgeCreateForm()
-    approachs = Approach.objects.all()
-    context = {
-        'form': form,
-        'approachs': approachs,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infrathirdpartys_view(request):
-    form = BridgeCreateForm()
-    thirdpartys = Thirdparty.objects.all()
-    context = {
-        'form': form,
-        'thirdpartys': thirdpartys,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraunderConditions_view(request):
-    form = BridgeCreateForm()
-    underConditions = UnderCondition.objects.all()
-    context = {
-        'form': form,
-        'underConditions': underConditions,
-    }
-    return render(request, 'infra_create.html', context)
-
-def infraregulations_view(request):
-    form = BridgeUpdateForm()
-    regulations = Regulation.objects.all()
-    context = {
-        'form': form,
-        'regulations': regulations,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infraloadWeights_view(request):
-    form = BridgeUpdateForm()
-    loadWeights = LoadWeight.objects.all()
-    context = {
-        'form': form,
-        'loadWeights': loadWeights,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infraloadGrades_view(request):
-    form = BridgeUpdateForm()
-    loadGrades = LoadGrade.objects.all()
-    context = {
-        'form': form,
-        'loadGrades': loadGrades,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infrarulebooks_view(request):
-    form = BridgeUpdateForm()
-    rulebooks = Rulebook.objects.all()
-    context = {
-        'form': form,
-        'rulebooks': rulebooks,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infraapproachs_view(request):
-    form = BridgeUpdateForm()
-    approachs = Approach.objects.all()
-    context = {
-        'form': form,
-        'approachs': approachs,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infrathirdpartys_view(request):
-    form = BridgeUpdateForm()
-    thirdpartys = Thirdparty.objects.all()
-    context = {
-        'form': form,
-        'thirdpartys': thirdpartys,
-    }
-    return render(request, 'infra_update.html', context)
-
-def infraunderConditions_view(request):
-    form = BridgeUpdateForm()
-    underConditions = UnderCondition.objects.all()
-    context = {
-        'form': form,
-        'underConditions': underConditions,
-    }
-    return render(request, 'infra_update.html', context)
+    return sorted_items

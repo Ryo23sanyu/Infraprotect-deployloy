@@ -25,7 +25,7 @@ class UserCreationForm(forms.ModelForm):
 class TableForm(forms.ModelForm):
     class Meta:
         model = Table
-        fields = ['dxf']
+        fields = ['infra', 'dxf']
 
 # <<各橋作成時のボタン選択肢>>
 class BridgeCreateForm(forms.ModelForm):

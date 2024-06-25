@@ -21,9 +21,14 @@ urlpatterns = [
     path('article/<int:pk>/delete/', views.DeleteArticleView.as_view(), name='delete-article'),# 案件の削除
     path('article/<int:pk>/update/', views.UpdateArticleView.as_view(), name='update-article'),# 案件の更新
     
-    path('article/<int:article_pk>/infra/<int:pk>/upload/', views.file_upload, name='file-upload'),# ファイルアップロード
+    path('names/', views.names_list_view, name='names-list'),# 名前とアルファベットの紐付け
     
-    #path('upload/', views.file_upload, name='file_upload'),# ファイルアップロード
+    path('article/<int:article_pk>/infra/<int:pk>/upload/', views.file_upload, name='file-upload'),# ファイルアップロード
+    path('article/<int:article_pk>/infra/<int:pk>/output/', views.data_output, name='data-output'),# ファイル出力
+    #                ↓ 何のモデルのpkにするか？ ← Tableモデルのid
+    #path('article/<int:pk>/infra/bridge_table/', views.bridge_table, name="bridge_table"),# 損傷写真帳
+    path('article/<int:article_pk>/infra/<int:pk>/bridge_table/', views.bridge_table, name='bridge_table'),# 損傷写真帳
+    
     path('upload/success/', views.file_upload_success, name='file_upload_success'),
     path('photos/', views.photo_list, name='photo_list'),
     path('photos/upload/', views.photo_upload, name='photo_upload'),
@@ -32,14 +37,11 @@ urlpatterns = [
     path('images/', views.image_list, name='image_list'),# 全景写真
     path('photo/', views.display_photo, name='photo'),# 全景写真のアップロード
     path('change-photo/', views.change_photo, name='change_photo'),# 全景写真の変更
-
-    #                ↓ 何のモデルのpkにするか？ ← Tableモデルのid
-    path('article/<int:pk>/infra/bridge_table/', views.bridge_table, name="bridge_table"),# 損傷写真帳
-    
-    # path('bridge_table/<int:pk>/', views.bridge_table, name="bridge_table"),
     path('number/', views.number_create_view, name='number'),
     path('opinion/', views.opinion_view, name='opinion'),# 所見一覧
     path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更
+    path('number-entry/', views.number_entry_view, name='number_entry'),# 要素番号登録
+    
 ]
 # path('URLの末尾', views.py内の関数名(操作に対するリクエストを受ける), ルーティングに名前を付ける(この名前でURLを参照できるようになる)),
 if settings.DEBUG:

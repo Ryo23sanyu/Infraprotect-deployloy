@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<title>登録フォーム</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+.form-section {
+    margin-bottom: 20px;
+}
+.form-section label {
+    display: block;
+    margin-bottom: 5px;
+}
+.form-section input, .form-section select {
+    width: 150px;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+.form-section .entries .entry {
+    display: inline-block;
+    margin-right: 10px;
+    white-space: nowrap;
+    gap: 10px; /* エントリ間の間隔を整える */
+}
+.form-section button {
+    margin-top: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+{% comment %}
+.form-section .entries {
+    margin-bottom: 10px;
+}
+
+.form-section .entries input {
+    width: auto;
+    margin-right: 5px;
+}
+.form-section button {
+    margin-top: 5px;
+} 
+{% endcomment %}
+</style>
+<body>
+
+    <h1>登録フォーム</h1>
+
+    <div class="form-section">
+        <label for="part-name">部材名:</label>
+        <select id="part-name">
+            <option value="部材名1">主桁</option>
+            <option value="部材名2">横桁</option>
+            <option value="部材名3">床版</option>
+        </select>
+    </div>
+
+    <div class="form-section">
+        <label>連続した番号:</label>
+        <button type="button" onclick="addSerialEntry()">追加</button>
+        <div id="serial-entries" class="entries">
+            <div class="entry">
+                <input type="number" placeholder="番号1" min="1000"> ～ <input type="number" placeholder="番号2" min="1000">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <label>単一の番号:</label>
+        <button type="button" onclick="addSingleEntry()">追加</button>
+        <div id="single-entries" class="entries">
+            <div class="entry">
+                <input type="number" placeholder="番号" min="1000">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <button type="button" onclick="register()">登録</button>
+    </div>
+
+    <script>
+        function addSerialEntry() {
+            const container = document.getElementById('serial-entries');
+            const entryDiv = document.createElement('div');
+            entryDiv.classList.add('entry');
+            entryDiv.innerHTML = `<input type="number" placeholder="番号1" min="1000"> ～ <input type="number" placeholder="番号2" min="1000">`;
+            container.appendChild(entryDiv);
+        }
+
+        function addSingleEntry() {
+            const container = document.getElementById('single-entries');
+            const entryDiv = document.createElement('div');
+            entryDiv.classList.add('entry');
+            entryDiv.innerHTML = `<input type="number" placeholder="番号" min="1000">`;
+            container.appendChild(entryDiv);
+        }
+
+        function register() {
+            const partName = document.getElementById('part-name').value;
+            const serialEntries = Array.from(document.querySelectorAll('#serial-entries .entry'));
+            const singleEntries = Array.from(document.querySelectorAll('#single-entries .entry'));
+
+            const serialNumbers = serialEntries.map(entry => {
+                const inputs = entry.getElementsByTagName('input');
+                return {from: inputs[0].value, to: inputs[1].value};
+            });
+
+            const singleNumbers = singleEntries.map(entry => entry.getElementsByTagName('input')[0].value);
+
+            console.log("パーツ名:", partName);
+            console.log("連続した番号:", serialNumbers);
+            console.log("単一の番号:", singleNumbers);
+
+            // 登録処理をここに追加 (例: サーバーにデータを送信)
+        }
+    </script>
+
+</body>
+{% endblock %}
