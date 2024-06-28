@@ -3,11 +3,12 @@ import datetime
 # django内からインポート
 from django import forms
 from django.core.files.storage import default_storage
+from django.forms import modelformset_factory
 
 from .models import CustomUser, Image, Infra, Number, Regulation, UploadedFile
-from .models import Photo, Company, Table
+from .models import Photo, Company, Table, NameEntry, PartsNumber
 
-# <<ファイルアップロード>>
+# ファイルアップロード
 class FileUploadForm(forms.ModelForm):
     class Meta:
         model = UploadedFile
@@ -16,18 +17,17 @@ class FileUploadForm(forms.ModelForm):
 # 会社別に表示
 class UserCreationForm(forms.ModelForm):
     company = forms.ModelChoiceField(queryset=Company.objects.all())
-
     class Meta:
         model = CustomUser
         fields = ('username', 'password', 'company')
 
-# Infra毎にdxfファイルを登録
+# << Infra毎にdxfファイルを登録 >>
 class TableForm(forms.ModelForm):
     class Meta:
         model = Table
         fields = ['infra', 'dxf']
 
-# <<各橋作成時のボタン選択肢>>
+# << 各橋作成時のボタン選択肢 >>
 class BridgeCreateForm(forms.ModelForm):
     class Meta:
         model = Infra
@@ -42,6 +42,7 @@ class BridgeCreateForm(forms.ModelForm):
             '路下条件': forms.CheckboxSelectMultiple,
         }
         
+# << 各橋更新時のボタン選択肢 >>
 class BridgeUpdateForm(forms.ModelForm):
     class Meta:
         model = Infra
@@ -56,11 +57,29 @@ class BridgeUpdateForm(forms.ModelForm):
             '路下条件': forms.CheckboxSelectMultiple,
         }
 
-# <<センサス調査>>
+# << センサス入力用 >>
 class CensusForm(forms.Form):
     traffic = forms.CharField(label='交通量')
     mixing = forms.CharField(label='大型車混入率')
     
+# << 名前とアルファベットの紐付け >>
+class NameEntryForm(forms.ModelForm):
+    class Meta:
+        model = NameEntry
+        fields = ['name', 'alphabet']
+
+NameEntryFormSet = modelformset_factory(NameEntry, form=NameEntryForm, extra=3)
+#          Formセットを生成するための関数(modelクラス, Formクラス, 最初に表示する空のクラス数)
+
+# << 要素番号の登録 >>
+class PartsNumberForm(forms.ModelForm):
+    class Meta:
+        model = PartsNumber
+        fields = ['parts_name', 'number']
+
+PartsNumberFormSet = modelformset_factory(PartsNumber, form=PartsNumberForm, extra=5)
+
+
 # <<損傷写真表示>>
 class NameForm(forms.Form):
     initial = forms.CharField(label='イニシャル')
@@ -95,3 +114,4 @@ class FileUploadSampleForm(forms.Form):
         upload_file = self.files['file']  # フォームからアップロードファイルを取得
         file_name = default_storage.save(now_date + "_" + upload_file.name, upload_file)  # ファイルを保存 戻り値は実際に保存したファイル名
         return default_storage.url(file_name)
+    

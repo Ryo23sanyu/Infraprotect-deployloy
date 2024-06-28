@@ -7,7 +7,7 @@
 
 {% block content %}
     {# ここで径間ボタンを生成 #}
-    <form action="{% url 'bridge_table' article_id item.pk %}">
+    <form action="{% url 'bridge-table' object.infra.article.pk object.infra.pk %}">
         {% for button in buttons %}
         <button name="search_title_text" value="{{ forloop.counter }}径間">{{ forloop.counter }}径間</button>
         {% endfor %}
@@ -84,11 +84,13 @@
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                                     <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
                                                         <div>
-                                                            {% if bridge.last_time_picture is None %}
-                                                                <img id="before-image" src="{% static 'infra/noImage.png' %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
-                                                            {% else %}
-                                                                <img id="before-image" src="{% static bridge.last_time_picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
-                                                            {% endif %}
+                                                            {% for last_time_picture_item in bridge.last_time_picture %}
+                                                                {% if last_time_picture_item is None %}
+                                                                    <img id="before-image" src="{% static 'infra/noImage.png' %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                                {% else %}
+                                                                    <img id="before-image" src="{% static last_time_picture_item %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                                {% endif %}
+                                                            {% endfor %}
                                                         </div>
                                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
                                                             <input id="upload-file" name="upload-file" type="file" style="display: none">

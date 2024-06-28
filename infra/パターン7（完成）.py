@@ -826,7 +826,7 @@ for index, data in enumerate(extracted_text):
         # << ◆ ここまで ◆ >>                   
                 # \n文字列のときの改行文字
         items = {'parts_name': first_item[i], 'damage_name': second_items[i], 'join': first_and_second, 
-                    'picture_number': third, 'this_time_picture': picture_urls, 'last_time_picture': None, 'textarea_content': combined_data, 
+                    'picture_number': third, 'this_time_picture': picture_urls, 'last_time_picture': [None], 'textarea_content': combined_data, 
                     'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
             
         damage_table.append(items)

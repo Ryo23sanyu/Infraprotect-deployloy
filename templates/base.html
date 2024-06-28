@@ -48,8 +48,7 @@
         {% endif %}
         <a class="nav-link mx-3" href="{% url 'list-article' %}">案件一覧</a>
         <a class="nav-link mx-3" href="{% url 'image_list' %}">写真一覧</a>
-        <a class="nav-link mx-3" href="{% url 'number_entry' %}">要素番号</a>
-        <a class="nav-link mx-3" href="{% url 'opinion' %}">所見一覧</a>
+        <a class="nav-link mx-3" href="{% url 'observer_list' %}">所見一覧</a>
       </div>
       <div class="navbar-nav d-flex flex-row">
       {% if request.user.is_authenticated %}

@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-# <<案件作成のモデル>>
+# << 案件作成のモデル >>
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 class Article(models.Model):
     案件名 = models.CharField(max_length=100)# 顧客名
@@ -15,7 +15,7 @@ class Article(models.Model):
         return self.案件名
     
 
-# <<交通規制のモデル>>
+# << 橋梁緒言 >>
 交通規制_CHOICES = (('無し', '無し'),('片側交互通行', '片側交互通行'),('車線減少', '車線減少'),('歩道規制', '歩道規制'),('通行止め', '通行止め'))
 class Regulation(models.Model):
     交通規制 = models.CharField(max_length=50, choices=交通規制_CHOICES)
@@ -61,7 +61,6 @@ class UnderCondition(models.Model):
     def __str__(self):
         return self.路下条件
 
-# <<橋梁緒言作成のモデル>>
 class Infra(models.Model):
     title = models.CharField(max_length=100)# 橋名
     径間数 = models.IntegerField()# 径間数
@@ -91,18 +90,34 @@ class Infra(models.Model):
     def __str__(self):
         return self.title
 
-# <<ファイルアップロード>>
+# << ファイルアップロード >>
 class UploadedFile(models.Model):
     file = models.FileField(upload_to='uploads/')
 
+# << 各インフラにdxfを紐付け >>
 class Table(models.Model):
-    # ForeignKeyフィールドによってInfraとのリレーションシップを定義
-    infra = models.ForeignKey(Infra, verbose_name="橋梁名", on_delete=models.CASCADE)
-    # infraを作成するときに登録するdxfファイル用
-    dxf = models.FileField(verbose_name="dxfファイル", upload_to="infra/table/dxf/")
+    infra = models.ForeignKey(Infra, verbose_name="橋梁名", on_delete=models.CASCADE) # ForeignKeyフィールドによってInfraとのリレーションシップを定義
+    dxf = models.FileField(verbose_name="dxfファイル", upload_to="infra/table/dxf/") # infraを作成するときに登録するdxfファイル用
+
+#<< 名前とアルファベットの登録 >>
+class NameEntry(models.Model):
+    name = models.CharField(max_length=50)
+    alphabet = models.CharField(max_length=50)
+
+    # 文字列表現を返すために使用
+    def __str__(self):
+        return f"{self.name} ({self.alphabet})" # 例：佐藤(S)
+    
+#<< 要素番号の登録 >>
+class PartsNumber(models.Model):
+    parts_name = models.CharField(max_length=100)
+    number = models.CharField(max_length=50)
+    
+    def __str__(self):
+        return f"{self.parts_name}({self.number})"
+
 
 # 会社別に表示
-
 class CustomUser(AbstractUser):
     company = models.CharField(max_length=100)
 
@@ -140,13 +155,14 @@ class Photo(models.Model):
     image = models.ImageField(upload_to='photos/')
 
 class Image(models.Model):
-    #title = models.CharField(max_length=255)  # 画像のタイトル
-    photo = models.ImageField(upload_to='photos/')  # 画像ファイル, 'photos/'はMEDIA_ROOT下の保存先ディレクトリ
+    #title = models.CharField(max_length=255) # 画像のタイトル
+    photo = models.ImageField(upload_to='photos/') # 画像ファイル, 'photos/'はMEDIA_ROOT下の保存先ディレクトリ
 
-    #def __str__(self):
-    #    return self.photo
+    def __str__(self):
+        return self.photo
 
 # 損傷メモ
 class DamageReport(models.Model):
     first = models.CharField(max_length=100)
     second = models.TextField()
+

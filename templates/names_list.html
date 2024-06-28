@@ -5,74 +5,96 @@
 {% block h1 %}名前登録{% endblock %}
 
 {% block content %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>入力フォームの追加</title>
-    <style>
-      .input-set {
-          display: flex;
-          margin-bottom: 10px;
-      }
-      .input-item {
-          margin-right: 10px;
-      }
-      @media (max-width: 600px) {
-          .input-set {
-              flex-direction: column;
-              margin-bottom: 20px;
-          }
-          .input-item {
-              margin-bottom: 10px;
-              margin-right: 0;
-          }
-      }
-    </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    .input-set {
+        display: flex;
+        margin-bottom: 10px;
+    }
+    .input-item {
+        margin-right: 10px;
+    }
+    @media (max-width: 600px) {
+        .input-set {
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        .input-item {
+            margin-bottom: 10px;
+            margin-right: 0;
+        }
+    }
+</style>
+<form id="input-form" method="POST" action="">
+    {% csrf_token %}
+    <div id="input-container">
+        {{ formset.management_form }}
+        {% for form in formset %}
 
-    <form id="input-form" method="POST" action="">
-        {% csrf_token %}
-        <div id="input-container">
-            {% for form in formset %}
-                <div class="input-set">
-                    {{ form.name }}
-                    {{ form.alphabet }}
-                </div>
-            {% endfor %}
-        </div>
-        <button type="button" id="add-button">追加</button>
-        <button type="submit">送信</button>
-    </form>
+        {% endfor %}
+    </div>
+    <button type="button" id="add-button">追加</button>
+    <button type="submit">送信</button>
+</form>
 
-    <script>
-        document.getElementById('add-button').addEventListener('click', function() {
-            const container = document.getElementById('input-container');
-            const formCount = container.children.length;
+<script>
+document.addEventListener('DOMContentLoaded', () => {
 
-            for (let i = 0; i < 3; i++) {
-                const inputSet = document.createElement('div');
-                inputSet.className = 'input-set';
+    // 1個分のフォームを作る(引数にname属性の番号を与える)
+    const createForm    = (counter) => {
 
-                const nameInput = document.createElement('input');
-                nameInput.type = 'text';
-                nameInput.className = 'input-item';
-                nameInput.name = `form-${formCount + i}-name`;
-                nameInput.placeholder = '名前';
+        const inputSet      = document.createElement('div');
+        inputSet.className  = 'input-set';
 
-                const alphabetInput = document.createElement('input');
-                alphabetInput.type = 'text';
-                alphabetInput.className = 'input-item';
-                alphabetInput.name = `form-${formCount + i}-alphabet`;
-                alphabetInput.placeholder = 'アルファベット';
+        const nameInput         = document.createElement('input');
+        nameInput.type          = 'text';
+        nameInput.className     = 'input-item';
+        nameInput.name          = `form-${counter}-name`;
+        nameInput.placeholder   = '名前';
 
-                inputSet.appendChild(nameInput);
-                inputSet.appendChild(alphabetInput);
+        const alphabetInput         = document.createElement('input');
+        alphabetInput.type          = 'text';
+        alphabetInput.className     = 'input-item';
+        alphabetInput.name          = `form-${counter}-alphabet`;
+        alphabetInput.placeholder   = 'アルファベット';
 
-                container.appendChild(inputSet);
-            }
+        inputSet.appendChild(nameInput);
+        inputSet.appendChild(alphabetInput);
 
-            // 総フォーム数を更新
-            document.getElementById('id_form-TOTAL_FORMS').value = formCount + 3;
-        });
-    </script>
+        return inputSet;
+    }
 
+
+    // ページロード時に、フォームを3つ作る。
+    for (let i = 0; i < 3; i++) {
+
+        inputSet                = createForm(i);
+        const container         = document.getElementById('input-container');
+
+        container.appendChild(inputSet);
+    }
+
+
+    // #add-button に対し、クリック時にフォームを追加するイベントをセット
+    document.getElementById('add-button').addEventListener('click', function() {
+
+        const container         = document.getElementById('input-container');
+
+        // FIXME: この要素は存在しない。フォームの数をカウントしたい場合、querySelectorAll() を使ってlengthプロパティから調べる。
+        /*
+        const totalFormsInput   = document.getElementById('id_form-TOTAL_FORMS');
+        const formCount         = parseInt(totalFormsInput.value);
+        */
+
+        const formCount         = document.querySelectorAll(".input-set").length - 1;
+        inputSet                = createForm(formCount);
+
+        container.appendChild(inputSet);
+
+        // FIXME:この要素も存在しないためコメントアウト
+        // 総フォーム数を更新
+        //totalFormsInput.value = formCount + 3;
+    });
+});
+</script>
 {% endblock %}

@@ -154,14 +154,17 @@ for item in output_data:
         full = "C:\work\django\myproject\program\Infraproject\infra\static"
         sub_image_path_full = os.path.join(full, image_path) # フルパスを取得
         image_path_full = convert_backslash_to_slash(sub_image_path_full)
+        print(image_path_full)
         if os.path.exists(image_path_full):
+            print('true')
+            print(image_path_full)
             cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]  # 所定のセル位置
             left = ws.Range(cell_pos).Left  # セルの左辺の位置を取得
             top = ws.Range(cell_pos).Top  # セルの上辺の位置を取得
             ws.Shapes.AddPicture(image_path_full, 0, 1, left, top, max_width, max_height)  # 画像を追加
             cell_counter += 1  # カウンタを進める
         else:
-            continue
+            print('false')
 
     # 過去の画像を貼り付ける動作
     if item['last_time_picture'] and os.path.exists(item['last_time_picture']):

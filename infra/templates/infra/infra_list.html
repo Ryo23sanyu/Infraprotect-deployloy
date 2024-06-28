@@ -29,17 +29,16 @@
           {# article_pkとpkの2つの引数を設定する必要がある。#}
           <a href="{% url 'detail-infra' article_id item.pk %}" class="btn btn-primary">詳細</a>
 
-            {% comment %} 
             {# infraに紐付いているtableのリンクを全て表示する。（逆参照を使用）#}
             {# Infra(1) Table(多) の状態で Infraに紐づくすべてのTableを取り出す方法 #}
             {# Table(models)にForeignKeyをつけた時点で紐付きが発生する #}
                 {# item.table_set #}
                 {# item は Infraのオブジェクト。item.table_set.all でInfraに紐づくTableをすべて取り出せる。 #}
             {# オブジェクト.多側のモデルの小文字.set.all で逆参照ができる #}
-            {% endcomment %}
+
             {% for table in item.table_set.all %} {# オブジェクト.多側のモデルの小文字.set.all で逆参照ができる #}
-            <a href="{% url 'bridge_table' article_id, item.pk %}" class="btn btn-primary">損傷写真帳{# {{ table.damage_location }} #}</a>
-            <a href="{% url 'opinion' %}" class="btn btn-primary">所見</a>
+            <a href="{% url 'bridge-table' article_id item.pk %}" class="btn btn-primary">損傷写真帳</a>
+            <a href="{% url 'observations-list' article_id item.pk %}" class="btn btn-primary">所見</a>
             {% endfor %}
         </div>
     </div>

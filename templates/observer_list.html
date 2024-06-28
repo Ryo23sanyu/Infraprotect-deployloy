@@ -1,0 +1,126 @@
+<!-- opinion.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}所見一覧{% endblock title %}
+{% block h1 %}所見一覧{% endblock %}
+
+{% block content %}
+<style>
+  table.bordered-table {
+    border-collapse: collapse;  /* セルの重複枠線を取り除く */
+    width: 100%;
+  }
+  table.bordered-table th, table.bordered-table td {
+    border: 1px solid black;  /* 枠線の追加 */
+    padding: 8px;  /* 内側の余白 */
+    text-align: center;  /* テキスト中央揃え */
+  }
+  table.bordered-table th {
+    background-color: #f2f2f2;  /* ヘッダーの背景色 */
+  }
+  {% comment %} .grid-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4列 */
+    gap: 10px; /* ボタン間の間隔 */
+    margin: 10px 0; /* グリッド周りの間隔 */
+  } {% endcomment %}
+.grid-container button {
+    width: 100%; /* ボタンの幅をセルに合わせる */
+    height: 40px; /* ボタンの高さを適宜調整 */
+  }
+</style>
+
+<table class="bordered-table">
+  <thead>
+    <tr>
+        <th>主要部材</th>
+        <th>損傷箇所</th>
+        <th>損傷種類</th>
+        <th>損傷写真</th>
+        <th>対策区分</th>
+        <th>損傷原因</th>
+        <th>所見</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in data %}
+        {% comment %} 
+        << views.py >>
+        def observer_list(request):
+        data = [
+            {'parts_name': ['排水管'], 'damage_name': ['腐食'], 'damage_lank': ['b', 'c', 'e']}, 
+            {'parts_name': ['排水管'], 'damage_name': ['防食機能の劣化'], 'damage_lank': ['e']}, 
+            {'parts_name': ['添架物'], 'damage_name': ['ゆるみ・脱落'], 'damage_lank': ['e']}
+        ]
+        return render(request, 'observer_list.html', {'data': data}) 
+    {% endcomment %}
+    <tr>
+        <td></td>
+        <td>{{ item.parts_name.0 }}</td>
+        <td>{{ item.damage_name.0 }}<br>{{ item.damage_lank }}</td>
+        <td><img src="{% static 'images/sample.jpg' %}" alt="サンプル画像"></td>
+        <td>
+          <div class="grid-container">
+            <button>B</button>
+            <button>M</button>
+            <button>C1</button>
+            <button>S1</button>
+            <button>C2</button>
+            <button>S2</button>
+            <button>E2</button>
+            <button>E1</button>
+          </div>
+        </td>
+        <td>
+        <button id="btn1">疲労</button>
+        <button id="btn2">塩害</button>
+        <button id="btn3">凍害</button>
+        <button id="btn4">アルカリ骨材反応</button>
+        <button id="btn5">中性化</button>
+        <button id="btn6">材料劣化</button></p>
+        <button id="btn7">想定外の荷重</button>
+        <button id="btn8">衝突</button>
+        <button id="btn9">偏土圧・圧密沈下</button>
+        <button id="btn10">洗掘・浸食</button>
+        <button id="btn11">地震</button>
+        <button id="btn12">乾燥収縮・温度応力</button>
+        <button id="btn13">科学的腐食</button>
+        <button id="btn14">品質の経年変化</button>
+        <button id="btn15">製作・施工不良</button>
+        <button id="btn16">防水・排水工不良</button>
+        <button id="btn17">構造形式・形状不良</button>
+        <button id="btn18">人為的</button>
+        <button id="btn19">鳥害</button>
+        <button id="btn20">自由記述</button>
+        </td>
+        <td>点錆が見られる。</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<script>
+  const buttonConditions = {
+    '疲労': [1, 2, 3],
+    '塩害': [1, 2, 3],
+    '凍害': [1, 2, 3],
+    'アルカリ骨材反応': [1, 2, 3],
+    '中性化': [1, 2, 3],
+    '材料劣化': [1, 2, 3],
+    '想定外の荷重': [1, 2, 3],
+    '衝突': [1, 2, 3],
+    '偏土圧・圧密沈下': [1, 2, 3],
+    '洗掘・浸食': [1, 2, 3],
+    '地震': [1, 2, 3],
+    '乾燥収縮・温度応力': [1, 2, 3],
+    '科学的腐食': [1, 2, 3],
+    '品質の経年変化': [1, 2, 3],
+    '製作・施工不良': [1, 2, 3],
+    '防水・排水工不良': [1, 2, 3],
+    '構造形式・形状不良': [1, 2, 3],
+    '人為的': [1, 2, 3],
+    '鳥害': [1, 2, 3],
+    '自由記述': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+};
+</script>
+{% endblock content %}
