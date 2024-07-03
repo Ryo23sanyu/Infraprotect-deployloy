@@ -84,13 +84,11 @@
                                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                                     <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
                                                         <div>
-                                                            {% for last_time_picture_item in bridge.last_time_picture %}
-                                                                {% if last_time_picture_item is None %}
-                                                                    <img id="before-image" src="{% static 'infra/noImage.png' %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
-                                                                {% else %}
-                                                                    <img id="before-image" src="{% static last_time_picture_item %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
-                                                                {% endif %}
-                                                            {% endfor %}
+                                                        {% if last_time_picture_item is None %}
+                                                            <img id="before-image" src="{% static 'infra/noImage.png' %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                        {% else %}
+                                                            <img id="before-image" src="{% static last_time_picture_item %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                        {% endif %}
                                                         </div>
                                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
                                                             <input id="upload-file" name="upload-file" type="file" style="display: none">

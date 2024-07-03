@@ -169,3 +169,19 @@ input[type="radio"].input_chk:checked + label.surround_label{
   margin-left: auto; /* 左側のマージンを自動で調整して右詰めに */
   margin-right: 0; /* 右側のマージンは0 */
 }
+
+/* プログレスバーのスタイル */
+#progress-container {
+    width: 100%;
+    background-color: #f3f3f3;
+    padding: 3px;
+    border: 1px solid #ccc;
+    margin-top: 10px;
+    display: none; /* 初期状態は非表示 */
+}
+
+#progress-bar {
+    width: 0;
+    height: 20px;
+    background-color: #4caf50;
+}

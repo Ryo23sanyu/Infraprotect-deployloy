@@ -5,7 +5,7 @@ from django import forms
 from django.core.files.storage import default_storage
 from django.forms import modelformset_factory
 
-from .models import CustomUser, Image, Infra, Number, Regulation, UploadedFile
+from .models import CustomUser, Image, Infra, Regulation, UploadedFile
 from .models import Photo, Company, Table, NameEntry, PartsNumber
 
 # ファイルアップロード
@@ -75,7 +75,7 @@ NameEntryFormSet = modelformset_factory(NameEntry, form=NameEntryForm, extra=3)
 class PartsNumberForm(forms.ModelForm):
     class Meta:
         model = PartsNumber
-        fields = ['parts_name', 'number']
+        fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number']
 
 PartsNumberFormSet = modelformset_factory(PartsNumber, form=PartsNumberForm, extra=5)
 
@@ -86,11 +86,6 @@ class NameForm(forms.Form):
     name = forms.CharField(label='名前')
     folder_path = forms.CharField(label='フォルダパス')
     
-# 番号図用(models-forms-viewsの順)
-class NumberForm(forms.ModelForm):
-    class Meta:
-        model   = Number
-        fields  = [ "name", "top_number", "bottom_number", "single_number" ]
 
 # 全景写真用
 class UploadForm(forms.ModelForm): # UploadFormという名前のFormクラスを定義(Modelクラスと紐付け)
@@ -98,16 +93,16 @@ class UploadForm(forms.ModelForm): # UploadFormという名前のFormクラス�
     class Meta: # ModelFormと紐付ける場合に記載
         model = Image # models.pyのImageクラスと紐付け
         fields = ['photo'] # Image.modelのphotoフィールドのみを使用
-
+        
 class PhotoUploadForm(forms.ModelForm): # PhotoUploadFormという名前のFormクラスを定義(Modelクラスと紐付け)
     class Meta: # ModelFormと紐付ける場合に記載
         model = Photo # models.pyのPhotoクラスと紐付け
-        fields = ['image'] # このFormで扱うフィールドを指定        
-
+        fields = ['image'] # このFormで扱うフィールドを指定
+        
 # 損傷写真変更用(Ajax)
 class FileUploadSampleForm(forms.Form):
     file = forms.ImageField()
-
+    
     def save(self):
         """ファイルを保存するメソッド"""
         now_date = datetime.datetime.now().strftime('%Y%m%d%H%M%S')  # ファイル名に現在時刻を付与するため取得

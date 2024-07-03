@@ -7,6 +7,7 @@
 <div class="sidebar">
   <p>インフラプロジェクト</p>
   <ul>
+      <li><a href="{% url 'list-infra' object.article.pk %}">橋梁一覧</a></li>{# 橋梁一覧 #}
       <li><a href="{% url 'detail-infra' object.article.pk object.pk %}">橋梁緒言</a></li>{# その1 #}
       <li>✕一般図</a></li>{# その2 #}
       <li>✕全景写真</a></li>{# その3 #}
@@ -16,7 +17,21 @@
       <li>✕損傷図</a></li>{# その9 #}
       <li><a href="{% url 'bridge-table' object.article.pk object.pk %}">損傷写真</a></li>{# その10 #}
       <li><a href="{% url 'file-upload' object.article.pk object.pk %}">アップロード</a></li>
-      <li><a href="{% url 'data-output' object.article.pk object.pk %}">データ出力</a></li>
+      <li><a id="excel_download" href="{% url 'excel-output' object.article.pk object.pk %}">エクセル出力</a></li>
+      {# <li><a id="dxf_download" href="{% if table.dxf %}{{ table.dxf.url }}{% endif %}">dxfデータ出力</a></li> #}
+      <li><a id="dxf_download" href="{% url 'dxf-output' object.article.pk object.pk %}">dxfデータ出力</a></li>
+      {# ↓をクリックした時、↑2つをクリックしたことにするJavaScriptを用意する。(dxfファイルが無い場合、このボタンは機能しない。) #}
+      <li><button id="double_download">ファイル出力</button></li>
+      <script>
+        const double_download = document.querySelector("#double_download");
+
+        double_download.addEventListener("click", () => {
+            document.querySelector("#excel_download").click();
+            document.querySelector("#dxf_download").click();
+            console.log("click");
+        });
+      </script>
+    
       <li></li>
       <div>案件番号: {{ object.article.pk }}</div>
       <div>橋梁番号: {{ object.pk }}</div>

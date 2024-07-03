@@ -59,46 +59,44 @@
                     <td class="center-align">
                         <ul class="vert"> 
                             {% if bridge.last is not None %}
-                                    {% for item in bridge.last %}
-                                            <ul class="side">
-                                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                                    <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
-                                                        <div>
-                                                            <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static item %}" width="200" height="150" style="margin:0 10px;">
-                                                        </div>
-                                                        <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
-                                                            <input id="upload-file-{{ forloop.parentloop.counter }}" name="upload-file" type="file" style="display: none">
-                                                            <button id="fileSelect-{{ forloop.parentloop.counter }}" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
-                                                            <button style="margin-bottom: 10px;">追加</button>
-                                                            <button>削除</button> <!--縦文字に変更-->
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                                    <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
-                                                        <div>
-                                                            <img id="before-image" src="{% static bridge.picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
-                                                        </div>
-                                                        <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
-                                                            <input id="upload-file" name="upload-file" type="file" style="display: none">
-                                                            <button id="fileSelect" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button>
-                                                            <!--<button id="fileSelect" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button>-->
-                                                            <!--<button style="margin-bottom: 10px;">変更</button> bottom(下方向)に10pxの間隔を空ける-->
-                                                            <button>削除</button>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                                    {% spaceless %}
-                                                        {% if bridge.textarea_content %} <!-- damage_tableのforループ(bridge)とviews.pyのtextarea_content-->
-                                                            <textarea name="notes" rows="6" style="margin:0 10px;">{{ bridge.textarea_content|safe }}</textarea>
-                                                        {% else %}
-                                                            <textarea name="notes" rows="6" style="margin:0 10px;" placeholder="写真メモを入力してください。"></textarea>
-                                                        {% endif %}
-                                                    {% endspaceless %}
-                                                </li>
-                                            </ul>
-                                    {% endfor %}                                    
+                                <ul class="side">
+                                    <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                        <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
+                                            <div>
+                                                <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static item %}" width="200" height="150" style="margin:0 10px;">
+                                            </div>
+                                            <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
+                                                <input id="upload-file-{{ forloop.parentloop.counter }}" name="upload-file" type="file" style="display: none">
+                                                <button id="fileSelect-{{ forloop.parentloop.counter }}" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
+                                                <button style="margin-bottom: 10px;">追加</button>
+                                                <button>削除</button> <!--縦文字に変更-->
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                        <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
+                                            <div>
+                                                <img id="before-image" src="{% static bridge.picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                            </div>
+                                            <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
+                                                <input id="upload-file" name="upload-file" type="file" style="display: none">
+                                                <button id="fileSelect" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button>
+                                                <!--<button id="fileSelect" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button>-->
+                                                <!--<button style="margin-bottom: 10px;">変更</button> bottom(下方向)に10pxの間隔を空ける-->
+                                                <button>削除</button>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                        {% spaceless %}
+                                            {% if bridge.textarea_content %} <!-- damage_tableのforループ(bridge)とviews.pyのtextarea_content-->
+                                                <textarea name="notes" rows="6" style="margin:0 10px;">{{ bridge.textarea_content|safe }}</textarea>
+                                            {% else %}
+                                                <textarea name="notes" rows="6" style="margin:0 10px;" placeholder="写真メモを入力してください。"></textarea>
+                                            {% endif %}
+                                        {% endspaceless %}
+                                    </li>
+                                </ul>                                 
                             {% endif %}
                         </ul>
                     </td>

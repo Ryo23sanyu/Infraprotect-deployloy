@@ -13,7 +13,7 @@ import urllib.parse
 from markupsafe import Markup
 import win32com.client
 # django内からインポート
-from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import FileResponse, HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
@@ -23,8 +23,8 @@ from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 
 from infraproject import settings
-from .models import Approach, Article, DamageReport, Infra, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Number, Regulation, Rulebook, Thirdparty, UnderCondition
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryFormSet, NumberForm, PartsNumberFormSet, TableForm, UploadForm, PhotoUploadForm, NameForm
+from .models import Approach, Article, DamageReport, Infra, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryFormSet, PartsNumberFormSet, TableForm, UploadForm, PhotoUploadForm, NameForm
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -42,7 +42,6 @@ class ListInfraView(LoginRequiredMixin, ListView):
         queryset = queryset.filter(article = self.kwargs["article_pk"])
         # 絞り込んだクエリーをDjangoに返却し表示データとしてもらう
         return queryset
-
     def get_context_data(self, **kwargs):
         # HTMLテンプレートでの表示変数として「article_id」を追加。
         # 値はパスパラメータpkの値→取り扱うarticle.idとなる
@@ -53,11 +52,11 @@ class ListInfraView(LoginRequiredMixin, ListView):
 class DetailInfraView(LoginRequiredMixin, DetailView):
     template_name = 'infra/infra_detail.html'
     model = Infra
-    # fields = ('交通量', '大型車混入率')
     def get_context_data(self, **kwargs):
         # HTMLテンプレートでの表示変数として「article_id」を追加。
         # 値はパスパラメータpkの値→取り扱うarticle.idとなる
-        kwargs["article_id"] = self.kwargs["pk"]
+        kwargs["article_id"] = self.kwargs["article_pk"]
+        #モデルのTableクラス ↑                    ↑  infraに格納する値は自らのpkの値とする
         return super().get_context_data(**kwargs)
   
 class CreateInfraView(LoginRequiredMixin, CreateView):
@@ -297,10 +296,6 @@ def names_list(request, article_pk):
         
     return render(request, 'names_list.html', {'formset': formset, 'article_pk': article_pk})
 
-# << バックスラッシュをスラッシュに変更 >>
-def convert_backslash_to_slash(path):
-    return path.replace("\\", "/")
-
 # << 損傷写真帳の作成 >>
 def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.htmlに表示
     context = {}
@@ -454,24 +449,6 @@ def change_photo(request):
 
     return render(request, 'upload_photo.html', {'form': form})
 
-# 番号図用
-def number_create_view(request): # number_create_view関数を定義
-# この行ではnumber_create_viewという名前の関数を定義しています。この関数はrequestという引数を受け取ります。
-# requestはユーザーからのHTTPリクエストを表し、Djangoが自動的に関数に渡します。
-    if request.method == 'POST': # HTTPリクエストメソッドがPOSTメソッド(データをサーバーに送る役割)の場合
-        form = NumberForm(request.POST) # 
-
-        if form.is_valid(): # POSTメソッドがform.pyで定めたfieldsに従っている場合
-            form.save() # DBに保存する。
-        else:
-            print(form.errors) # エラーの理由を出す。
-
-        return redirect('/') # 
-    else:
-        form = NumberForm() # GETリクエストの場合、空のフォームを表示します。
-
-    return render(request, 'select_item.html', {'form': form})
-
 # << 所見一覧 >>
 def observations_list(request, article_pk, pk):
     data = [
@@ -496,8 +473,20 @@ def number_list(request, article_pk, pk):
     if request.method == 'POST':
         formset = PartsNumberFormSet(request.POST)
         if formset.is_valid():
+            """
+            parts_name = formset.cleaned_data['parts_name'] # 部材名
+            symbol = formset.cleaned_data['symbol'] # 部材記号
+            material = formset.cleaned_data['material'] # 材料
+            main_frame = formset.cleaned_data['main_frame'] # 主要部材
+            number = formset.cleaned_data['number'] # 要素番号
+            
+            PartsNumberFormクラスのPartsNumberFormSet = modelformset_factory(PartsNumber, form=PartsNumberForm, extra=5)
+                                                     5つ分のデータが含まれている   ↑
+            """
             formset.save()
             return redirect('number-list', article_pk, pk)
+        else:
+            pass
     else:
         formset = PartsNumberFormSet()
 
@@ -630,13 +619,9 @@ def infraunderConditions_view(request):
     }
     return render(request, 'infra_update.html', context)
 
-# << スラッシュ(/)をバックスラッシュ(\)に変更 >>
-def convert_backslash_to_slash(path):
-    return path.replace("/", "\\")
-
 # << 指定したInfra(pk)に紐づくTableのエクセルの出力 >>
-def data_output(request, article_pk, pk):
-    pythoncom.CoInitialize()  # COMライブラリを初期化
+def excel_output(request, article_pk, pk):
+    pythoncom.CoInitialize() # COMライブラリを初期化
     try:
         # 指定したInfraに紐づく Tableを取り出す
         table = Table.objects.filter(infra=pk).first()
@@ -665,8 +650,7 @@ def data_output(request, article_pk, pk):
         wb = Excel.Workbooks.Open(Filename=fullpath)
         ws = wb.Worksheets('その１０')  # シート名を指定
 
-        # CF3セルに値を入力
-        # TODO：径間番号を右辺にあてはめる
+        # CF3セルに径間数(amount)を入力
         ws.Range("CF3").Value = amount
 
         # シート複製マクロを実行
@@ -675,7 +659,7 @@ def data_output(request, article_pk, pk):
 
         for number in range(1,amount+1):
 
-            # TODO: ↓ 径間番号の指定。
+                                    # ↓ 径間番号の指定。
             search_title_text = f"{number}径間"
             second_search_title_text = "損傷図"
             ws_name = f"その１０-{number}" # シート名を作成
@@ -786,21 +770,15 @@ def data_output(request, article_pk, pk):
                     # プログラム4｜マクロ実行
                     macro_name = 'ページ複製その10'
                     Excel.Application.Run(f"'{filename}'!{macro_name}")
-
+                
                 # 現在の画像を貼り付ける動作
                 for this_image_path in item['this_time_picture']:
-
-                    decoded_picture_path = urllib.parse.unquote(this_image_path) # URLデコード
-                    full = "C:\work\django\myproject\program\Infraproject\infra\static"
-                    sub_image_path = os.path.join(full, decoded_picture_path.lstrip('/'))
-                    full_image_path = convert_backslash_to_slash(sub_image_path)
-                    print(f"{sub_image_path}")
-                    # フルパス：C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上\P9070617.JPG
-                    #       ↑
-                    # settings.BASE_DIR：C:\work\django\myproject\program\Infraproject
-                    #                    \infra\static\
-                    # decoded_picture_path：infra/img\9月7日　佐藤　地上\P9070617.JPG
                     
+                    decoded_picture_path = urllib.parse.unquote(this_image_path) # URLデコード
+                    full = settings.STATICFILES_DIRS[0]
+                    sub_image_path = os.path.join(full, decoded_picture_path.lstrip('/'))
+                    full_image_path = sub_image_path.replace("/", "\\")
+                    print(full_image_path)
                     if os.path.exists(full_image_path):
                         cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]  # 所定のセル位置
                         left = ws.Range(cell_pos).Left  # セルの左辺の位置を取得
@@ -914,7 +892,35 @@ def data_output(request, article_pk, pk):
         return FileResponse(binary, filename = new_filename)
     finally:
         pythoncom.CoUninitialize()
-    
+
+# << 指定したInfra(pk)に紐づくTableのエクセルの出力 >>
+def dxf_output(request, article_pk, pk):
+    pythoncom.CoInitialize() # COMライブラリを初期化
+    try:
+        # 指定したInfraに紐づく Tableを取り出す
+        table = Table.objects.filter(infra=pk).first()
+        print(table.dxf.url) # 相対パス
+        
+        # 絶対パスに変換
+        encoded_url_path = table.dxf.url
+        decoded_url_path = urllib.parse.unquote(encoded_url_path) # URLデコード
+        dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
+        print(dxf_filename)
+        #      ↑ dxfファイルのフルパス
+        
+        # ファイルをバイトデータとして読み込む
+        with open(dxf_filename, 'rb') as f:
+            binary = BytesIO(f.read())
+        
+        infra_name = Infra.objects.filter(id=pk).first()
+        file_name = infra_name.title
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        dxf_filename = file_name + "_" + timestamp + ".dxf"
+        #レスポンスをする
+        return FileResponse(binary, filename = dxf_filename)
+    finally:
+        pythoncom.CoUninitialize()
+        
 # << dxfから要素を抽出・整列してsorted_itemsに渡す >>
 def create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text):
     

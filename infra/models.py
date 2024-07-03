@@ -13,7 +13,6 @@ class Article(models.Model):
   
     def __str__(self):
         return self.案件名
-    
 
 # << 橋梁緒言 >>
 交通規制_CHOICES = (('無し', '無し'),('片側交互通行', '片側交互通行'),('車線減少', '車線減少'),('歩道規制', '歩道規制'),('通行止め', '通行止め'))
@@ -107,16 +106,30 @@ class NameEntry(models.Model):
     # 文字列表現を返すために使用
     def __str__(self):
         return f"{self.name} ({self.alphabet})" # 例：佐藤(S)
-    
+
 #<< 要素番号の登録 >>
+材料_CHOICES = (('鋼', '鋼'),('コンクリート', 'コンクリート'),('その他', 'その他'))
+class Material(models.Model):
+    材料 = models.CharField(max_length=50, choices=材料_CHOICES)
+    def __str__(self):
+        return self.材料
+    
+主要部材_CHOICES = (('有り', '有り'),('無し', '無し'))
+class Main_frame(models.Model):
+    主要部材 = models.CharField(max_length=50, choices=主要部材_CHOICES)
+    def __str__(self):
+        return self.主要部材
+        
 class PartsNumber(models.Model):
     parts_name = models.CharField(max_length=100)
+    symbol = models.CharField(max_length=100)
+    material = models.ManyToManyField(Material)
+    main_frame = models.ManyToManyField(Main_frame)
     number = models.CharField(max_length=50)
     
     def __str__(self):
-        return f"{self.parts_name}({self.number})"
-
-
+        return f"{self.parts_name}({self.symbol}{self.number}):{self.material}/{self.main_frame}"
+               
 # 会社別に表示
 class CustomUser(AbstractUser):
     company = models.CharField(max_length=100)
@@ -138,17 +151,6 @@ class Uploads(models.Model):
 
 class Damage(models.Model):
     notes = models.TextField(blank=True, null=True)
-    
-# 番号図用(models-forms-viewsの順)
-PARTS = (('syuketa', '主桁'), ('yokoketa', '横桁'), ('PCteityakubu', 'PC定着部'))
-class Number(models.Model):
-    name = models.CharField(max_length=100, choices = PARTS)
-    top_number = models.CharField(max_length=5, blank=True)
-    bottom_number = models.CharField(max_length=5, blank=True)
-    single_number = models.CharField(max_length=5, blank=True)
-
-    def __str__(self):
-        return self.name
 
 # 全景写真
 class Photo(models.Model):

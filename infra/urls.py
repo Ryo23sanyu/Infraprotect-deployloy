@@ -24,7 +24,8 @@ urlpatterns = [
     path('article/<int:pk>/update/', views.UpdateArticleView.as_view(), name='update-article'),# 案件の更新
     # << インプット・アウトプット >>
     path('article/<int:article_pk>/infra/<int:pk>/upload/', views.file_upload, name='file-upload'),# ファイルアップロード
-    path('article/<int:article_pk>/infra/<int:pk>/output/', views.data_output, name='data-output'),# ファイル出力
+    path('article/<int:article_pk>/infra/<int:pk>/excel_output/', views.excel_output, name='excel-output'),# ファイル出力
+    path('article/<int:article_pk>/infra/<int:pk>/dxf_output/', views.dxf_output, name='dxf-output'),# ファイル出力
     # << 損傷写真帳 >>
     path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table'),# 損傷写真帳
     # << 名前の登録 >>

@@ -122,10 +122,10 @@ USE_TZ = True
 STATIC_URL = "infra/static/"# infra/static/以降のファイルパスをviews.pyで指定
 
 STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, "infra/static/"),# 「C:\work\django\myproject\myvenv\Infraproject\infra\static\」と同じ
+    os.path.join(BASE_DIR, "infra/static/"), #「C:\work\django\myproject\myvenv\Infraproject\infra\static\」と同じ
 )
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #「C:\work\django\myproject\myvenv\Infraproject\」と同じ
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
