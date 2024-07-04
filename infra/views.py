@@ -24,7 +24,7 @@ from django.views.generic import ListView, DetailView, CreateView, DeleteView, U
 
 from infraproject import settings
 from .models import Approach, Article, DamageReport, Infra, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryFormSet, PartsNumberFormSet, TableForm, UploadForm, PhotoUploadForm, NameForm
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryFormSet, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -469,28 +469,55 @@ def observer_list(request):
 
 # << 番号登録 >>
 def number_list(request, article_pk, pk):
-    # POSTリクエストの場合、フォームセットをデータとともに作成する
-    if request.method == 'POST':
-        formset = PartsNumberFormSet(request.POST)
-        if formset.is_valid():
-            """
-            parts_name = formset.cleaned_data['parts_name'] # 部材名
-            symbol = formset.cleaned_data['symbol'] # 部材記号
-            material = formset.cleaned_data['material'] # 材料
-            main_frame = formset.cleaned_data['main_frame'] # 主要部材
-            number = formset.cleaned_data['number'] # 要素番号
-            
-            PartsNumberFormクラスのPartsNumberFormSet = modelformset_factory(PartsNumber, form=PartsNumberForm, extra=5)
-                                                     5つ分のデータが含まれている   ↑
-            """
-            formset.save()
-            return redirect('number-list', article_pk, pk)
-        else:
-            pass
-    else:
-        formset = PartsNumberFormSet()
+    
+    # 同じname属性の値をすべて取り出す
+    serial_numbers = request.POST.getlist("serial_number") # ['0101', '0103', '0201', '0203']
+    single_numbers = request.POST.getlist("single_number") # ['0101', '0201', '0301', '0401']
+    
+    new_serial_numbers = []
+    #    初期値を0 ↓     回数分 ↓           ↓ 2ずつ足す(0101(index:0),0201(index:2))
+    for i in range(0, len(serial_numbers), 2):
+        new_serial_numbers.append(serial_numbers[i] + "~" + serial_numbers[i+1])
+        #                          0101(index:0) ↑          0103(index:1+1) ↑
+        #                          0201(index:2) ↑          0203(index:2+1) ↑
+    # print(new_serial_numbers) ['0101~0103', '0201~0203']
+    
+    # 単一の番号、連続の番号 を部材名と紐付けて保存
+    for new_serial_number in new_serial_numbers:
+        dic = {}
+        dic["number"] = new_serial_number
+        dic["parts_name"] = request.POST.get("parts_name")
+        dic["symbol"] = request.POST.get("symbol")
+        dic["material"] = request.POST.get("material")
+        dic["main_frame"] = request.POST.get("main_frame")
+        print(new_serial_number)
 
-    return render(request, 'number_entry.html', {'formset': formset, 'article_pk': article_pk, 'pk': pk})
+        # 1個ずつバリデーションして保存する
+        form    = PartsNumberForm(dic)
+
+        if form.is_valid():
+            form.save()
+        else:
+            print("not_save")
+
+    for single_number in single_numbers:
+        dic = {}
+        dic["number"] = single_number
+        dic["parts_name"] = request.POST.get("parts_name")
+        dic["symbol"] = request.POST.get("symbol")
+        dic["material"] = request.POST.get("material")
+        dic["main_frame"] = request.POST.get("main_frame")
+        print(single_number)
+
+        # 1個ずつバリデーションして保存する
+        form    = PartsNumberForm(dic)
+
+        if form.is_valid():
+            form.save()
+        else:
+            print("not_save")
+
+    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk})
 
 # << 橋梁緒言の選択肢 >>
 def infraregulations_view(request):

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 
 # << 案件作成のモデル >>
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
@@ -122,10 +123,15 @@ class Main_frame(models.Model):
         
 class PartsNumber(models.Model):
     parts_name = models.CharField(max_length=100)
+    # 4040 もしくは 2020~4030 2パターンだけを許可する正規表現のバリデーションを作る。
+    # 4桁 と 4桁~4桁 を許す正規表現　　　　　　　 　　↓ もしくは
+    number_regex = RegexValidator(regex=r"(^\d{4}$)|(^\d{4}~\d{4}$)")
+    #                            最初の文字 ↑     ↑ 最後の文字
+    #                                         ↓ 追加のバリデーションをする、フィールドオプション
+    number = models.CharField(max_length=50, validators=[number_regex])
     symbol = models.CharField(max_length=100)
     material = models.ManyToManyField(Material)
     main_frame = models.ManyToManyField(Main_frame)
-    number = models.CharField(max_length=50)
     
     def __str__(self):
         return f"{self.parts_name}({self.symbol}{self.number}):{self.material}/{self.main_frame}"

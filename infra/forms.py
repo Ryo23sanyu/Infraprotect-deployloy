@@ -76,8 +76,9 @@ class PartsNumberForm(forms.ModelForm):
     class Meta:
         model = PartsNumber
         fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number']
-
-PartsNumberFormSet = modelformset_factory(PartsNumber, form=PartsNumberForm, extra=5)
+        
+# 1回のリクエストで、必ず5個のデータを入力したいときに使う。必ず一定数のデータを入れたいときに使う。
+# PartsNumberFormSet = modelformset_factory(PartsNumber, form=PartsNumberForm, extra=5)
 
 
 # <<損傷写真表示>>

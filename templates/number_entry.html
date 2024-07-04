@@ -14,13 +14,17 @@ body {
     display: block;
     margin-bottom: 5px;
 }
-.form-section input, .form-section select {
+.form-section input, .form-section select, .form-number-section input, .form-number-section select {
     width: 150px;
     padding: 5px;
     margin-bottom: 10px;
 }
 .form-section {
     display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.form-number-section {
     align-items: center;
     gap: 10px;
 }
@@ -33,7 +37,7 @@ body {
 .form-section .inline-group label {
     margin: 0;
 }
-.form-section .inline-group input, .form-section .inline-group select {
+.form-section .inline-group input, .form-section, .form-number-section .inline-group select {
     margin: 0 10px;
 }
 
@@ -49,79 +53,76 @@ button.toggle-button.selected {
     background-color: #007bff;
     color: white;
 }
-
-.entries .entry {
+.form-number-section .entries .entry {
     display: inline-block;
     margin-right: 10px;
     white-space: nowrap;
     gap: 10px; /* エントリ間の間隔を整える */
 }
-
 button {
     margin-top: 5px;
     padding: 5px 10px;
     cursor: pointer;
 }
 </style>
-
 <h1>登録フォーム</h1>
+{# PartsNumber を保存するためにformで囲う #}
+    <form action="" method="post">
+        {% csrf_token %}
+        <div class="form-section">
+            <div class="inline-group">
+                <label for="part-name">部材名:</label>
+                {# name属性を与える #}
+                <select id="part-name" name="parts_name">
+                    <option value="主桁">主桁</option>
+                    <option value="横桁">横桁</option>
+                    <option value="床版">床版</option>
+                </select>
+            </div>
 
-<div class="form-section">
-    <div class="inline-group">
-        <label for="part-name">部材名:</label>
-        <select id="part-name">
-            <option value="部材名1">主桁</option>
-            <option value="部材名2">横桁</option>
-            <option value="部材名3">床版</option>
-        </select>
-    </div>
+            <div class="inline-group">
+                <label for="material">材料:</label>
+                <div id="material-buttons" class="toggle-buttons" name="material">
+                    <button type="button" class="toggle-button" data-value="鋼">鋼</button>
+                    <button type="button" class="toggle-button" data-value="コンクリート">コンクリート</button>
+                    <button type="button" class="toggle-button" data-value="その他">その他</button>
+                </div>
+            </div>
 
-    <div class="inline-group">
-        <label for="material">材料:</label>
-        <div id="material-buttons" class="toggle-buttons">
-            <button type="button" class="toggle-button" data-value="鋼">鋼</button>
-            <button type="button" class="toggle-button" data-value="コンクリート">コンクリート</button>
-            <button type="button" class="toggle-button" data-value="その他">その他</button>
+            <div class="inline-group">
+                <label for="main_frame">主要部材:</label>
+                <div id="main-frame-buttons" class="toggle-buttons" name="main_frame">
+                    <button type="button" class="toggle-button" data-value="〇">〇</button>
+                    <button type="button" class="toggle-button" data-value="✕">✕</button>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="inline-group">
-        <label for="main_frame">主要部材:</label>
-        <div id="main-frame-buttons" class="toggle-buttons">
-            <button type="button" class="toggle-button" data-value="〇">〇</button>
-            <button type="button" class="toggle-button" data-value="✕">✕</button>
+        <div class="form-number-section">
+            <label>連続した番号:</label>
+            <button type="button" onclick="addSerialEntry()">追加</button>
+            <div id="serial-entries" class="entries">
+                <div class="entry">
+                    <input type="number" placeholder="番号1" min="1" name="serial_number"> ～ <input type="number" placeholder="番号2" min="1" name="serial_number">
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-<div class="form-section">
-    <label>連続した番号:</label>
-    <button type="button" onclick="addSerialEntry()">追加</button>
-    <div id="serial-entries" class="entries">
-        <div class="entry">
-            <br>
-            <input type="number" placeholder="番号1" min="1000"> ～ <input type="number" placeholder="番号2" min="1000">
+        <div class="form-number-section">
+            <label>単一の番号:</label>
+            <button type="button" onclick="addSingleEntry()">追加</button>
+            <div id="single-entries" class="entries">
+                <div class="entry">
+                    <input type="number" placeholder="番号" min="1" name="single_number">
+                </div>
+            </div>
         </div>
-    </div>
-</div>
+        {# 保存するためのボタン #}
+        <input type="submit" value="登録">
 
-<div class="form-section">
-    <label>単一の番号:</label>
-    <button type="button" onclick="addSingleEntry()">追加</button>
-    <div id="single-entries" class="entries">
-        <div class="entry">
-            <br>
-            <input type="number" placeholder="番号" min="1000">
-        </div>
-    </div>
-</div>
-
-<div class="form-section">
-    <button type="button" onclick="register()">登録</button>
-</div>
+    </form>
 
 <script>
-
     // 材料ボタンの選択切り替え
     const materialButtons = document.querySelectorAll('#material-buttons .toggle-button');
     materialButtons.forEach(button => {
@@ -143,7 +144,7 @@ button {
         const container = document.getElementById('serial-entries');
         const entryDiv = document.createElement('div');
         entryDiv.classList.add('entry');
-        entryDiv.innerHTML = `<input type="number" placeholder="番号1" min="1000"> ～ <input type="number" placeholder="番号2" min="1000">`;
+        entryDiv.innerHTML = `<input type="number" placeholder="番号1" min="1000" name="serial_number"> ～ <input type="number" placeholder="番号2" min="1000" name="serial_number">`;
         container.appendChild(entryDiv);
     }
 
@@ -151,7 +152,7 @@ button {
         const container = document.getElementById('single-entries');
         const entryDiv = document.createElement('div');
         entryDiv.classList.add('entry');
-        entryDiv.innerHTML = `<input type="number" placeholder="番号" min="1000">`;
+        entryDiv.innerHTML = `<input type="number" placeholder="番号" min="1000" name="single_number">`;
         container.appendChild(entryDiv);
     }
 
