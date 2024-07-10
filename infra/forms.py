@@ -3,7 +3,6 @@ import datetime
 # django内からインポート
 from django import forms
 from django.core.files.storage import default_storage
-from django.forms import modelformset_factory
 
 from .models import CustomUser, Image, Infra, Regulation, UploadedFile
 from .models import Photo, Company, Table, NameEntry, PartsNumber
@@ -19,7 +18,7 @@ class UserCreationForm(forms.ModelForm):
     company = forms.ModelChoiceField(queryset=Company.objects.all())
     class Meta:
         model = CustomUser
-        fields = ('username', 'password', 'company')
+        fields = ['username', 'password', 'company']
 
 # << Infra毎にdxfファイルを登録 >>
 class TableForm(forms.ModelForm):
@@ -68,14 +67,15 @@ class NameEntryForm(forms.ModelForm):
         model = NameEntry
         fields = ['name', 'alphabet']
 
-NameEntryFormSet = modelformset_factory(NameEntry, form=NameEntryForm, extra=3)
+# NameEntryFormSet = modelformset_factory(NameEntry, form=NameEntryForm, extra=3)
 #          Formセットを生成するための関数(modelクラス, Formクラス, 最初に表示する空のクラス数)
 
 # << 要素番号の登録 >>
 class PartsNumberForm(forms.ModelForm):
     class Meta:
         model = PartsNumber
-        fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number']
+        # fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number']
+        fields = ['parts_name', 'symbol', 'number']
         
 # 1回のリクエストで、必ず5個のデータを入力したいときに使う。必ず一定数のデータを入れたいときに使う。
 # PartsNumberFormSet = modelformset_factory(PartsNumber, form=PartsNumberForm, extra=5)

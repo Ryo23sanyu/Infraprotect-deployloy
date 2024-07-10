@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 
+{% block title %}番号登録{% endblock title %}
+{% block h1 %}番号登録{% endblock %}
+
 {% block content %}
-<title>登録フォーム</title>
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -40,7 +42,6 @@ body {
 .form-section .inline-group input, .form-section, .form-number-section .inline-group select {
     margin: 0 10px;
 }
-
 button.toggle-button {
     margin: 0 5px;
     padding: 5px 10px;
@@ -65,7 +66,7 @@ button {
     cursor: pointer;
 }
 </style>
-<h1>登録フォーム</h1>
+
 {# PartsNumber を保存するためにformで囲う #}
     <form action="" method="post">
         {% csrf_token %}
@@ -81,21 +82,30 @@ button {
             </div>
 
             <div class="inline-group">
+                <label for="symbol">部材記号:</label>
+                <input type="text" id="symbol" name="symbol">
+            </div>
+
+            {% comment %}
+            <div class="inline-group">
                 <label for="material">材料:</label>
                 <div id="material-buttons" class="toggle-buttons" name="material">
-                    <button type="button" class="toggle-button" data-value="鋼">鋼</button>
-                    <button type="button" class="toggle-button" data-value="コンクリート">コンクリート</button>
-                    <button type="button" class="toggle-button" data-value="その他">その他</button>
+                    <button type="button" class="toggle-button" data-value="鋼" onclick="selectValue(this)">鋼</button>
+                    <button type="button" class="toggle-button" data-value="コンクリート" onclick="selectValue(this)">コンクリート</button>
+                    <button type="button" class="toggle-button" data-value="その他" onclick="selectValue(this)">その他</button>
                 </div>
             </div>
 
             <div class="inline-group">
                 <label for="main_frame">主要部材:</label>
                 <div id="main-frame-buttons" class="toggle-buttons" name="main_frame">
-                    <button type="button" class="toggle-button" data-value="〇">〇</button>
-                    <button type="button" class="toggle-button" data-value="✕">✕</button>
+                    <button type="button" class="toggle-button" data-value="〇" onclick="selectValue(this)">〇</button>
+                    <button type="button" class="toggle-button" data-value="✕" onclick="selectValue(this)">✕</button>
                 </div>
             </div>
+            {% endcomment %}
+
+
         </div>
 
         <div class="form-number-section">
@@ -117,12 +127,26 @@ button {
                 </div>
             </div>
         </div>
+
+        {# 隠しフィールドを追加して選択された値を保持する #}
+        {% comment %} 
+        <input type="hidden" id="main_frame_input" name="main_frame" value="">
+        <input type="hidden" id="material_input" name="material" value="">
+        {% endcomment %}
+
         {# 保存するためのボタン #}
         <input type="submit" value="登録">
 
     </form>
 
 <script>
+    // ボタンの送信機能
+    function selectValue(button) {
+        var value = button.getAttribute("data-value");
+        document.getElementById("main_frame_input").value = value;
+        var value = button.getAttribute("data-value");
+        document.getElementById("meterial_input").value = value;
+    }
     // 材料ボタンの選択切り替え
     const materialButtons = document.querySelectorAll('#material-buttons .toggle-button');
     materialButtons.forEach(button => {
@@ -130,7 +154,6 @@ button {
             button.classList.toggle('selected');
         });
     });
-
     // 主要部材ボタンの選択切り替え
     const mainFrameButtons = document.querySelectorAll('#main-frame-buttons .toggle-button');
     mainFrameButtons.forEach(button => {
@@ -139,20 +162,20 @@ button {
             button.classList.add('selected');
         });
     });
-
+    // 追加ボタンで表示される入力フォーム
     function addSerialEntry() {
         const container = document.getElementById('serial-entries');
         const entryDiv = document.createElement('div');
         entryDiv.classList.add('entry');
-        entryDiv.innerHTML = `<input type="number" placeholder="番号1" min="1000" name="serial_number"> ～ <input type="number" placeholder="番号2" min="1000" name="serial_number">`;
+        entryDiv.innerHTML = `<input type="number" placeholder="番号1" min="1" name="serial_number"> ～ <input type="number" placeholder="番号2" min="1" name="serial_number">`;
         container.appendChild(entryDiv);
     }
-
+    // 追加ボタンで表示される入力フォーム
     function addSingleEntry() {
         const container = document.getElementById('single-entries');
         const entryDiv = document.createElement('div');
         entryDiv.classList.add('entry');
-        entryDiv.innerHTML = `<input type="number" placeholder="番号" min="1000" name="single_number">`;
+        entryDiv.innerHTML = `<input type="number" placeholder="番号" min="1" name="single_number">`;
         container.appendChild(entryDiv);
     }
 
@@ -171,8 +194,35 @@ button {
         console.log("パーツ名:", partName);
         console.log("連続した番号:", serialNumbers);
         console.log("単一の番号:", singleNumbers);
-
-        // 登録処理をここに追加 (例: サーバーにデータを送信)
     }
+    // part-nameとsymbolの紐付け
+    document.addEventListener('DOMContentLoaded', function () {
+        const partsNameInput = document.getElementById('part-name');
+        const symbolInput = document.getElementById('symbol');
+
+        const optionsMap = {
+            '主桁': 'Mg',
+            '横桁': 'Cr',
+            '床版': 'Ds'
+        };
+
+        partsNameInput.addEventListener('input', function () {
+            const enteredPartName = partsNameInput.value;
+            if (optionsMap[enteredPartName]) {
+                symbolInput.value = optionsMap[enteredPartName];
+            } else {
+                symbolInput.value = '';
+            }
+        });
+        // ページ読み込み時に入力欄を初期設定する(必要な場合)
+        const initializeInput = () => {
+            const enteredPartName = partsNameInput.value;
+            if (optionsMap[enteredPartName]) {
+                symbolInput.value = optionsMap[enteredPartName];
+            }
+        };
+        // 初期設定を呼び出す
+        initializeInput();
+    });
 </script>
 {% endblock %}

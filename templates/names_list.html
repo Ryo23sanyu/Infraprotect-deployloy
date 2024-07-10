@@ -1,100 +1,99 @@
-<!--names_list.html-->
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block title %}名前登録{% endblock title %}
 {% block h1 %}名前登録{% endblock %}
 
 {% block content %}
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-    .input-set {
-        display: flex;
-        margin-bottom: 10px;
-    }
-    .input-item {
-        margin-right: 10px;
-    }
-    @media (max-width: 600px) {
-        .input-set {
-            flex-direction: column;
-            margin-bottom: 20px;
-        }
-        .input-item {
-            margin-bottom: 10px;
-            margin-right: 0;
-        }
-    }
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+.form-section {
+    margin-bottom: 20px;
+}
+.form-section label {
+    display: block;
+    margin-bottom: 5px;
+}
+.form-section input, .form-section select, .form-number-section input, .form-number-section select {
+    width: 150px;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+.form-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.form-number-section {
+    align-items: center;
+    gap: 10px;
+}
+.inline-group {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* フレックスアイテム間の空間 */
+    margin-bottom: 10px;
+}
+.form-section .inline-group label {
+    margin: 0;
+}
+.form-section .inline-group input, .form-section, .form-number-section .inline-group select {
+    margin: 0 10px;
+}
+button.toggle-button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    background-color: #ddd;
+    border: none;
+    border-radius: 5px;
+}
+button.toggle-button.selected {
+    background-color: #007bff;
+    color: white;
+}
+.form-number-section .entries .entry {
+    display: inline-block;
+    margin-right: 10px;
+    white-space: nowrap;
+    gap: 10px; /* エントリ間の間隔を整える */
+}
+button {
+    margin-top: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
 </style>
-<form id="input-form" method="POST" action="">
-    {% csrf_token %}
-    <div id="input-container">
-        {{ formset.management_form }}
-        {% for form in formset %}
 
-        {% endfor %}
-    </div>
-    <button type="button" id="add-button">追加</button>
-    <button type="submit">送信</button>
-</form>
+{# PartsNumber を保存するためにformで囲う #}
+    <form action="" method="post">
+        {% csrf_token %}
+
+        <div class="form-number-section">
+            <label>名前とアルファベットの紐付け:</label>
+            <button type="button" onclick="addSerialEntry()">追加</button>
+            <div id="name-entries" class="entries">
+                <div class="entry">
+                    <input type="name" placeholder="名前" name="name_alphabet"> : <input type="alphabet" placeholder="アルファベット" min="1" name="name_alphabet">
+                </div>
+            </div>
+        </div>
+
+        <input type="submit" value="登録">
+
+    </form>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-
-    // 1個分のフォームを作る(引数にname属性の番号を与える)
-    const createForm    = (counter) => {
-
-        const inputSet      = document.createElement('div');
-        inputSet.className  = 'input-set';
-
-        const nameInput         = document.createElement('input');
-        nameInput.type          = 'text';
-        nameInput.className     = 'input-item';
-        nameInput.name          = `form-${counter}-name`;
-        nameInput.placeholder   = '名前';
-
-        const alphabetInput         = document.createElement('input');
-        alphabetInput.type          = 'text';
-        alphabetInput.className     = 'input-item';
-        alphabetInput.name          = `form-${counter}-alphabet`;
-        alphabetInput.placeholder   = 'アルファベット';
-
-        inputSet.appendChild(nameInput);
-        inputSet.appendChild(alphabetInput);
-
-        return inputSet;
+    // 追加ボタンで表示される入力フォーム
+    function addSerialEntry() {
+        const container = document.getElementById('name-entries');
+        const entryDiv = document.createElement('div');
+        entryDiv.classList.add('entry');
+        entryDiv.innerHTML = `<input type="name" placeholder="名前" name="name_alphabet"> : <input type="alphabet" placeholder="アルファベット" name="name_alphabet">`;
+        container.appendChild(entryDiv);
     }
 
-
-    // ページロード時に、フォームを3つ作る。
-    for (let i = 0; i < 3; i++) {
-
-        inputSet                = createForm(i);
-        const container         = document.getElementById('input-container');
-
-        container.appendChild(inputSet);
-    }
-
-
-    // #add-button に対し、クリック時にフォームを追加するイベントをセット
-    document.getElementById('add-button').addEventListener('click', function() {
-
-        const container         = document.getElementById('input-container');
-
-        // FIXME: この要素は存在しない。フォームの数をカウントしたい場合、querySelectorAll() を使ってlengthプロパティから調べる。
-        /*
-        const totalFormsInput   = document.getElementById('id_form-TOTAL_FORMS');
-        const formCount         = parseInt(totalFormsInput.value);
-        */
-
-        const formCount         = document.querySelectorAll(".input-set").length - 1;
-        inputSet                = createForm(formCount);
-
-        container.appendChild(inputSet);
-
-        // FIXME:この要素も存在しないためコメントアウト
-        // 総フォーム数を更新
-        //totalFormsInput.value = formCount + 3;
-    });
-});
 </script>
 {% endblock %}

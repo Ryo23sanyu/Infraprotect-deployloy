@@ -1,5 +1,6 @@
 # アプリ内からインポート
 import datetime
+from functools import reduce
 import pythoncom
 from io import BytesIO
 from itertools import zip_longest
@@ -23,8 +24,8 @@ from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 
 from infraproject import settings
-from .models import Approach, Article, DamageReport, Infra, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryFormSet, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
+from .models import Approach, Article, DamageReport, Infra, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -263,38 +264,6 @@ def panorama_upload(request):
         panorama = Panorama.objects.create(image=image, checked=checked)
         return redirect('photo')
     return render(request, 'panorama_upload.html')
-   
-# 番号表示  
-def number_view(request):
-    start = "0101"
-    end = "0206"
-
-    # 最初の2桁と最後の2桁を取得
-    start_prefix = start[:2]
-    start_suffix = start[2:]
-    end_prefix = end[:2]
-    end_suffix = end[2:]
-
-    # 抽出した数字を文字列として結合
-    result = ""
-    for prefix in range(int(start_prefix), int(end_prefix)+1):
-        for suffix in range(int(start_suffix), int(end_suffix)+1):
-            result += "{:02d}{:02d}\n".format(prefix, suffix)
-
-    return HttpResponse(result)
-
-# << 名前とアルファベットを紐付け >>
-def names_list(request, article_pk):
-    # POSTリクエストの場合、フォームセットをデータとともに作成する
-    if request.method == 'POST':
-        formset = NameEntryFormSet(request.POST)
-        if formset.is_valid():
-            formset.save()
-            return redirect('names-list')
-    else:
-        formset = NameEntryFormSet(queryset=NameEntry.objects.none())
-        
-    return render(request, 'names_list.html', {'formset': formset, 'article_pk': article_pk})
 
 # << 損傷写真帳の作成 >>
 def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.htmlに表示
@@ -465,7 +434,28 @@ def observer_list(request):
         {'parts_name': ['排水管'], 'damage_name': ['防食機能の劣化'], 'damage_lank': ['e']}, 
         {'parts_name': ['添架物'], 'damage_name': ['ゆるみ・脱落'], 'damage_lank': ['e']}
     ]
-    return render(request, 'observer_list.html', {'data': data})
+    return render(request, 'observer_list.html', {'data': data})            
+
+# << 名前とアルファベットを紐付け >>
+def names_list(request, article_pk):
+    
+    alphabet_list = request.POST.getlist("name_alphabet")
+    #alphabet_dict = {alphabet_list[i]: alphabet_list[i+1] for i in range(0, len(alphabet_list), 2)}
+    #print(alphabet_dict)
+    for i in range(0, len(alphabet_list), 2):
+        dic = {}
+        dic["name"] = alphabet_list[i]
+        dic["alphabet"] = alphabet_list[i+1]
+        dic["article"] = article_pk
+        
+        form = NameEntryForm(dic)
+
+        if form.is_valid():
+            form.save()
+        else:
+            print(form.errors) # 入力フォームのエラー内容を表示
+            
+    return render(request, 'names_list.html', {'article_pk': article_pk, "form": NameEntryForm()})
 
 # << 番号登録 >>
 def number_list(request, article_pk, pk):
@@ -488,25 +478,25 @@ def number_list(request, article_pk, pk):
         dic["number"] = new_serial_number
         dic["parts_name"] = request.POST.get("parts_name")
         dic["symbol"] = request.POST.get("symbol")
-        dic["material"] = request.POST.get("material")
-        dic["main_frame"] = request.POST.get("main_frame")
+        #dic["material"] = request.POST.get("material")
+        #dic["main_frame"] = request.POST.get("main_frame")
         print(new_serial_number)
 
         # 1個ずつバリデーションして保存する
-        form    = PartsNumberForm(dic)
+        form = PartsNumberForm(dic)
 
         if form.is_valid():
             form.save()
         else:
-            print("not_save")
+            print(form.errors) # 入力フォームのエラー内容を表示
 
     for single_number in single_numbers:
         dic = {}
         dic["number"] = single_number
         dic["parts_name"] = request.POST.get("parts_name")
         dic["symbol"] = request.POST.get("symbol")
-        dic["material"] = request.POST.get("material")
-        dic["main_frame"] = request.POST.get("main_frame")
+        #dic["material"] = request.POST.getlist("material")
+        #dic["main_frame"] = request.POST.getlist("main_frame")
         print(single_number)
 
         # 1個ずつバリデーションして保存する
@@ -515,9 +505,37 @@ def number_list(request, article_pk, pk):
         if form.is_valid():
             form.save()
         else:
-            print("not_save")
+            print(form.errors)
 
-    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk})
+    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm()})
+
+# 番号表示  
+def number_view(request):
+    # TODO: PartsNumberモデルから1件データを取り出し
+    parts_number = PartsNumber.objects.get(id=1)
+    # 抽出した数字を文字列として結合
+    result = ""
+    # 4桁 か 4桁~4桁 のいずれか
+    if len(parts_number.number) == 4:
+        # 4桁
+        result  = parts_number.number
+    else:
+        # 4桁~4桁
+        # ~ で区切る必要がある。 [ "3000","3000" ]
+        numbers = parts_number.number.split("~")
+        start   = numbers[0]
+        end     = numbers[1]
+        # 最初の2桁と最後の2桁を取得
+        start_prefix = start[:2]
+        start_suffix = start[2:]
+        end_prefix = end[:2]
+        end_suffix = end[2:]
+
+        for prefix in range(int(start_prefix), int(end_prefix)+1):
+            for suffix in range(int(start_suffix), int(end_suffix)+1):
+                result += "{:02d}{:02d}\n".format(prefix, suffix)
+
+    print(result)
 
 # << 橋梁緒言の選択肢 >>
 def infraregulations_view(request):
@@ -652,14 +670,14 @@ def excel_output(request, article_pk, pk):
     try:
         # 指定したInfraに紐づく Tableを取り出す
         table = Table.objects.filter(infra=pk).first()
-        print(table.dxf.url) # 相対パス
+        #print(table.dxf.url) # 相対パス
         
         # 絶対パスに変換
         encoded_url_path = table.dxf.url
         decoded_url_path = urllib.parse.unquote(encoded_url_path) # URLデコード
         dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
-        print(dxf_filename)
-    #         ↑ を読んでエクセルファイルを作る
+        #print(dxf_filename)
+        #       ↑ を読んで絶対パスを作る
 
         # 径間の数をamountに格納
         infra   = Infra.objects.filter(id=pk).first()
@@ -690,7 +708,7 @@ def excel_output(request, article_pk, pk):
             search_title_text = f"{number}径間"
             second_search_title_text = "損傷図"
             ws_name = f"その１０-{number}" # シート名を作成
-            print(f"シート名{ws_name}")
+            # print(f"シート名{ws_name}")
             ws = wb.Worksheets(ws_name) # シート名を指定
             
             # 1回の実行で作れるのは、径間の1個分しか作れない。エクセルのシート1枚。
@@ -714,7 +732,7 @@ def excel_output(request, article_pk, pk):
             lasttime_lank_row = 15 # 前回損傷程度
             damage_memo_row = 17 # 損傷メモ
             step = 14
-            num_positions = len(output_data) * 3  # データ数に3列分を掛けています
+            num_positions = len(output_data) * 3  # データ数に3列分を掛ける
 
             # 関連する列を定義
             picture_columns = ["E", "AE", "BE"]
@@ -1357,8 +1375,27 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
             if isinstance(last_item[i], list):
                 continue
             else:
-                name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
-            # name_item に格納されるのは 'NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253'のいずれかです。リストのi番目の文字列になります。
+                # 組み合わせを収集するリスト
+                replacements = []
+
+                # name_entriesの取得 NameEntry.objects.all()
+                name_entries = NameEntry.objects.filter(article = article_pk).first()
+
+                # 置換情報を収集する
+                for name_entry in name_entries:
+                    replacements.append((name_entry.alphabet, name_entry.name))
+                replacements.append((" ", "　"))
+                print(f'replacements: {replacements}')
+                # 置換リストをキーの長さで降順にソート
+                sorted_replacements = sorted(replacements, key=lambda x: len(x[0]), reverse=True)
+
+                # 置換関数を定義
+                def replace_all(text, replacements):
+                    return reduce(lambda acc, pair: acc.replace(pair[0], pair[1]), replacements, text)
+                
+                name_item = replace_all(last_item[i], sorted_replacements)
+                #name_item = last_item[i].replace("S", "佐藤").replace("H", "濵田").replace(" ", "　")
+            # name_item に格納されるのは 'NON-a', '9月7日 佐藤*/*404', '9月7日 佐藤*/*537', '9月8日 佐藤*/*117,9月8日 佐藤*/*253'のいずれか
 
             pattern = r',(?![^(]*\))'
             dis_items = re.split(pattern, name_item)#「9月8日 S*/*117」,「9月8日 S*/*253」

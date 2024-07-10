@@ -102,40 +102,43 @@ class Table(models.Model):
 #<< 名前とアルファベットの登録 >>
 class NameEntry(models.Model):
     name = models.CharField(max_length=50)
-    alphabet = models.CharField(max_length=50)
-
+    alphabet_regex = RegexValidator(regex=r"[A-Za-z]+")
+    alphabet = models.CharField(max_length=50, validators=[alphabet_regex])
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, null=True, blank=True)
+    
     # 文字列表現を返すために使用
     def __str__(self):
         return f"{self.name} ({self.alphabet})" # 例：佐藤(S)
 
 #<< 要素番号の登録 >>
-材料_CHOICES = (('鋼', '鋼'),('コンクリート', 'コンクリート'),('その他', 'その他'))
-class Material(models.Model):
-    材料 = models.CharField(max_length=50, choices=材料_CHOICES)
-    def __str__(self):
-        return self.材料
+# 材料_CHOICES = (('鋼', '鋼'),('コンクリート', 'コンクリート'),('その他', 'その他'))
+# class Material(models.Model):
+#     材料 = models.CharField(max_length=50, choices=材料_CHOICES)
+#     def __str__(self):
+#         return self.材料
     
-主要部材_CHOICES = (('有り', '有り'),('無し', '無し'))
-class Main_frame(models.Model):
-    主要部材 = models.CharField(max_length=50, choices=主要部材_CHOICES)
-    def __str__(self):
-        return self.主要部材
-        
+# 主要部材_CHOICES = (('有り', '有り'),('無し', '無し'))
+# class Main_frame(models.Model):
+#     主要部材 = models.CharField(max_length=50, choices=主要部材_CHOICES)
+#     def __str__(self):
+#         return self.主要部材
+
 class PartsNumber(models.Model):
     parts_name = models.CharField(max_length=100)
-    # 4040 もしくは 2020~4030 2パターンだけを許可する正規表現のバリデーションを作る。
+    # 4040 もしくは 2020~4030 2パターンだけを許可する正規表現のバリデーションを作る
     # 4桁 と 4桁~4桁 を許す正規表現　　　　　　　 　　↓ もしくは
     number_regex = RegexValidator(regex=r"(^\d{4}$)|(^\d{4}~\d{4}$)")
     #                            最初の文字 ↑     ↑ 最後の文字
-    #                                         ↓ 追加のバリデーションをする、フィールドオプション
+    #                                            ↓ 追加のバリデーションをする、フィールドオプション
     number = models.CharField(max_length=50, validators=[number_regex])
     symbol = models.CharField(max_length=100)
-    material = models.ManyToManyField(Material)
-    main_frame = models.ManyToManyField(Main_frame)
+    #material = models.ManyToManyField(Material)
+    #main_frame = models.ManyToManyField(Main_frame)
     
     def __str__(self):
-        return f"{self.parts_name}({self.symbol}{self.number}):{self.material}/{self.main_frame}"
-               
+        #return f"{self.parts_name}({self.symbol}{self.number}):{self.material}/{self.main_frame}"
+        return f"{self.parts_name}({self.symbol}{self.number})" # 管理サイトには「主桁(Mg0101)」のように表示
+           
 # 会社別に表示
 class CustomUser(AbstractUser):
     company = models.CharField(max_length=100)
