@@ -118,9 +118,13 @@ input[type="checkbox"]:checked + label {
 
             <div class="inline-group">
                 <label>材料:</label>
-                {% for material in materials %}
-                <input type="checkbox" id="material_{{ material.id }}" name="material" value="{{ material.id }}">
-                <label for="material_{{ material.id }}">{{ material.材料 }}</label>
+                {% for parts_name in parts_names %}
+                    {% for material in parts_name.material.all %}
+                        <input type="checkbox" id="material_{{ material.id }}" name="material" value="{{ material.id }}">
+                        <label class="material-option" for="material_{{ material.id }}" data-parts-id="{{ parts_name.id }}">
+                            {{ material.材料 }}
+                        </label>
+                    {% endfor %}
                 {% endfor %}
             </div>
 
@@ -178,10 +182,21 @@ input[type="checkbox"]:checked + label {
     }
     
     // 材料ボタンの選択切り替え
-    document.getElementById('part-name').addEventListener('change', function() {
-        var selectedOption = this.options[this.selectedIndex];
-        var isMain = selectedOption.getAttribute('data-main') === 'true';
-        document.getElementById('main_frame').checked = isMain;
+    document.addEventListener("DOMContentLoaded", function() {
+        var partsSelect = document.getElementById('part-name');
+        partsSelect.addEventListener('change', function() {
+            var selectedPartId = this.value;
+            var materials = document.querySelectorAll('.material-option');
+            materials.forEach(function(material) {
+                if (material.getAttribute('data-parts-id') == selectedPartId) {
+                    material.style.display = 'block';
+                } else {
+                    material.style.display = 'none';
+                }
+            });
+        });
+
+        partsSelect.dispatchEvent(new Event('change')); // 初期化
     });
 
     // 主要部材ボタンの選択切り替え

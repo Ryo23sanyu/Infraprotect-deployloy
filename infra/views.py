@@ -511,9 +511,9 @@ def number_list(request, article_pk, pk):
         else:
             print(form.errors)
         
-    parts_names = PartsName.objects.all()
-    materials = Material.objects.all()
-    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, "materials":materials})
+    parts_names = PartsName.objects.all().prefetch_related('material')
+    # materials = Material.objects.all()
+    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names})
 
 # 部材名と記号を紐付けるAjaxリクエスト
 def get_symbol(request):
