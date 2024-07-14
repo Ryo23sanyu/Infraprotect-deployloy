@@ -41,6 +41,31 @@
     text-align: center; /* ボタン内のテキストを中央に配置 */
     flex: 0 0 auto; /* フレックスアイテムの伸縮を禁止し、設定したサイズを適用 */
   }
+  /* ボタンの枠線、中の色を指定 */
+  .btn {
+      background-color: #4CAF50; /* ボタンの背景色 */
+      border: 2px solid #4CAF50; /* ボタンの枠線の色と太さ */
+      color: white; /* ボタンの文字色 */
+      padding: 10px 20px; /* ボタン内のパディング */
+      text-align: center; /* 文字の位置 */
+      text-decoration: none; /* テキストの下線を消す */
+      display: inline-block; /* ボタンをインラインブロック要素に */
+      font-size: 16px; /* フォントサイズ */
+      cursor: pointer; /* ポインタを指マークに */
+      width: 150px; /* ボタンの幅を指定 */
+      height: 50px; /* ボタンの高さを指定 */
+      box-sizing: border-box; /* パディングとボーダーを含めたサイズ計算 */
+      white-space: nowrap;       /* テキストの折り返しを無効にする */
+  }
+  
+  /* ボタンを横並びにする */
+  .button-container {
+      display: flex; /* フレックスボックスを使用 */
+      flex-wrap: wrap; /* 幅に収まりきらない場合は折り返す */
+      justify-content: space-between; /* ボタンの間隔を均等にする */
+      gap: 10px; /* 横並びのボタン間のギャップを設定 */
+  }
+
 </style>
 
 <table class="bordered-table">
@@ -71,7 +96,7 @@
         <td></td>
         <td>{{ item.parts_name.0 }}</td>
         <td>{{ item.damage_name.0 }}<br>{{ item.damage_lank }}</td>
-        <td><img src="{% static 'images/sample.jpg' %}" alt="サンプル画像"></td>
+        <td><img src="C:\work\django\myproject\program\Infraproject\temp_image.png" alt="サンプル画像"></td>
         <td>
           <div class="judge-container">
             <button>B</button>
@@ -85,42 +110,49 @@
           </div>
         </td>
         <td>
-          <div class="cause-container">
-            <button id="btn1" class="btn">疲労</button>
-            <button id="btn2" class="btn">塩害</button>
-            <button id="btn3" class="btn">凍害</button>
-            <button id="btn4" class="btn">アルカリ骨材反応</button>
-            <button id="btn5" class="btn">中性化</button>
-            <button id="btn6" class="btn">材料劣化</button>
-            <button id="btn7" class="btn">想定外の荷重</button>
-            <button id="btn8" class="btn">衝突</button>
-            <button id="btn9" class="btn">偏土圧・圧密沈下</button>
-            <button id="btn10" class="btn">洗掘・浸食</button>
-            <button id="btn11" class="btn">地震</button>
-            <button id="btn12" class="btn">乾燥収縮・温度応力</button>
-            <button id="btn13" class="btn">科学的腐食</button>
-            <button id="btn14" class="btn">品質の経年変化</button>
-            <button id="btn15" class="btn">製作・施工不良</button>
-            <button id="btn16" class="btn">防水・排水工不良</button>
-            <button id="btn17" class="btn">構造形式・形状不良</button>
-            <button id="btn18" class="btn">人為的</button>
-            <button id="btn19" class="btn">鳥害</button>
-            <button id="btn20" class="btn">自由記述</button>
+          <div class="button-container">
+            <button id="btn{{ forloop.counter }}-1" class="btn">疲労</button>
+            <button id="btn{{ forloop.counter }}-2" class="btn">塩害</button>
+            <button id="btn{{ forloop.counter }}-3" class="btn">凍害</button>
+            <button id="btn{{ forloop.counter }}-4" class="btn">アルカリ骨材反応</button>
+            <button id="btn{{ forloop.counter }}-5" class="btn">中性化</button>
+            <button id="btn{{ forloop.counter }}-6" class="btn">材料劣化</button>
+            <button id="btn{{ forloop.counter }}-7" class="btn">想定外の荷重</button>
+            <button id="btn{{ forloop.counter }}-8" class="btn">衝突</button>
+            <button id="btn{{ forloop.counter }}-9" class="btn">偏土圧・圧密沈下</button>
+            <button id="btn{{ forloop.counter }}-10" class="btn">洗掘・浸食</button>
+            <button id="btn{{ forloop.counter }}-11" class="btn">地震</button>
+            <button id="btn{{ forloop.counter }}-12" class="btn">乾燥収縮・温度応力</button>
+            <button id="btn{{ forloop.counter }}-13" class="btn">科学的腐食</button>
+            <button id="btn{{ forloop.counter }}-14" class="btn">品質の経年変化</button>
+            <button id="btn{{ forloop.counter }}-15" class="btn">製作・施工不良</button>
+            <button id="btn{{ forloop.counter }}-16" class="btn">防水・排水工不良</button>
+            <button id="btn{{ forloop.counter }}-17" class="btn">構造形式・形状不良</button>
+            <button id="btn{{ forloop.counter }}-18" class="btn">人為的</button>
+            <button id="btn{{ forloop.counter }}-19" class="btn">鳥害</button>
+            <button id="btn{{ forloop.counter }}-20" class="btn">自由記述</button>
           </div>
         </td>
         <td>点錆が見られる。</td>
     </tr>
     {% endfor %}
+  </tbody>
 </table>
 
 <script>
-    // 仮のitem.damage_name.0の値、実際の値はサーバーなどから取得してください
-    let damageName = "{{ item.damage_name.0 }}";
-    console.log('damageName:', damageName);
+    // 特定のボタンを表示するヘルパー関数
+    function showButtons(buttonIds) {
+      buttonIds.forEach(id => {
+          const button = document.getElementById(id);
+          if (button) {
+              button.style.display = 'block';
+          }
+      });
+    }
 
-    // 必要に応じてボタンの表示/非表示を切り替える関数
-    function updateButtonVisibility(damageName) {
-      const buttons = document.querySelectorAll('.btn');
+    // 各行ごとのボタンの表示/非表示を切り替える関数
+    function updateButtonVisibility(row, damageName, rowIndex) {
+      const buttons = row.querySelectorAll('.btn');
 
       // 全てのボタンを非表示にする
       buttons.forEach(button => {
@@ -128,102 +160,43 @@
       });
 
       // damageNameの値によって表示するボタンを指定
+      let buttonIds = [];
       switch (damageName) {
         case '腐食': // 1
-          showButtons(['btn1', 'btn2', 'btn3', 'btn4', 'btn5']);
+          buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-2', 'btn' + rowIndex + '-3', 'btn' + rowIndex + '-4', 'btn' + rowIndex + '-5', 'btn' + rowIndex + '-6', 'btn' + rowIndex + '-7'];
           break;
-        case '亀裂': // 2
-          showButtons(['btn1', 'btn7', 'btn8']);
+        case '防食機能の劣化': // 2
+          buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8'];
           break;
         case 'ゆるみ・脱落': // 3
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case '破断': // 4
-          showButtons(['btn1', 'btn2', 'btn3', 'btn4', 'btn5']);
-          break;
-        case '防食機能の劣化': // 5
-          showButtons(['btn1', 'btn7', 'btn8']);
-          break;
-        case 'ひびわれ': // 6
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case '剥離・鉄筋露出': // 7
-          showButtons(['btn1', 'btn2', 'btn3', 'btn4', 'btn5']);
-          break;
-        case '漏水・遊離石灰': // 8
-          showButtons(['btn1', 'btn7', 'btn8']);
-          break;
-        case '抜け落ち': // 9
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case '補修・補強材の損傷': // 10
-          showButtons(['btn1', 'btn2', 'btn3', 'btn4', 'btn5']);
-          break;
-        case '床版ひびわれ': // 11
-          showButtons(['btn1', 'btn7', 'btn8']);
-          break;
-        case 'うき': // 12
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case '遊間の異常': // 13
-          showButtons(['btn1', 'btn2', 'btn3', 'btn4', 'btn5']);
-          break;
-        case '路面の凹凸': // 14
-          showButtons(['btn1', 'btn7', 'btn8']);
-          break;
-        case '舗装の異常': // 15
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case '支承部の機能障害': // 16
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case 'その他': // 17
-          showButtons(['btn1', 'btn2', 'btn3', 'btn4', 'btn5']);
-          break;
-        case '定着部の異常': // 18
-          showButtons(['btn1', 'btn7', 'btn8']);
-          break;
-        case '変色・劣化': // 19
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case '漏水・滞水': // 20
-          showButtons(['btn1', 'btn2', 'btn3', 'btn4', 'btn5']);
-          break;
-        case '異常な音・振動': // 21
-          showButtons(['btn1', 'btn7', 'btn8']);
-          break;
-        case '異常なたわみ': // 22
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case '変形・欠損': // 23
-          showButtons(['btn6', 'btn7', 'btn8']);
-          break;
-          case '土砂詰まり': // 24
-          showButtons(['btn1', 'btn2', 'btn3', 'btn4', 'btn5']);
-          break;
-        case '沈下・移動・傾斜': // 25
-          showButtons(['btn1', 'btn7', 'btn8']);
-          break;
-        case '洗掘': // 26
-          showButtons(['btn6', 'btn7', 'btn8']);
+          buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8'];
           break;
         default:
           console.log('Unexpected value');
       }
+
+      showButtons(buttonIds);
     }
 
-    // 特定のボタンを表示するヘルパー関数
-    function showButtons(buttonIds) {
-      buttonIds.forEach(id => {
-        const button = document.getElementById(id);
-        if (button) {
-          button.style.display = 'block';
+    // 仮のitem.damage_name.0の値、実際の値はサーバーなどから取得してください
+    let rows = document.querySelectorAll("tbody tr"); // tbody内のすべての行を取得
+    rows.forEach((row, index) => {
+        let cells = row.querySelectorAll("td"); // 行内のすべてのセルを取得
+        if (cells.length >= 3) { // 3列目が存在するか確認
+            let damageName = cells[2].textContent;
+        
+            // 正規表現で [ の前の部分を抽出
+            let matches = damageName.match(/^[^\[]+/);
+            if (matches) { // マッチする部分があるか確認
+                damageName = matches[0].trim(); // 空白を取り除いて格納
+            }
+
+            console.log("log:", damageName); // 3列目のデータを表示（インデックス 2 が 3 列目）
+
+            // damageNameに基づいてボタンの表示を更新
+            updateButtonVisibility(row, damageName, index + 1);
         }
-      });
-    }
-
-    // damageNameに基づいてボタンの表示を更新
-    updateButtonVisibility(damageName);
+    });
 </script>
 
 {% endblock content %}

@@ -1,6 +1,6 @@
 from django.urls import path
 from .import views
-from .views import file_upload, file_upload_success
+from .views import file_upload, file_upload_success, get_symbol
 from .views import photo_list, photo_upload, selected_photos, panorama_list
 from django.conf import settings
 from django.conf.urls.static import static
@@ -24,8 +24,8 @@ urlpatterns = [
     path('article/<int:pk>/update/', views.UpdateArticleView.as_view(), name='update-article'),# 案件の更新
     # << インプット・アウトプット >>
     path('article/<int:article_pk>/infra/<int:pk>/upload/', views.file_upload, name='file-upload'),# ファイルアップロード
-    path('article/<int:article_pk>/infra/<int:pk>/excel_output/', views.excel_output, name='excel-output'),# ファイル出力
-    path('article/<int:article_pk>/infra/<int:pk>/dxf_output/', views.dxf_output, name='dxf-output'),# ファイル出力
+    path('article/<int:article_pk>/infra/<int:pk>/excel_output/', views.excel_output, name='excel-output'),# Excelファイル出力
+    path('article/<int:article_pk>/infra/<int:pk>/dxf_output/', views.dxf_output, name='dxf-output'),# DXFファイル出力
     # << 損傷写真帳 >>
     path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table'),# 損傷写真帳
     # << 名前の登録 >>
@@ -34,6 +34,9 @@ urlpatterns = [
     path('article/<int:article_pk>/infra/<int:pk>/number/', views.number_list, name='number-list'),# 要素番号登録
     # << 所見一覧 >>
     path('article/<int:article_pk>/infra/<int:pk>/observations/', views.observations_list, name='observations-list'),# 所見一覧
+    # << Ajax >>
+    path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更
+    path('ajax-get-symbol/', views.get_symbol, name='ajax_get_symbol'),# 部材名と部材記号の紐付け
     
     # << 未完成 >>
     path('observations/', views.observer_list, name='observer_list'),# observertionsの形式を見る用(後で消す)
@@ -45,7 +48,6 @@ urlpatterns = [
     path('images/', views.image_list, name='image_list'),# 全景写真
     path('photo/', views.display_photo, name='photo'),# 全景写真のアップロード
     path('change-photo/', views.change_photo, name='change_photo'),# 全景写真の変更
-    path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更
     #path('number/', views.number_create_view, name='number'),
     #path('article/<int:pk>/infra/bridge_table/', views.bridge_table, name="bridge_table"),# 損傷写真帳
     #                   ↑ 何のモデルのpkにするか？ ← Tableモデルのid

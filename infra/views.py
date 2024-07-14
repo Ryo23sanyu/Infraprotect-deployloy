@@ -24,7 +24,7 @@ from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 
 from infraproject import settings
-from .models import Approach, Article, DamageReport, Infra, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition
+from .models import Approach, Article, DamageReport, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
 from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 
 class ListInfraView(LoginRequiredMixin, ListView):
@@ -470,7 +470,7 @@ def number_list(request, article_pk, pk):
         new_serial_numbers.append(serial_numbers[i] + "~" + serial_numbers[i+1])
         #                          0101(index:0) ↑          0103(index:1+1) ↑
         #                          0201(index:2) ↑          0203(index:2+1) ↑
-    # print(new_serial_numbers) ['0101~0103', '0201~0203']
+    print(new_serial_numbers) # ['0101~0103', '0201~0203']
     
     # 単一の番号、連続の番号 を部材名と紐付けて保存
     for new_serial_number in new_serial_numbers:
@@ -478,8 +478,8 @@ def number_list(request, article_pk, pk):
         dic["number"] = new_serial_number
         dic["parts_name"] = request.POST.get("parts_name")
         dic["symbol"] = request.POST.get("symbol")
-        #dic["material"] = request.POST.get("material")
-        #dic["main_frame"] = request.POST.get("main_frame")
+        dic["material"] = request.POST.getlist("material")
+        dic["main_frame"] = request.POST.get("main_frame") == 'on'
         print(new_serial_number)
 
         # 1個ずつバリデーションして保存する
@@ -487,6 +487,8 @@ def number_list(request, article_pk, pk):
 
         if form.is_valid():
             form.save()
+            parts_number = form.save()
+            parts_number.material.set(request.POST.getlist("material"))
         else:
             print(form.errors) # 入力フォームのエラー内容を表示
 
@@ -495,8 +497,8 @@ def number_list(request, article_pk, pk):
         dic["number"] = single_number
         dic["parts_name"] = request.POST.get("parts_name")
         dic["symbol"] = request.POST.get("symbol")
-        #dic["material"] = request.POST.getlist("material")
-        #dic["main_frame"] = request.POST.getlist("main_frame")
+        dic["material"] = request.POST.getlist("material")
+        dic["main_frame"] = request.POST.getlist("main_frame") == 'on'
         print(single_number)
 
         # 1個ずつバリデーションして保存する
@@ -504,11 +506,24 @@ def number_list(request, article_pk, pk):
 
         if form.is_valid():
             form.save()
+            parts_number = form.save()
+            parts_number.material.set(request.POST.getlist("material"))
         else:
             print(form.errors)
+        
+    parts_names = PartsName.objects.all()
+    materials = Material.objects.all()
+    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, "materials":materials})
 
-    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm()})
-
+# 部材名と記号を紐付けるAjaxリクエスト
+def get_symbol(request):
+    part_id = request.GET.get('part_id')
+    try:
+        parts_name = PartsName.objects.get(id=part_id)
+        return JsonResponse({'symbol': parts_name.記号})
+    except PartsName.DoesNotExist:
+        return JsonResponse({'error': 'PartsName not found'}, status=404)
+    
 # 番号表示  
 def number_view(request):
     # TODO: PartsNumberモデルから1件データを取り出し
@@ -1379,7 +1394,9 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
                 replacements = []
 
                 # name_entriesの取得 NameEntry.objects.all()
-                name_entries = NameEntry.objects.filter(article = article_pk).first()
+                # tableにarticleが紐付いているため、そこから取得(tableのinfraのarticle(id))
+                name_entries = NameEntry.objects.filter(article = table.infra.article)
+                print(name_entries)
 
                 # 置換情報を収集する
                 for name_entry in name_entries:

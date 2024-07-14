@@ -7,6 +7,7 @@ from django.core.files.storage import default_storage
 from .models import CustomUser, Image, Infra, Regulation, UploadedFile
 from .models import Photo, Company, Table, NameEntry, PartsNumber
 
+from django.core.exceptions import ValidationError
 # ファイルアップロード
 class FileUploadForm(forms.ModelForm):
     class Meta:
@@ -65,7 +66,7 @@ class CensusForm(forms.Form):
 class NameEntryForm(forms.ModelForm):
     class Meta:
         model = NameEntry
-        fields = ['name', 'alphabet']
+        fields = ['name', 'alphabet', 'article']
 
 # NameEntryFormSet = modelformset_factory(NameEntry, form=NameEntryForm, extra=3)
 #          Formセットを生成するための関数(modelクラス, Formクラス, 最初に表示する空のクラス数)
@@ -74,9 +75,20 @@ class NameEntryForm(forms.ModelForm):
 class PartsNumberForm(forms.ModelForm):
     class Meta:
         model = PartsNumber
-        # fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number']
-        fields = ['parts_name', 'symbol', 'number']
+        fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number']
         
+    def clean(self):
+        data = self.cleaned_data
+        print(data)
+
+        materials = data["material"]
+
+        #タグは3個まで
+        if len(materials) > 3:
+            raise ValidationError("materialは3個まで")            
+
+        return self.cleaned_data
+
 # 1回のリクエストで、必ず5個のデータを入力したいときに使う。必ず一定数のデータを入れたいときに使う。
 # PartsNumberFormSet = modelformset_factory(PartsNumber, form=PartsNumberForm, extra=5)
 
