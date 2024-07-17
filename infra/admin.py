@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from infra.forms import PartsNumberForm
-from .models import Approach, Infra, Material, PartsName, Table, Article, CustomUser, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition, PartsNumber, NameEntry
+from .models import Approach, FullReportData, Infra, Material, PartsName, Table, Article, CustomUser, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition, PartsNumber, NameEntry
 from django.contrib.auth.admin import UserAdmin
 
 # models.pyのclass名とカッコの中を合わせる
@@ -20,4 +20,5 @@ admin.site.register(PartsName) # 番号登録
 admin.site.register(PartsNumber) # 番号登録
 admin.site.register(Material) # 番号登録(材料)
 admin.site.register(NameEntry) # 名前とアルファベットの紐付け
+admin.site.register(FullReportData) # 損傷写真帳の全データ
 

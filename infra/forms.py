@@ -4,7 +4,7 @@ import datetime
 from django import forms
 from django.core.files.storage import default_storage
 
-from .models import CustomUser, Image, Infra, Regulation, UploadedFile
+from .models import CustomUser, FullReportData, Image, Infra, Regulation, UploadedFile
 from .models import Photo, Company, Table, NameEntry, PartsNumber
 
 from django.core.exceptions import ValidationError
@@ -123,3 +123,8 @@ class FileUploadSampleForm(forms.Form):
         file_name = default_storage.save(now_date + "_" + upload_file.name, upload_file)  # ファイルを保存 戻り値は実際に保存したファイル名
         return default_storage.url(file_name)
     
+# << 写真帳の全データを管理サイトに登録 >>
+class FullReportDataForm(forms.ModelForm):
+    class Meta:
+        model = FullReportData
+        fields = ['parts_name', 'damage_name', 'join', 'picture_number', 'this_time_picture', 'last_time_picture', 'textarea_content', 'damage_coordinate', 'picture_coordinate']

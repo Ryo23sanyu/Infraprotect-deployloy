@@ -179,4 +179,15 @@ class Image(models.Model):
 class DamageReport(models.Model):
     first = models.CharField(max_length=100)
     second = models.TextField()
-
+    
+# 調書データ
+class FullReportData(models.Model):
+    parts_name = models.CharField(max_length=255) # '排水管 Dp0101'
+    damage_name = models.CharField(max_length=255) # '①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e'
+    join = models.CharField(max_length=255) # {'parts_name': ['排水管 Dp0101'], 'damage_name': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}
+    picture_number = models.CharField(max_length=255) # '写真番号-31'
+    this_time_picture = models.CharField(max_length=255) # 'infra/img\\9月7日\u3000佐藤\u3000地上\\P9070617.JPG'
+    last_time_picture = models.CharField(max_length=255) # None
+    textarea_content = models.CharField(max_length=255) # '排水管に板厚減少を伴う拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0101:⑤防食機能の劣化(分類1)-e'
+    damage_coordinate = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
+    picture_coordinate = models.CharField(max_length=255) # '538810.3087944178', '228910.3502713814'
