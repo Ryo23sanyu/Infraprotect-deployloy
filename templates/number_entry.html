@@ -120,8 +120,8 @@ input[type="checkbox"]:checked + label {
                 <label>材料:</label>
                 {% for parts_name in parts_names %}
                     {% for material in parts_name.material.all %}
-                        <input type="checkbox" id="material_{{ material.id }}" name="material" value="{{ material.id }}">
-                        <label class="material-option" for="material_{{ material.id }}" data-parts-id="{{ parts_name.id }}">
+                        <input type="checkbox" id="material_{{ parts_name.id }}_{{ material.id }}" name="material" value="{{ material.id }}">
+                        <label class="material-option" for="material_{{ parts_name.id }}_{{ material.id }}" data-parts-id="{{ parts_name.id }}">
                             {{ material.材料 }}
                         </label>
                     {% endfor %}
