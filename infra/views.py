@@ -1111,22 +1111,18 @@ def excel_output(request, article_pk, pk):
     # 新しいファイル名の生成
     new_filename = f"{timestamp}_Macro_{original_file_path}"
     # デスクトップのパス
-    desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+    # desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
     # 保存するファイルのフルパス
-    save_path = os.path.join(desktop_path, new_filename)
+    # save_path = os.path.join(desktop_path, new_filename)
     """"""
+    #メモリ空間内に保存
+    virtual = BytesIO()
+    wb.save(virtual)
 
-    # # ファイルをバイトデータとして読み込む
-    # with open(new_filename, 'rb') as f:
-    #     binary = BytesIO(f.read())
+    #バイト文字列からバイナリを作る
+    binary = BytesIO(virtual.getvalue())
 
-    # # 一時ファイルを削除する
-    # os.remove(new_filename)
-    
-    # print(f"複製シートが保存されました: {save_path}")
-    
-    #レスポンスをする
-    #return FileResponse(binary, filename = new_filename)
+    return FileResponse(binary, filename = new_filename)
 
 # << 指定したInfra(pk)に紐づくTableのエクセルの出力 >>
 def dxf_output(request, article_pk, pk):
@@ -1571,13 +1567,13 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
                 # name_entriesの取得 NameEntry.objects.all()
                 # tableにarticleが紐付いているため、そこから取得(tableのinfraのarticle(id))
                 name_entries = NameEntry.objects.filter(article = table.infra.article)
-                print(name_entries)
+                # print(name_entries)
 
                 # 置換情報を収集する
                 for name_entry in name_entries:
                     replacements.append((name_entry.alphabet, name_entry.name))
                 replacements.append((" ", "　"))
-                print(f'replacements: {replacements}')
+                # print(f'replacements: {replacements}')
                 # 置換リストをキーの長さで降順にソート
                 sorted_replacements = sorted(replacements, key=lambda x: len(x[0]), reverse=True)
 
