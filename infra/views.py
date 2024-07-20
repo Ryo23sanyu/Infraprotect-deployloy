@@ -762,7 +762,7 @@ def excel_output(request, article_pk, pk):
 
         # lastがNoneでないデータを残す
         filtered_data = [item for item in sorted_items if item['this_time_picture'] is not None]
-        print(filtered_data)
+        # print(filtered_data)
 
         # this_time_pictureの要素が複数ある場合、分割する
         output_data = []
@@ -897,7 +897,7 @@ def excel_output(request, article_pk, pk):
             while sheet['A' + str(max_row)].value is None and max_row > 0:
                 max_row -= 1
             insert_at_row = max_row
-            print(f"max_row：{max_row}")
+            # print(f"max_row：{max_row}")
             
             # シフトする行の高さを保持するリストを作成します
             heights = []
@@ -968,12 +968,12 @@ def excel_output(request, article_pk, pk):
                 full = settings.STATICFILES_DIRS[0]
                 sub_image_path = os.path.join(full, decoded_picture_path.lstrip('/'))
                 full_image_path = sub_image_path.replace("/", "\\")
-                print(full_image_path)
+                # print(full_image_path)
                 if os.path.exists(full_image_path):
-                    print('true')
-                    print(full_image_path)
+                    # print('true')
+                    # print(full_image_path)
                     cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]  # 所定のセル位置
-                    print(f"cell_pos:{cell_pos}")
+                    # print(f"cell_pos:{cell_pos}")
                     # 画像を開いてリサイズ
                     pil_img = pil_img = PILImage.open(full_image_path)
                     width, height = pil_img.size
@@ -1008,9 +1008,9 @@ def excel_output(request, article_pk, pk):
             # 過去の画像を貼り付ける動作
             if item['last_time_picture'] and os.path.exists(item['last_time_picture']):
                 img_path = os.path.abspath(item['last_time_picture'])
-                print(img_path)
+                # print(img_path)
                 cell_pos = picture_cell_positions[cell_counter // len(picture_columns)][cell_counter % len(picture_columns)]
-                print(f"cell_pos:{cell_pos}")
+                # print(f"cell_pos:{cell_pos}")
                 pil_img = pil_img = PILImage.open(img_path)
                 width, height = pil_img.size
                 aspect_ratio = width / height
@@ -1056,7 +1056,7 @@ def excel_output(request, article_pk, pk):
             pre_lank_cell = join_lasttime_lank_cell_positions[data_index]
             memo_cell = join_damage_memo_cell_positions[data_index]
             
-            print(part_cell) # I10
+            # print(part_cell) # I10
             
         # メモに入れるための固定コード　↓
             # firstキーの内容を所定の書式に変更
@@ -1130,13 +1130,13 @@ def dxf_output(request, article_pk, pk):
     #try:
         # 指定したInfraに紐づく Tableを取り出す
         table = Table.objects.filter(infra=pk).first()
-        print(table.dxf.url) # 相対パス
+        # print(table.dxf.url) # 相対パス
         
         # 絶対パスに変換
         encoded_url_path = table.dxf.url
         decoded_url_path = urllib.parse.unquote(encoded_url_path) # URLデコード
         dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
-        print(dxf_filename)
+        # print(dxf_filename)
         #      ↑ dxfファイルのフルパス
         
         # ファイルをバイトデータとして読み込む
