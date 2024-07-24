@@ -810,11 +810,12 @@ def delete_name_entry(request, entry_id):
         article_pk = entry.article.pk  # 事前に記事のPKを取得
         entry.delete()
         
-        # ここでname_entries を作る。
+        # ここでname_entries を作る
         # 削除後にエントリを再度取得しない
         name_entries = NameEntry.objects.filter(article=article_pk)
-        
-    return render(request, 'names_list.html', {'article_pk': entry.article.pk, "form": NameEntryForm(), 'name_entries': name_entries})
+        return render(request, 'names_list.html', {"form": NameEntryForm()})
+    else:
+        return render(request, 'names_list.html', {'article_pk': entry.article.pk, "form": NameEntryForm(), 'name_entries': name_entries})
 
 # << 番号登録 >>
 def number_list(request, article_pk, pk):
