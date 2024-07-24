@@ -137,7 +137,9 @@ class PartsNumber(models.Model):
     symbol = models.CharField(max_length=100)
     material = models.ManyToManyField(Material)
     main_frame = models.BooleanField()
-        
+    #Infraと1対多のリレーションを組む。
+    infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE)
+    
     def __str__(self):
         return f"{self.parts_name}({self.symbol}{self.number}):{self.material}/{self.main_frame}"
         # return f"{self.parts_name}({self.symbol}{self.number})" # 管理サイトには「主桁(Mg0101)」のように表示

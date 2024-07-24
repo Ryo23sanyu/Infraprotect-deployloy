@@ -75,7 +75,7 @@ class NameEntryForm(forms.ModelForm):
 class PartsNumberForm(forms.ModelForm):
     class Meta:
         model = PartsNumber
-        fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number']
+        fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number', 'infra']
         
     def clean(self):
         data = self.cleaned_data
@@ -85,7 +85,7 @@ class PartsNumberForm(forms.ModelForm):
 
         #タグは3個まで
         if len(materials) > 3:
-            raise ValidationError("materialは3個まで")            
+            raise ValidationError("materialは3個まで")
 
         return self.cleaned_data
 

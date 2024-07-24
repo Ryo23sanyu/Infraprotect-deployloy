@@ -24,12 +24,14 @@ urlpatterns = [
     path('article/<int:pk>/update/', views.UpdateArticleView.as_view(), name='update-article'),# 案件の更新
     # << インプット・アウトプット >>
     path('article/<int:article_pk>/infra/<int:pk>/upload/', views.file_upload, name='file-upload'),# ファイルアップロード
+    path('upload/success/', views.file_upload_success, name='file_upload_success'),# アップロード成功時
     path('article/<int:article_pk>/infra/<int:pk>/excel_output/', views.excel_output, name='excel-output'),# Excelファイル出力
     path('article/<int:article_pk>/infra/<int:pk>/dxf_output/', views.dxf_output, name='dxf-output'),# DXFファイル出力
     # << 損傷写真帳 >>
     path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table'),# 損傷写真帳
     # << 名前の登録 >>
     path('article/<int:article_pk>/names/', views.names_list, name='names-list'),# 名前とアルファベットの紐付け
+    path('delete_name_entry/<int:entry_id>/', views.delete_name_entry, name='delete_name_entry'),# 登録した紐付けを削除
     # << 要素番号の登録 >>
     path('article/<int:article_pk>/infra/<int:pk>/number/', views.number_list, name='number-list'),# 要素番号登録
     # << 所見一覧 >>
@@ -39,8 +41,6 @@ urlpatterns = [
     path('ajax-get-symbol/', views.get_symbol, name='ajax_get_symbol'),# 部材名と部材記号の紐付け
     
     # << 未完成 >>
-    path('observations/', views.observer_list, name='observer_list'),# observertionsの形式を見る用(後で消す)
-    path('upload/success/', views.file_upload_success, name='file_upload_success'),
     path('photos/', views.photo_list, name='photo_list'),
     path('photos/upload/', views.photo_upload, name='photo_upload'),
     path('photos/selected/', views.selected_photos, name='selected_photos'),
@@ -48,9 +48,6 @@ urlpatterns = [
     path('images/', views.image_list, name='image_list'),# 全景写真
     path('photo/', views.display_photo, name='photo'),# 全景写真のアップロード
     path('change-photo/', views.change_photo, name='change_photo'),# 全景写真の変更
-    #path('number/', views.number_create_view, name='number'),
-    #path('article/<int:pk>/infra/bridge_table/', views.bridge_table, name="bridge_table"),# 損傷写真帳
-    #                   ↑ 何のモデルのpkにするか？ ← Tableモデルのid
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

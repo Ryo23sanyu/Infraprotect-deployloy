@@ -82,8 +82,23 @@ button {
         </div>
 
         <input type="submit" value="登録">
-
     </form>
+
+    </br>
+    <h2>現在の登録一覧</h2>
+    <ul>
+    {% for entry in name_entries %}
+        <li>
+            {{ entry.name }} ({{ entry.alphabet }})
+            <form action="{% url 'delete_name_entry' entry.id %}" method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit">削除</button>
+            </form>
+        </li>
+    {% empty %}
+        <p>登録されている名前がありません。</p>
+    {% endfor %}
+    </ul>
 
 <script>
     // 追加ボタンで表示される入力フォーム

@@ -20,13 +20,13 @@
     background-color: #f2f2f2;  /* ヘッダーの背景色 */
   }
 
-  .col-1 { width: 3%; } /* ● */
+  .col-1 { width: 1%; } /* ● */
   .col-2 { width: 7%; } /* 主桁 01 */
-  .col-3 { width: 10%; } /* 腐食(b,e) */
+  .col-3 { width: 15%; } /* 腐食(b,e) */
   .col-4 { width: 20%; } /* 写真 */
-  .col-5 { width: 13%; } /* ボタン(B~E1) */ /*13%が限界*/
-  .col-6 { width: 35%; } /* ボタン(原因) */
-  .col-7 { width: 12%; } /* 所見 */
+  .col-5 { width: 10%; } /* ボタン(B~E1) */ /*13%が限界*/
+  .col-6 { width: 45%; } /* ボタン(原因) */
+  .col-7 { width: 10%; } /* 所見 */
   
   .judge-container {
     display: flex;
@@ -41,23 +41,34 @@
     text-align: center; /* ボタン内のテキストを中央に配置 */
     flex: 0 0 auto; /* フレックスアイテムの伸縮を禁止し、設定したサイズを適用 */
   }
+
   /* ボタンの枠線、中の色を指定 */
   .btn {
-      background-color: #4CAF50; /* ボタンの背景色 */
-      border: 2px solid #4CAF50; /* ボタンの枠線の色と太さ */
-      color: white; /* ボタンの文字色 */
-      padding: 10px 20px; /* ボタン内のパディング */
-      text-align: center; /* 文字の位置 */
-      text-decoration: none; /* テキストの下線を消す */
-      display: inline-block; /* ボタンをインラインブロック要素に */
-      font-size: 16px; /* フォントサイズ */
-      cursor: pointer; /* ポインタを指マークに */
-      width: 150px; /* ボタンの幅を指定 */
-      height: 50px; /* ボタンの高さを指定 */
-      box-sizing: border-box; /* パディングとボーダーを含めたサイズ計算 */
-      white-space: nowrap;       /* テキストの折り返しを無効にする */
+    background-color: #4CAF50; /* ボタンの背景色 */
+    border: 2px solid black; /* ボタンの枠線の色と太さ */
+    color: white; /* ボタンの文字色 */
+    padding: 0; /* ボタン内のパディングをリセット */
+    text-align: center; /* 文字の位置 */
+    text-decoration: none; /* テキストの下線を消す */
+    display: inline-flex; /* ボタンをフレックスコンテナに */
+    align-items: center; /* 垂直方向の中央揃え */
+    font-size: 16px; /* 初期フォントサイズ */
+    cursor: pointer; /* ポインタを指マークに */
+    width: 120px; /* ボタンの幅を指定 */
+    height: 30px; /* ボタンの高さを指定 */
+    box-sizing: border-box; /* パディングとボーダーを含めたサイズ計算 */
+    white-space: nowrap; /* テキストの折り返しを無効にする */
+    overflow: hidden; /* テキストがはみ出さないようにする */
+    /* 中央揃えのためのCSS */
+    line-height: 30px; /* テキストの行間をボタンの高さと同じにする */
+    vertical-align: middle; /* テキストの垂直方向の位置を中央に */
   }
-  
+  /* ホバー時（カーソルを合わせたとき）のボタンスタイル */
+  .btn:hover {
+      background-color: #FF9900; /* ホバー時の背景色をオレンジに変更 */
+      /* border: 2px solid #FF9900; ボタンの枠線の色もオレンジに変更 */
+      color: white; /* ボタンの文字色 */
+  }
   /* ボタンを横並びにする */
   .button-container {
       display: flex; /* フレックスボックスを使用 */
@@ -65,9 +76,40 @@
       justify-content: space-between; /* ボタンの間隔を均等にする */
       gap: 10px; /* 横並びのボタン間のギャップを設定 */
   }
-
+  .selected {
+    background-color: #FF9900; /* 選択時の色を指定 */
+    color: white; /* テキストの色を指定 */
+  }
+  .image-scroll-container {
+    display: flex; /* 高さを揃えて横並び */
+    overflow-x: auto; /* 水平方向のスクロールバーを表示 */
+    white-space: nowrap; /* 折り返さず1行で表示 */
+    max-width: 500px; /* 必要に応じて幅を設定 */
+    /* border: 2px solid #ccc; 枠線の色と太さを指定 */
+    gap: 10px; /* 画像間のスペースを設定 */
+    /* background-color: #f0f0f0;  背景色を設定 */
+    padding: 10px; /* コンテナの内側に余白を設定 */
+  }
+  
+  .image-scroll-container img {
+    max-width: 200px; /* 各画像の最大幅を設定 */
+    height: auto; /* 高さを自動調整 */
+    background-color: #fff; /* 画像背景に色を設定 */
+  }
+  .center-justify {
+    justify-content: center; /* 中央揃えにする */
+  }
 </style>
 
+{% comment %}
+{# ここで径間ボタンを生成 #}
+<form action="{% url 'observations-list' object.infra.article.pk object.infra.pk %}">
+  {% for button in buttons %}
+  <button name="search_title_text" value="{{ forloop.counter }}径間">{{ forloop.counter }}径間</button>
+  {% endfor %}
+</form>
+{# HTMLのtableタグのルールとして、table系のタグ以外(formタグなど)が使われた時、中の要素だけ外に追い出される。 #}
+{% endcomment %}
 <table class="bordered-table">
   <thead>
     <tr>
@@ -82,31 +124,31 @@
   </thead>
   <tbody>
     {% for item in data %}
-        {% comment %} 
-        << views.py >>
-        def observer_list(request):
-        data = [
-            {'parts_name': ['排水管'], 'damage_name': ['腐食'], 'damage_lank': ['b', 'c', 'e']}, 
-            {'parts_name': ['排水管'], 'damage_name': ['防食機能の劣化'], 'damage_lank': ['e']}, 
-            {'parts_name': ['添架物'], 'damage_name': ['ゆるみ・脱落'], 'damage_lank': ['e']}
-        ]
-        return render(request, 'observer_list.html', {'data': data}) 
-    {% endcomment %}
     <tr>
-        <td></td>
-        <td>{{ item.parts_name.0 }}</td>
-        <td>{{ item.damage_name.0 }}<br>{{ item.damage_lank }}</td>
-        <td><img src="C:\work\django\myproject\program\Infraproject\temp_image.png" alt="サンプル画像"></td>
+        <td id="parts_name_{{ forloop.counter }}">{{ item.main_frame.0 }}</td>
+        <td id="parts_name_{{ forloop.counter }}">{{ item.parts_name.0 }}</td>
+        <td id="damage_name_{{ forloop.counter }}">{{ item.damage_name.0 }}<br> [ {{ item.damage_lank }} ]</td>
+        <td>
+          <div class="image-scroll-container">
+            {% if item.this_time_picture %}
+              {% for this_time_picture in item.this_time_picture %}
+                <img id="photo_{{ forloop.counter }}" src="{% static this_time_picture %}" alt="損傷写真">
+              {% endfor %}
+            {% else %}
+              <img src="{% static 'infra/noImage.png' %}" alt="サンプル画像">
+            {% endif %}
+          </div>
+        </td>
         <td>
           <div class="judge-container">
-            <button>B</button>
-            <button>M</button>
-            <button>C1</button>
-            <button>S1</button>
-            <button>C2</button>
-            <button>S2</button>
-            <button>E2</button>
-            <button>E1</button>
+            <button id="{{ forloop.counter }}" data-judge="B">B</button>
+            <button id="{{ forloop.counter }}" data-judge="M">M</button>
+            <button id="{{ forloop.counter }}" data-judge="C1">C1</button>
+            <button id="{{ forloop.counter }}" data-judge="S1">S1</button>
+            <button id="{{ forloop.counter }}" data-judge="C2">C2</button>
+            <button id="{{ forloop.counter }}" data-judge="S2">S2</button>
+            <button id="{{ forloop.counter }}" data-judge="E2">E2</button>
+            <button id="{{ forloop.counter }}" data-judge="E1">E1</button>
           </div>
         </td>
         <td>
@@ -130,16 +172,54 @@
             <button id="btn{{ forloop.counter }}-17" class="btn">構造形式・形状不良</button>
             <button id="btn{{ forloop.counter }}-18" class="btn">人為的</button>
             <button id="btn{{ forloop.counter }}-19" class="btn">鳥害</button>
-            <button id="btn{{ forloop.counter }}-20" class="btn">自由記述</button>
+            <button id="btn{{ forloop.counter }}-20" class="btn">経年</button>
+            <button id="btn{{ forloop.counter }}-21" class="btn">自由記述</button>
           </div>
         </td>
-        <td>点錆が見られる。</td>
+        <td>
+            <textarea name="notes" rows="6" style="margin:0 10px;">点錆が見られる。</textarea>
+        </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 
 <script>
+    // 写真が3枚未満の場合は中央揃えにする
+    document.addEventListener("DOMContentLoaded", function() {
+      var imageContainer = document.querySelector('.image-scroll-container');
+      var images = imageContainer.querySelectorAll('img');
+      
+      if (images.length < 3) {
+        imageContainer.classList.add('center-justify');
+      }
+    });
+    // ボタンを押したときのアクション
+    document.addEventListener('DOMContentLoaded', (event) => {
+      // Judgeボタンについて
+      document.querySelectorAll('.judge-container button').forEach(button => {
+          button.addEventListener('click', (event) => {
+              // 全ての兄弟要素の選択を解除
+              event.target.parentNode.querySelectorAll('button').forEach(btn => {
+                  btn.classList.remove('selected');
+              });
+              // クリックされたボタンに選択クラスを付与
+              event.target.classList.add('selected');
+          });
+      });
+
+      // Button-containerについて
+      document.querySelectorAll('.button-container button').forEach(button => {
+          button.addEventListener('click', (event) => {
+              // 全ての兄弟要素の選択を解除
+              event.target.parentNode.querySelectorAll('button').forEach(btn => {
+                  btn.classList.remove('selected');
+              });
+              // クリックされたボタンに選択クラスを付与
+              event.target.classList.add('selected');
+          });
+      });
+    });
     // 特定のボタンを表示するヘルパー関数
     function showButtons(buttonIds) {
       buttonIds.forEach(id => {
@@ -161,20 +241,106 @@
 
       // damageNameの値によって表示するボタンを指定
       let buttonIds = [];
-      switch (damageName) {
-        case '腐食': // 1
-          buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-2', 'btn' + rowIndex + '-3', 'btn' + rowIndex + '-4', 'btn' + rowIndex + '-5', 'btn' + rowIndex + '-6', 'btn' + rowIndex + '-7'];
-          break;
-        case '防食機能の劣化': // 2
-          buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8'];
-          break;
-        case 'ゆるみ・脱落': // 3
-          buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8'];
-          break;
-        default:
-          console.log('Unexpected value');
+      if (damageName.includes('その他')) { // 17
+        buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-15', 'btn' + rowIndex + '-21'];
+      } else {
+        switch (damageName) {
+          case '腐食': // 1
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-13', 'btn' + rowIndex + '-14', 'btn' + rowIndex + '-15',
+                        'btn' + rowIndex + '-16', 'btn' + rowIndex + '-18', 'btn' + rowIndex + '-19', 'btn' + rowIndex + '-21'];
+            break;
+          case '亀裂': // 2
+            buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case 'ゆるみ・脱落': // 3
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '破断': // 4
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '防食機能の劣化': // 5
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-13', 'btn' + rowIndex + '-14', 'btn' + rowIndex + '-15',
+                        'btn' + rowIndex + '-16', 'btn' + rowIndex + '-18', 'btn' + rowIndex + '-19', 'btn' + rowIndex + '-21'];
+            break;
+          case 'ひびわれ': // 6
+            buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-2', 'btn' + rowIndex + '-3', 'btn' + rowIndex + '-4', 'btn' + rowIndex + '-5',
+                        'btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-9', 'btn' + rowIndex + '-10',
+                        'btn' + rowIndex + '-11', 'btn' + rowIndex + '-12', 'btn' + rowIndex + '-13', 'btn' + rowIndex + '-14', 'btn' + rowIndex + '-15',
+                        'btn' + rowIndex + '-16', 'btn' + rowIndex + '-17', 'btn' + rowIndex + '-18', 'btn' + rowIndex + '-19', 'btn' + rowIndex + '-20',
+                        'btn' + rowIndex + '-21'];
+            break;
+          case '剥離・鉄筋露出': // 7
+          buttonIds = ['btn' + rowIndex + '-2', 'btn' + rowIndex + '-3', 'btn' + rowIndex + '-4', 'btn' + rowIndex + '-5', 'btn' + rowIndex + '-8',
+                      'btn' + rowIndex + '-11', 'btn' + rowIndex + '-13', 'btn' + rowIndex + '-14', 'btn' + rowIndex + '-15', 'btn' + rowIndex + '-16',
+                      'btn' + rowIndex + '-21'];
+            break;
+          case '漏水・遊離石灰': // 8
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '抜け落ち': // 9
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '補修・補強材の損傷': // 10
+            buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '床版ひびわれ': // 11
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case 'うき': // 12
+            buttonIds = ['btn' + rowIndex + '-2', 'btn' + rowIndex + '-3', 'btn' + rowIndex + '-4', 'btn' + rowIndex + '-5', 'btn' + rowIndex + '-8',
+                        'btn' + rowIndex + '-11', 'btn' + rowIndex + '-13', 'btn' + rowIndex + '-14', 'btn' + rowIndex + '-15', 'btn' + rowIndex + '-16',
+                        'btn' + rowIndex + '-21'];
+            break;
+          case '遊間の異常': // 13
+            buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-2', 'btn' + rowIndex + '-3', 'btn' + rowIndex + '-4', 'btn' + rowIndex + '-5',
+                        'btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-9', 'btn' + rowIndex + '-10',
+                        'btn' + rowIndex + '-11', 'btn' + rowIndex + '-12', 'btn' + rowIndex + '-13', 'btn' + rowIndex + '-14', 'btn' + rowIndex + '-15',
+                        'btn' + rowIndex + '-16', 'btn' + rowIndex + '-17', 'btn' + rowIndex + '-18', 'btn' + rowIndex + '-19', 'btn' + rowIndex + '-20'];
+            break;
+          case '路面の凹凸': // 14
+            buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '舗装の異常': // 15
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8'];
+            break;
+          case '支承部の機能障害': // 16
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case 'その他': // 17
+            buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '定着部の異常': // 18
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '変色・劣化': // 19
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '漏水・滞水': // 20
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-14', 'btn' + rowIndex + '-15', 'btn' + rowIndex + '-16', 'btn' + rowIndex + '-17',
+                         'btn' + rowIndex + '-21'];
+            break;
+          case '異常な音・振動': // 21
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '異常なたわみ': // 22
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '変形・欠損': // 23
+            buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '土砂詰まり': // 24
+            buttonIds = ['btn' + rowIndex + '-14', 'btn' + rowIndex + '-15', 'btn' + rowIndex + '-17', 'btn' + rowIndex + '-20', 'btn' + rowIndex + '-21'];
+            break;
+          case '沈下・移動・傾斜': // 25
+            buttonIds = ['btn' + rowIndex + '-6', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          case '洗掘': // 26
+            buttonIds = ['btn' + rowIndex + '-1', 'btn' + rowIndex + '-7', 'btn' + rowIndex + '-8', 'btn' + rowIndex + '-21'];
+            break;
+          default:
+            console.log('Unexpected value');
+        }
       }
-
       showButtons(buttonIds);
     }
 
@@ -197,6 +363,22 @@
             updateButtonVisibility(row, damageName, index + 1);
         }
     });
+
+    // フォントサイズの調整
+    function adjustFontSize(element) {
+      let fontSize = parseInt(window.getComputedStyle(element).fontSize);
+      const minFontSize = 8; // 最小フォントサイズを定義
+      while (element.scrollWidth > element.clientWidth && fontSize > minFontSize) {
+          fontSize--;
+          element.style.fontSize = fontSize + 'px';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(adjustFontSize);
+    });
+    // テキストエリアの値を変更
 </script>
 
 {% endblock content %}

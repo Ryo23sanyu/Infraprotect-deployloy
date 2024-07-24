@@ -95,4 +95,3 @@ class CustomUserForm(forms.ModelForm):
     class Meta:
         model	= CustomUser
         fields	= [ "name" ]
-

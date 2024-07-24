@@ -94,14 +94,6 @@ input[type="checkbox"]:checked + label {
         <div class="form-section">
             <div class="inline-group">
                 <label for="part-name">部材名:</label>
-                {# name属性を与える #}
-                {% comment %}
-                <select id="part-name" name="parts_name">
-                    <option value="主桁">主桁</option>
-                    <option value="横桁">横桁</option>
-                    <option value="床版">床版</option>
-                </select>
-                {% endcomment %}
                 <select id="part-name" name="parts_name" onchange="toggleMainFrame(this)">
                     {% for parts_name in parts_names %}
                     <option value="{{ parts_name.id }}" data-main="{{ parts_name.主要部材|yesno:'true,false' }}">
@@ -113,7 +105,7 @@ input[type="checkbox"]:checked + label {
 
             <div class="inline-group">
                 <label for="symbol">部材記号:</label>
-                <input type="text" id="symbol" name="symbol">
+                <input type="text" id="symbol" name="symbol" value="Mg">
             </div>
 
             <div class="inline-group">
@@ -129,7 +121,7 @@ input[type="checkbox"]:checked + label {
             </div>
 
             {% for main in main_frames %}
-            <label><input type="checkbox" name="main" value="{{ main.id }}">{{ main.主要部材 }}</label>
+                <label><input type="checkbox" name="main" value="{{ main.id }}">{{ main.主要部材 }}</label>
             {% endfor %}
             <input type="checkbox" id="main_frame" name="main_frame">
             <label for="main_frame">主要部材</label>
@@ -155,12 +147,6 @@ input[type="checkbox"]:checked + label {
                 </div>
             </div>
         </div>
-
-        {# 隠しフィールドを追加して選択された値を保持する #}
-        {% comment %} 
-        <input type="hidden" id="main_frame_input" name="main_frame" value="">
-        <input type="hidden" id="material_input" name="material" value="">
-        {% endcomment %}
 
         {# 保存するためのボタン #}
         <input type="submit" value="登録">

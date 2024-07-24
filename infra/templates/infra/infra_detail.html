@@ -4,6 +4,7 @@
 {% block h1 %}橋梁緒言{% endblock %}
 
 {% block content %}
+{% comment "" %}
 <div class="sidebar">
   <p>インフラプロジェクト</p>
   <ul>
@@ -40,6 +41,7 @@
     <button class="btn btn-primary">＜</button>
   </div>
 </div>
+{% endcomment %}
   <div class="p-4 m-4 bg-light border border-success rounded">
     <h2 class="text-success">{{ object.橋梁名 }}</h2>
     <p>径間数：{{ object.径間数 }} 径間</p>
@@ -200,6 +202,8 @@
                   // 選択された値を使って何かしらの処理を行う（例：Ajaxでデータを取得するなど）
                   console.log("選択された値: ", selectedValue);
               }
+
+      {% comment %}
       var sidebar = document.querySelector('.sidebar');
       var sidebarToggle = document.querySelector('.sidebar-toggle');
     
@@ -225,6 +229,7 @@
               window.addEventListener('scroll', function() {
                 stickySidebar();
               });
+      {% endcomment %}
               
       </script>
 

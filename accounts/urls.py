@@ -9,5 +9,7 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('signup/', SignupView.as_view(), name='signup'),
+    path('register/', views.register_view, name='register'), # アカウント作成ページ
+    path('my_page/', views.my_page_view, name='my_page'), # マイページ
     path('my_page/<int:pk>/', views.MyPage.as_view(), name='my_page'),
 ]
