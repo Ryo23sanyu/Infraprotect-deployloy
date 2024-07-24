@@ -741,7 +741,7 @@ def observations_list(request, article_pk, pk):
 
     return render(request, 'observer_list.html', {'data': change_observer_list, 'article_pk': article_pk, 'pk': pk})           
 
-# TODO:所見コメント用
+# TODO:所見コメント用（写真の中央揃えの確認）
 def observer_comment(request):
     # 主桁（損傷箇所）、 剥離・鉄筋露出（損傷種類）、d（損傷種類）、 対策区分、 損傷原因
     # これらの組み合わせで表示する内容を変える
