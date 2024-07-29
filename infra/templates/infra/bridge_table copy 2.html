@@ -23,7 +23,7 @@
         </thead>
 
         <tbody id="sortable">
-            {% for bridge in damage_table %}
+            {% for bridge in bridge_table %}
             <form id="ajax-file-send" action="#" method="post" enctype="multipart/form-data">
                 <!--ajaxの設定：methodはpostにする、mulitpart/form-dataとする、CSRF対策を行う-->
                 {% csrf_token %}

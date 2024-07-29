@@ -127,4 +127,5 @@ class FileUploadSampleForm(forms.Form):
 class FullReportDataForm(forms.ModelForm):
     class Meta:
         model = FullReportData
-        fields = ['parts_name', 'damage_name', 'join', 'picture_number', 'this_time_picture', 'last_time_picture', 'textarea_content', 'damage_coordinate', 'picture_coordinate']
+        fields = ['parts_name', 'damage_name', 'join', 'picture_number', 'this_time_picture', 'last_time_picture', 
+                  'textarea_content', 'damage_coordinate_x', 'damage_coordinate_y', 'picture_coordinate_x', 'picture_coordinate_y']

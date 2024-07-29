@@ -182,14 +182,35 @@ class DamageReport(models.Model):
     first = models.CharField(max_length=100)
     second = models.TextField()
     
-# 調書データ
+# << 損傷用のデータをDBに格納 >>
 class FullReportData(models.Model):
     parts_name = models.CharField(max_length=255) # '排水管 Dp0101'
     damage_name = models.CharField(max_length=255) # '①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e'
+    # damage_split = models.CharField(max_length=255) # '①腐食'
+    # damage_lank = models.CharField(max_length=50) # 'e'
+    parts_split = models.CharField(max_length=255) # '排水管 Dp00'
     join = models.CharField(max_length=255) # {'parts_name': ['排水管 Dp0101'], 'damage_name': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}
-    picture_number = models.CharField(max_length=255) # '写真番号-31'
-    this_time_picture = models.CharField(max_length=255) # 'infra/img\\9月7日\u3000佐藤\u3000地上\\P9070617.JPG'
-    last_time_picture = models.CharField(max_length=255) # None
+    picture_number = models.IntegerField(null=True, blank=True) # '写真番号-31'
+    this_time_picture = models.ImageField(upload_to='pictures/', null=True, blank=True) # 'infra/img\\9月7日\u3000佐藤\u3000地上\\P9070617.JPG'
+    last_time_picture = models.ImageField(upload_to='pictures/', null=True, blank=True) # None
     textarea_content = models.CharField(max_length=255) # '排水管に板厚減少を伴う拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0101:⑤防食機能の劣化(分類1)-e'
-    damage_coordinate = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
-    picture_coordinate = models.CharField(max_length=255) # '538810.3087944178', '228910.3502713814'
+    damage_coordinate_x = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
+    damage_coordinate_y = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
+    picture_coordinate_x = models.CharField(max_length=255, null=True, blank=True) # '538810.3087944178', '228910.3502713814'
+    picture_coordinate_y = models.CharField(max_length=255, null=True, blank=True) # '538810.3087944178', '228910.3502713814'
+    span_number = models.CharField(max_length=255) # 1径間
+    special_links = models.CharField(max_length=255) # 排水管 Dp00/①腐食(大大)-e/1径間
+    infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE)
+    def __str__(self):
+        return f"{self.parts_name}　{self.damage_name}：{self.span_number}　({self.special_links})"
+    
+class DamageComment(models.Model):
+    parts_name = "" # 排水管 00
+    main_parts = "" # 主要部材「〇」
+    damage_name = "" # 腐食
+    damage_lank = "" # e
+    picture = "" # 表示する写真
+    jadgement = "" # 対策区分「C1」
+    cause = "" # 損傷原因「経年変化」
+    comment = "" # 〇〇が見られる。
+    special_links = "" # 1径間-排水管 Dp00-①腐食(大大)-e

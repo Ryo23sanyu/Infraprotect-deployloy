@@ -1,20 +1,45 @@
-new_serial_number = "0101~0205"
+import re
 
-one = new_serial_number.find("~")
+def extract_number(text):
+    """
+    テキストから4文字以上の連続する数字を抽出する関数。
+    """
+    pattern = r'\d{4,}'
+    matches = re.findall(pattern, text)
+    return matches
 
-start_number = new_serial_number[:one]
-end_number = new_serial_number[one+1:]
+names = '防護柵 Mg0101'
 
-# 最初の2桁と最後の2桁を取得
-start_prefix = start_number[:2]
-start_suffix = start_number[2:]
-end_prefix = end_number[:2]
-end_suffix = end_number[2:]
+parts_left = ["主桁", "PC定着部"]  # 左の数字
+parts_right = ["横桁", "橋台"]     # 右の数字
+parts_zero = ["床版"]              # 00になる場合
 
-first_elements = []
-# 決められた範囲内の番号を一つずつ追加
-for prefix in range(int(start_prefix), int(end_prefix)+1):
-    for suffix in range(int(start_suffix), int(end_suffix)+1):
-        number_items = "{:02d}{:02d}".format(prefix, suffix)
-        first_elements.append(number_items)
-print(first_elements)
+# namesから部品名（parts）と数字を抽出
+space = names.find(" ")
+parts = names[:space]  # 部品名
+number = ''.join(extract_number(names))  # 数字
+parts_join = names.replace(number, '') # 符号部分を取得
+
+# 必要な部分の数字を抽出するロジック
+split_number = ''
+
+if parts in parts_zero:
+    split_number = '00'
+elif len(number) == 4 or int(number[2:]) >= 100:
+    if parts in parts_left:
+        split_number = number[:2]
+    elif parts in parts_right:
+        split_number = number[2:]
+    else:
+        split_number = '00'
+else:
+    if parts in parts_left:
+        split_number = number[:3]
+    elif parts in parts_right:
+        split_number = number[3:]
+    else:
+        split_number = '00'
+        
+print(split_number)
+result = parts_join + split_number
+print(result)

@@ -7,11 +7,13 @@
 
 {% block content %}
     {# ここで径間ボタンを生成 #}
+    {% comment %} 
     <form action="{% url 'bridge-table' object.infra.article.pk object.infra.pk %}">
         {% for button in buttons %}
         <button name="search_title_text" value="{{ forloop.counter }}径間">{{ forloop.counter }}径間</button>
         {% endfor %}
     </form>
+    {% endcomment %}
     {# HTMLのtableタグのルールとして、table系のタグ以外(formタグなど)が使われた時、中の要素だけ外に追い出される。 #}
 
     <table class="my-table" border="1">
