@@ -125,9 +125,9 @@
   <tbody>
     {% for item in data %}
     <tr>
-        <td id="parts_name_{{ forloop.counter }}">{{ item.main_frame }}</td>
+        <td id="parts_name_{{ forloop.counter }}">{{ item.main_parts }}</td>
         <td id="parts_name_{{ forloop.counter }}">{{ item.parts_name }}</td>
-        <td id="damage_name_{{ forloop.counter }}">{{ item.damage_name }}<br> [ {{ item.damage_lank }} ]</td>
+        <td id="damage_name_{{ forloop.counter }}">{{ item.damage_name }}<br> [ {{ item.damage_max_lank }} ～ {{ item.damage_min_lank }} ]</td>
         <td>
           <div class="image-scroll-container">
             {% if item.this_time_picture %}
