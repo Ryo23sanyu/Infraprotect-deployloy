@@ -11,11 +11,19 @@ from django.contrib.auth.forms import UserCreationForm  # ユーザ登録用フ�
 from django.contrib.auth import login, authenticate
 
 class SignupView(CreateView):
-  model = CustomUser # UserからCustomUserに変更
-  form_class = SignupForm
-  template_name ='accounts/signup.html'
-  success_url = reverse_lazy('my_page')
+    model = CustomUser # UserからCustomUserに変更
+    form_class = SignupForm
+    template_name ='accounts/signup.html'
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        self.object.company = Company.objects.create(name=self.request.POST.get('company_name'))
+        self.object.save()
+        return response
 
+    def get_success_url(self):
+        return reverse_lazy('accounts:my_page_detail', kwargs={'pk': self.object.pk})
+    
 def signup(request):
     if request.method == 'POST':
         form = SignupForm(request.POST)
@@ -56,7 +64,7 @@ def register_view(request):
             password = form.cleaned_data.get('password1')
             user = authenticate(username=username, password=password)
             login(request, user)
-            return redirect('my_page')  # アカウント作成後にマイページへリダイレクト
+            return redirect('accounts:my_page_detail', pk=user.pk) # アプリケーション名を含める
     else:
         form = UserCreationForm()
     return render(request, 'register.html', {'form': form})

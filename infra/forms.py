@@ -75,7 +75,7 @@ class NameEntryForm(forms.ModelForm):
 class PartsNumberForm(forms.ModelForm):
     class Meta:
         model = PartsNumber
-        fields = ['parts_name', 'symbol', 'material', 'main_frame', 'number', 'infra']
+        fields = ['parts_name', 'symbol', 'material', 'main_frame', 'span_number', 'number', 'infra']
         
     def clean(self):
         data = self.cleaned_data

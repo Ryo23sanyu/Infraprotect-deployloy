@@ -3,10 +3,12 @@ from collections import defaultdict
 import datetime
 from functools import reduce
 from io import BytesIO
-from itertools import zip_longest
+from itertools import groupby, zip_longest
+from operator import attrgetter
 import re
 import os
 import glob
+from django.db import IntegrityError
 import openpyxl
 import tempfile
 # サードパーティー製モジュール
@@ -30,7 +32,7 @@ from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 
 from infraproject import settings
-from .models import Approach, Article, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
+from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
 from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 
 
@@ -263,7 +265,6 @@ def panorama_list(request):
     return redirect('image_list')
     #return render(request, 'image_list.html', {'panoramas': panoramas})
 
-
 def panorama_upload(request):
     if request.method == 'POST':
         image = request.FILES['image']
@@ -272,326 +273,6 @@ def panorama_upload(request):
         return redirect('photo')
     return render(request, 'panorama_upload.html')
 
-# << 損傷写真帳の作成 >>
-def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.htmlに表示
-    context = {}
-    # プロジェクトのメディアディレクトリからdxfファイルまでの相対パス
-    # URL：article/<int:article_pk>/infra/<int:pk>/bridge-table/
-    table = Table.objects.filter(id=pk).first()
-    # print(f"table_name{table}")
-    # オブジェクトディレクトリの相対パスを取得
-    if table.dxf:
-        encoded_url_path = table.dxf.url
-    decoded_url_path = urllib.parse.unquote(encoded_url_path) # URLデコード
-    # 絶対パスと合体
-    dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
-    
-    context["object"] = table
-    # keikan_infra = Infra.objects.filter(id=pk).first() # 271行目と同じ
-    context["buttons"] = table.infra.径間数 * " " # Tableクラスのinfraオブジェクトから「径間数」を取り出す
-    
-    if "search_title_text" in request.GET:
-        # request.GET：検索URL（http://127.0.0.1:8000/article/1/infra/bridge_table/?search_title_text=1径間） 
-        search_title_text = request.GET["search_title_text"]
-        # 検索URL内のsearch_title_textの値（1径間）を取得する
-    else:
-        search_title_text = "1径間" # 検索URLにsearch_title_textがない場合
-
-    second_search_title_text = "損傷図"
-    
-    sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
-
-    # << 辞書型として、全径間を1つの多重リストに格納 >>
-    max_search_title_text = table.infra.径間数
-    database_sorted_items = []  # 結果をまとめるリスト
-    
-    for search_title_text_with_suffix in range(1, max_search_title_text + 1):
-        search_title_text = f"{search_title_text_with_suffix}径間"
-        sub_database_sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
-        for item in sub_database_sorted_items:
-            item['search'] = search_title_text
-            database_sorted_items.append(item)
-    # print(f"database_sorted_items:{database_sorted_items}")
-    """辞書型の多重リストをデータベースに登録"""
-    # << ['']を外してフラットにする >>
-    def flatten(value):
-        def _flatten(nested_list):
-            if isinstance(nested_list, list):
-                for item in nested_list:
-                    yield from _flatten(item)
-            else:
-                yield nested_list
-        
-        return ', '.join(_flatten(value))
-
-    # << joinキーを変換 >>
-    def join_to_result_string(join):
-        result_parts = []
-        for item in join:
-            parts_name = item['parts_name'][0]
-            damage_names = item['damage_name']
-            formatted_damage_names = '/'.join(damage_names)
-            result_parts.append(f"{parts_name} : {formatted_damage_names}")
-        return ', '.join(result_parts)
-
-    # << 写真のキーを変換 >>
-    def simple_flatten(value):
-        return ', '.join(map(str, value)) if isinstance(value, list) else value
-    
-    # <<正規表現で4桁以上の番号を取得>>
-    def extract_number(text):
-        # 正規表現パターン：4文字以上の連続する数字
-        pattern = r'\d{4,}'
-        # 正規表現検索によるマッチング
-        matches = re.findall(pattern, text)
-        return matches
-    
-    for damage_data in database_sorted_items:
-        print(f"damage_data：{damage_data}")
-        # 元の辞書から 'picture_number' の値を取得
-        #             　辞書型 ↓           ↓ キーの名前      ↓ 存在しない場合、デフォルト値として空白を返す
-        picture_number = damage_data.get('picture_number', '')
-        # 正規表現で数字のみを抽出
-        if picture_number:
-            # 数字のみを抽出
-            numbers_only = re.findall(r'\d+', str(picture_number)) # ['2']
-            # 数字を結合して整数に変換
-            numbers_only = int(''.join(numbers_only)) if numbers_only else None # 2
-        else:
-            numbers_only = None
-        
-        damage_coordinate = damage_data.get('damage_coordinate', [None, None])
-        picture_coordinate = damage_data.get('picture_coordinate', [None, None])
-        
-        #parts_list = flatten(damage_data.get('parts_name', ''))
-        #damage_list = flatten(damage_data.get('damage_name', ''))
-        
-        names = damage_data.get('parts_name', '')
-        damages = damage_data.get('damage_name', '')
-        
-        split_names = []
-
-        for item in names:
-            split_items = []
-            for split in item:
-                if "～" in split:
-                    one = split.find("～")
-                    start_number = ''.join(extract_number(split[:one])) # 0101
-                    end_number = ''.join(extract_number(split[one+1:])) # 0204
-
-                    # 最初の2桁と最後の2桁を取得
-                    start_prefix = start_number[:2] # 01
-                    start_suffix = start_number[2:] # 01
-                    end_prefix = end_number[:2] # 01
-                    end_suffix = end_number[2:] # 03
-                    
-                    part_name = split[:one].replace(start_number, '')
-                
-                    for prefix in range(int(start_prefix), int(end_prefix)+1):
-                        for suffix in range(int(start_suffix), int(end_suffix)+1):
-                            number_items = "{:02d}{:02d}".format(prefix, suffix)
-                            join_item = part_name + number_items
-                            split_items.append(join_item)
-                    
-                else:
-                    split_items.append(split)
-            split_names.append(split_items)
-        
-        join = join_to_result_string(damage_data.get('join', ''))
-        this_time_picture = simple_flatten(damage_data.get('this_time_picture', ''))
-        last_time_picture = simple_flatten(damage_data.get('last_time_picture', ''))
-        textarea_content = damage_data.get('textarea_content', '')
-        damage_coordinate_x = damage_coordinate[0] if damage_coordinate else None
-        damage_coordinate_y = damage_coordinate[1] if damage_coordinate else None
-        picture_coordinate_x = picture_coordinate[0] if picture_coordinate else None
-        picture_coordinate_y = picture_coordinate[1] if picture_coordinate else None
-        span_number = damage_data.get('search', '')
-        
-        name_length = len(split_names)
-        damage_length = len(damages)
-        
-        # 多重リストかどうかを判定する関数
-        def is_multi_list(lst):
-            return any(isinstance(i, list) for i in lst)
-        
-        def process_names(names):
-            """
-            与えられたnamesを処理し、適切な部分を返す関数。
-            """
-            
-            parts_left = ["主桁", "PC定着部"]  # 左の数字
-            parts_right = ["横桁", "橋台"]     # 右の数字
-            parts_zero = ["床版"]              # 00になる場合
-
-            # namesから部品名（parts）と数字を抽出
-            space = names.find(" ")
-            parts = names[:space]  # 部品名
-            number = ''.join(extract_number(names))  # 数字
-            parts_join = names.replace(number, '') # 符号部分を取得
-
-            # 必要な部分の数字を抽出するロジック
-            split_number = ''
-
-            if parts in parts_zero:
-                split_number = '00'
-            elif len(number) == 4 or int(number[2:]) >= 100:
-                if parts in parts_left:
-                    split_number = number[:2]
-                elif parts in parts_right:
-                    split_number = number[2:]
-                else:
-                    split_number = '00'
-            else:
-                if parts in parts_left:
-                    split_number = number[:3]
-                elif parts in parts_right:
-                    split_number = number[3:]
-                else:
-                    split_number = '00'
-
-            result = parts_join + split_number  # 結果を組み立てる
-            return result
-        
-        if not is_multi_list(split_names) and not is_multi_list(damages) and name_length == 1: # 部材名が1つの場合
-            for single_damage in damages: 
-                parts_name = names[0]
-                damage_name = flatten(single_damage)
-                print(f"damage_name:{damage_name}")
-                parts_split = process_names(flatten(parts_name))
-                damage_obj, created = FullReportData.objects.update_or_create(
-                    parts_name = parts_name,
-                    damage_name = damage_name,
-                    parts_split = parts_split,
-                    join = join,
-                    picture_number = numbers_only,
-                    this_time_picture = this_time_picture,
-                    last_time_picture = last_time_picture,
-                    textarea_content = textarea_content,
-                    damage_coordinate_x = damage_coordinate_x,
-                    damage_coordinate_y = damage_coordinate_y,
-                    picture_coordinate_x = picture_coordinate_x,
-                    picture_coordinate_y = picture_coordinate_y,
-                    span_number = span_number,
-                    special_links = '/'.join([str(parts_split), str(damage_name), str(span_number)])
-                )
-                damage_obj.save()
-        elif not is_multi_list(split_names) and not is_multi_list(damages) and name_length >= 2: # 部材名が2つ以上の場合
-            if damage_length == 1: # かつ損傷名が1つの場合
-                for single_name in split_names:
-                    parts_name = single_name
-                    damage_name = flatten(damages[0])
-                    print(f"damage_name:{damage_name}")
-                    parts_split = process_names(flatten(parts_name))
-                    damage_obj, created = FullReportData.objects.update_or_create(
-                        parts_name = parts_name,
-                        damage_name = damage_name,
-                        parts_split = parts_split,
-                        join = join,
-                        picture_number = numbers_only,
-                        this_time_picture = this_time_picture,
-                        last_time_picture = last_time_picture,
-                        textarea_content = textarea_content,
-                        damage_coordinate_x = damage_coordinate_x,
-                        damage_coordinate_y = damage_coordinate_y,
-                        picture_coordinate_x = picture_coordinate_x,
-                        picture_coordinate_y = picture_coordinate_y,
-                        span_number = span_number,
-                        special_links = '/'.join([str(parts_split), str(damage_name), str(span_number)])
-                    )
-                    damage_obj.save()
-            elif not is_multi_list(split_names) and not is_multi_list(damages) and damage_length >= 2: # かつ損傷名が2つ以上の場合
-                for name in split_names:
-                    for damage in damages:
-                        parts_name = name
-                        damage_name = flatten(damage)
-                        print(f"damage_name:{damage_name}")
-                        parts_split = process_names(flatten(parts_name))
-                        damage_obj, created = FullReportData.objects.update_or_create(
-                            parts_name = parts_name,
-                            damage_name = damage_name,
-                            parts_split = parts_split,
-                            join = join,
-                            picture_number = numbers_only,
-                            this_time_picture = this_time_picture,
-                            last_time_picture = last_time_picture,
-                            textarea_content = textarea_content,
-                            damage_coordinate_x = damage_coordinate_x,
-                            damage_coordinate_y = damage_coordinate_y,
-                            picture_coordinate_x = picture_coordinate_x,
-                            picture_coordinate_y = picture_coordinate_y,
-                            span_number = span_number,
-                            special_links = '/'.join([str(parts_split), str(damage_name), str(span_number)])
-                        )
-                        damage_obj.save()
-
-        else: # 多重リストの場合
-            for i in range(name_length):
-                for name in split_names[i]:
-                    for damage in damages[i]:
-                        parts_name = name
-                        damage_name = flatten(damage)
-                        print(f"damage_name:{damage_name}")
-                        parts_split = process_names(flatten(parts_name))
-                        damage_obj, created = FullReportData.objects.update_or_create(
-                            parts_name = parts_name,
-                            damage_name = damage_name,
-                            parts_split = parts_split,
-                            join = join,
-                            picture_number = numbers_only,
-                            this_time_picture = this_time_picture,
-                            last_time_picture = last_time_picture,
-                            textarea_content = textarea_content,
-                            damage_coordinate_x = damage_coordinate_x,
-                            damage_coordinate_y = damage_coordinate_y,
-                            picture_coordinate_x = picture_coordinate_x,
-                            picture_coordinate_y = picture_coordinate_y,
-                            span_number = span_number,
-                            special_links = '/'.join([str(parts_split), str(damage_name), str(span_number)])
-                        )
-                        damage_obj.save()
-    """辞書型の多重リストをデータベースに登録(ここまで)"""
-    
-    # path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table')
-
-    #context["damage_table"] = sorted_items
-    #return render(request, "infra/bridge_table.html", context)
-    
-    # FullReportDataの全オブジェクトを取得
-    bridge_table_data = FullReportData.objects.all()
-    # テンプレートに渡すコンテキストを設定
-    context = {'damage_table': bridge_table_data}
-    # テンプレートをレンダリング
-    return render(request, 'infra/bridge_table.html', context)
-
-def ajax_file_send(request):
-    if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ
-        if 'upload-file' in request.FILES: # アップロードされたファイルがrequest.FILESに入っている場合
-            myfile = request.FILES['upload-file'] # 受け取ったファイルをmyfileという変数に代入
-            fs = FileSystemStorage() # FileSystemStorageのインスタンスを生成(システム上にファイルを保存する準備)
-            filename = fs.save(myfile.name, myfile) # myfileを指定した名前で保存し、保存したファイルの名前をfilename変数に格納
-            uploaded_file_url = fs.url(filename) # 保存したファイルにアクセスするためのURLを生成
-            # success時のレスポンスはJSON形式で返すならこちらを使う
-            return JsonResponse({'upload_file_url': uploaded_file_url})
-            # HTMLページを返す場合はこちらを使う
-            # context = {'damage_table': sorted_text_list}
-            # return render(request, 'table.html', context)
-        else:
-            # ファイルがPOSTされていない場合はエラーレスポンスを返す
-            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。') # File is not attached
-    else:
-        # POSTメソッドでない場合はエラーレスポンスを返す
-        return HttpResponseBadRequest('無効な作業です。') # Invalid request method
-
-# << ファイルアップロード(プライマリーキーで分類分け) >>
-def upload_directory_path(instance, filename):
-    # プライマリーキーを取得する
-    primary_key = instance.pk
-    # 'documents/プライマリーキー/filename' のパスを返す
-    return 'uploads/{}/{}'.format(primary_key, filename)
-
-# class Upload(models.Model):
-#     file = models.FileField(upload_to=upload_directory_path)
-    
 # << センサス調査 >>
 def census_view(request):
     form = CensusForm()
@@ -682,12 +363,414 @@ def change_photo(request):
 
     return render(request, 'upload_photo.html', {'form': form})
 
+# << 損傷写真帳の作成 >>
+def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.htmlに表示
+    context = {}
+    # プロジェクトのメディアディレクトリからdxfファイルまでの相対パス
+    # URL：article/<int:article_pk>/infra/<int:pk>/bridge-table/
+    table = Table.objects.filter(id=pk).first()
+    #print(f"table_name:{table}") # Table object (17)
+    infra_instance = Infra.objects.filter(title = table.infra.title)
+    #print(f"table_name:{infra_instance}") # センサス橋
+    # オブジェクトディレクトリの相対パスを取得
+    if table.dxf:
+        encoded_url_path = table.dxf.url
+    decoded_url_path = urllib.parse.unquote(encoded_url_path) # URLデコード
+    # 絶対パスと合体
+    dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
+    
+    context["object"] = table
+    # keikan_infra = Infra.objects.filter(id=pk).first() # 271行目と同じ
+    context["buttons"] = table.infra.径間数 * " " # Tableクラスのinfraオブジェクトから「径間数」を取り出す
+    
+    if "search_title_text" in request.GET:
+        # request.GET：検索URL（http://127.0.0.1:8000/article/1/infra/bridge_table/?search_title_text=1径間） 
+        search_title_text = request.GET["search_title_text"]
+        # 検索URL内のsearch_title_textの値（1径間）を取得する
+    else:
+        search_title_text = "1径間" # 検索URLにsearch_title_textがない場合
+
+    second_search_title_text = "損傷図"
+    
+    sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
+
+    # << 辞書型として、全径間を1つの多重リストに格納 >>
+    max_search_title_text = table.infra.径間数
+    database_sorted_items = []  # 結果をまとめるリスト
+    
+    for search_title_text_with_suffix in range(1, max_search_title_text + 1):
+        search_title_text = f"{search_title_text_with_suffix}径間"
+        sub_database_sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
+        for item in sub_database_sorted_items:
+            item['search'] = search_title_text
+            database_sorted_items.append(item)
+    # print(f"database_sorted_items:{database_sorted_items}")
+    """辞書型の多重リストをデータベースに登録"""
+    # << ['']を外してフラットにする >>
+    def flatten(value):
+        def _flatten(nested_list):
+            if isinstance(nested_list, list):
+                for item in nested_list:
+                    yield from _flatten(item)
+            else:
+                yield nested_list
+        
+        return ', '.join(_flatten(value))
+
+    # << joinキーを変換 >>
+    def join_to_result_string(join):
+        result_parts = []
+        for item in join:
+            parts_name = item['parts_name'][0]
+            damage_names = item['damage_name']
+            formatted_damage_names = '/'.join(damage_names)
+            result_parts.append(f"{parts_name} : {formatted_damage_names}")
+        return ', '.join(result_parts)
+
+    # << 写真のキーを変換 >>
+    def simple_flatten(value):
+        return ', '.join(map(str, value)) if isinstance(value, list) else value
+    
+    # <<正規表現で4桁以上の番号を取得>>
+    def extract_number(text):
+        pattern = r'\d{4,}' # 4文字以上の連続する数字
+        matches = re.findall(pattern, text)
+        return matches
+    
+    for damage_data in database_sorted_items:
+        #print(f"damage_data：{damage_data}")
+        # 元の辞書から 'picture_number' の値を取得
+        #             　辞書型 ↓           ↓ キーの名前      ↓ 存在しない場合、デフォルト値として空白を返す
+        picture_number = damage_data.get('picture_number', '')
+        # 正規表現で数字のみを抽出
+        if picture_number:
+            # 数字のみを抽出
+            numbers_only = re.findall(r'\d+', str(picture_number)) # ['2']
+            # 数字を結合して整数に変換
+            numbers_only = int(''.join(numbers_only)) if numbers_only else None # 2
+        else:
+            numbers_only = None
+
+        damage_coordinate = damage_data.get('damage_coordinate', [None, None])
+        picture_coordinate = damage_data.get('picture_coordinate', [None, None])
+
+        #parts_list = flatten(damage_data.get('parts_name', ''))
+        #damage_list = flatten(damage_data.get('damage_name', ''))
+
+        names = damage_data.get('parts_name', '')
+        damages = damage_data.get('damage_name', '')
+        #print(f"names:{names}")
+        #print(f"damages:{damages}")
+        
+        split_names = []
+
+        for item in names:
+            split_items = []
+            for split in item:
+                if "～" in split:
+                    one = split.find("～")
+                    start_number = ''.join(extract_number(split[:one])) # 0101
+                    end_number = ''.join(extract_number(split[one+1:])) # 0204
+
+                    # 最初の2桁と最後の2桁を取得
+                    start_prefix = start_number[:2] # 01
+                    start_suffix = start_number[2:] # 01
+                    end_prefix = end_number[:2] # 01
+                    end_suffix = end_number[2:] # 03
+                    
+                    part_name = split[:one].replace(start_number, '')
+                
+                    for prefix in range(int(start_prefix), int(end_prefix)+1):
+                        for suffix in range(int(start_suffix), int(end_suffix)+1):
+                            number_items = "{:02d}{:02d}".format(prefix, suffix)
+                            join_item = part_name + number_items
+                            split_items.append(join_item)
+                    
+                else:
+                    split_items.append(split)
+            split_names.append(split_items)
+        
+        join = join_to_result_string(damage_data.get('join', ''))
+        this_time_picture = simple_flatten(damage_data.get('this_time_picture', ''))
+        last_time_picture = simple_flatten(damage_data.get('last_time_picture', ''))
+        textarea_content = damage_data.get('textarea_content', '')
+        damage_coordinate_x = damage_coordinate[0] if damage_coordinate else None
+        damage_coordinate_y = damage_coordinate[1] if damage_coordinate else None
+        picture_coordinate_x = picture_coordinate[0] if picture_coordinate else None
+        picture_coordinate_y = picture_coordinate[1] if picture_coordinate else None
+        span_number = damage_data.get('search', '')
+        
+        name_length = len(split_names)
+        damage_length = len(damages)
+        
+        # 多重リストかどうかを判定する関数
+        def is_multi_list(lst):
+            return any(isinstance(i, list) for i in lst)
+        
+        def process_names(names):
+            """
+            与えられたnamesを処理し、適切な部分を返す関数。
+            """
+            
+            parts_left = ["主桁", "PC定着部"]  # 左の数字
+            parts_right = ["横桁", "橋台"]     # 右の数字
+            parts_zero = ["床版"]              # 00になる場合
+
+            # namesから部品名（parts）と数字を抽出
+            space = names.find(" ")
+            parts = names[:space]  # 部品名
+            number = ''.join(extract_number(names))  # 数字
+            parts_join = names.replace(number, '') # 符号部分を取得
+
+            # 必要な部分の数字を抽出するロジック
+            split_number = ''
+
+            if parts in parts_zero:
+                split_number = '00'
+            elif len(number) == 4 or int(number[2:]) >= 100:
+                if parts in parts_left:
+                    split_number = number[:2]
+                elif parts in parts_right:
+                    split_number = number[2:]
+                else:
+                    split_number = '00'
+            else:
+                if parts in parts_left:
+                    split_number = number[:3]
+                elif parts in parts_right:
+                    split_number = number[3:]
+                else:
+                    split_number = '00'
+
+            result = parts_join + split_number  # 結果を組み立てる
+            return result
+            # 共通のフィールドを辞書に格納
+        
+        if not is_multi_list(split_names) and not is_multi_list(damages) and name_length == 1: # 部材名が1つの場合
+            for single_damage in damages: 
+                parts_name = names[0]
+                damage_name = flatten(single_damage)
+                #print(f"parts_name1:{parts_name}")
+                #print(f"damage_name1:{damage_name}")
+                parts_split = process_names(flatten(parts_name))
+                data_fields = {
+                    'parts_name': parts_name,
+                    'damage_name': damage_name,
+                    'parts_split': parts_split,
+                    'join': join,
+                    'picture_number': numbers_only,
+                    'this_time_picture': this_time_picture,
+                    'last_time_picture': last_time_picture,
+                    'textarea_content': textarea_content,
+                    'damage_coordinate_x': damage_coordinate_x,
+                    'damage_coordinate_y': damage_coordinate_y,
+                    'picture_coordinate_x': picture_coordinate_x,
+                    'picture_coordinate_y': picture_coordinate_y,
+                    'span_number': span_number,
+                    'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
+                    'infra': Infra.objects.get(id=pk)
+                }
+                report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+                if report_data_exists:
+                    print("データが存在しています。")
+                else:
+                    try:
+                        damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
+                        damage_obj.save()
+                    except IntegrityError:
+                        print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
+
+        elif not is_multi_list(split_names) and not is_multi_list(damages) and name_length >= 2: # 部材名が2つ以上の場合
+            if damage_length == 1: # かつ損傷名が1つの場合
+                for single_name in split_names:
+                    parts_name = single_name
+                    damage_name = flatten(damages[0])
+                    #print(f"parts_name2:{parts_name}")
+                    #print(f"damage_name2:{damage_name}")
+                    parts_split = process_names(flatten(parts_name))
+                    data_fields = {
+                        'parts_name': parts_name,
+                        'damage_name': damage_name,
+                        'parts_split': parts_split,
+                        'join': join,
+                        'picture_number': numbers_only,
+                        'this_time_picture': this_time_picture,
+                        'last_time_picture': last_time_picture,
+                        'textarea_content': textarea_content,
+                        'damage_coordinate_x': damage_coordinate_x,
+                        'damage_coordinate_y': damage_coordinate_y,
+                        'picture_coordinate_x': picture_coordinate_x,
+                        'picture_coordinate_y': picture_coordinate_y,
+                        'span_number': span_number,
+                        'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
+                        'infra': Infra.objects.get(id=pk)
+                    }
+                    report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+                    if report_data_exists:
+                        print("データが存在しています。")
+                    else:
+                        try:
+                            damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
+                            damage_obj.save()
+                        except IntegrityError:
+                            print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
+
+            elif not is_multi_list(split_names) and not is_multi_list(damages) and damage_length >= 2: # かつ損傷名が2つ以上の場合
+                for name in split_names:
+                    for damage in damages:
+                        parts_name = name
+                        damage_name = flatten(damage)
+                        #print(f"parts_name3:{parts_name}")
+                        #print(f"damage_name3:{damage_name}")
+                        parts_split = process_names(flatten(parts_name))
+                        data_fields = {
+                            'parts_name': parts_name,
+                            'damage_name': damage_name,
+                            'parts_split': parts_split,
+                            'join': join,
+                            'picture_number': numbers_only,
+                            'this_time_picture': this_time_picture,
+                            'last_time_picture': last_time_picture,
+                            'textarea_content': textarea_content,
+                            'damage_coordinate_x': damage_coordinate_x,
+                            'damage_coordinate_y': damage_coordinate_y,
+                            'picture_coordinate_x': picture_coordinate_x,
+                            'picture_coordinate_y': picture_coordinate_y,
+                            'span_number': span_number,
+                            'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
+                            'infra': Infra.objects.get(id=pk)
+                        }
+                        report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+                        if report_data_exists:
+                            print("データが存在しています。")
+                        else:
+                            try:
+                                damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
+                                damage_obj.save()
+                            except IntegrityError:
+                                print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
+
+        else: # 多重リストの場合
+            for i in range(name_length):
+                for name in split_names[i]:
+                    for damage in damages[i]:
+                        parts_name = name
+                        damage_name = flatten(damage)
+                        #print(f"parts_name4:{parts_name}")
+                        #print(f"damage_name4:{damage_name}")
+                        parts_split = process_names(flatten(parts_name))
+                        data_fields = {
+                            'parts_name': parts_name,
+                            'damage_name': damage_name,
+                            'parts_split': parts_split,
+                            'join': join,
+                            'picture_number': numbers_only,
+                            'this_time_picture': this_time_picture,
+                            'last_time_picture': last_time_picture,
+                            'textarea_content': textarea_content,
+                            'damage_coordinate_x': damage_coordinate_x,
+                            'damage_coordinate_y': damage_coordinate_y,
+                            'picture_coordinate_x': picture_coordinate_x,
+                            'picture_coordinate_y': picture_coordinate_y,
+                            'span_number': span_number,
+                            'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
+                            'infra': Infra.objects.get(id=pk)
+                        }
+                        report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+                        if report_data_exists:
+                            print("データが存在しています。")
+                        else:
+                            try:
+                                damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
+                                damage_obj.save()
+                            except IntegrityError:
+                                print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
+    """
+        # 共通のdata_fieldsを設定
+        data_fields = {
+            'parts_name': names, # parts_name,
+            'damage_name': damages, # damage_name,
+            'parts_split': parts_split,
+            'join': join,
+            'picture_number': numbers_only,
+            'this_time_picture': this_time_picture,
+            'last_time_picture': last_time_picture,
+            'textarea_content': textarea_content,
+            'damage_coordinate_x': damage_coordinate_x,
+            'damage_coordinate_y': damage_coordinate_y,
+            'picture_coordinate_x': picture_coordinate_x,
+            'picture_coordinate_y': picture_coordinate_y,
+            'span_number': span_number,
+            'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
+            'infra': Infra.objects.get(id=pk)
+        }
+        report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+
+        if report_data_exists:
+            print("データが存在しています。")
+        else:
+            try:
+                damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
+                damage_obj.save()
+            except IntegrityError:
+                print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
+    """                
+    """辞書型の多重リストをデータベースに登録(ここまで)"""
+    # path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table')
+
+    #context["damage_table"] = sorted_items
+    #return render(request, "infra/bridge_table.html", context)
+
+    # # テンプレートをレンダリング
+    # return render(request, 'infra/bridge_table.html', context)
+    bridges = FullReportData.objects.filter(infra=pk)
+    
+    # HTMLにまとめて表示するためのグループ化
+    grouped_data = []
+    for key, group in groupby(bridges, key=attrgetter('join', 'damage_coordinate_x', 'damage_coordinate_y')):
+        grouped_data.append(list(group))
+        
+    context = {'grouped_data': grouped_data}
+    # テンプレートをレンダリング
+    return render(request, 'infra/bridge_table.html', context)
+    #context = {'bridge_table': FullReportData.objects.filter(infra=pk), 'grouped_data': grouped_data}
+    # テンプレートをレンダリング
+    #return render(request, 'infra/bridge_table.html', context)
+def ajax_file_send(request):
+    if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ
+        if 'upload-file' in request.FILES: # アップロードされたファイルがrequest.FILESに入っている場合
+            myfile = request.FILES['upload-file'] # 受け取ったファイルをmyfileという変数に代入
+            fs = FileSystemStorage() # FileSystemStorageのインスタンスを生成(システム上にファイルを保存する準備)
+            filename = fs.save(myfile.name, myfile) # myfileを指定した名前で保存し、保存したファイルの名前をfilename変数に格納
+            uploaded_file_url = fs.url(filename) # 保存したファイルにアクセスするためのURLを生成
+            # success時のレスポンスはJSON形式で返すならこちらを使う
+            return JsonResponse({'upload_file_url': uploaded_file_url})
+            # HTMLページを返す場合はこちらを使う
+            # context = {'damage_table': sorted_text_list}
+            # return render(request, 'table.html', context)
+        else:
+            # ファイルがPOSTされていない場合はエラーレスポンスを返す
+            return HttpResponseBadRequest('添付ファイルが見つかりませんでした。') # File is not attached
+    else:
+        # POSTメソッドでない場合はエラーレスポンスを返す
+        return HttpResponseBadRequest('無効な作業です。') # Invalid request method
+
+# << ファイルアップロード(プライマリーキーで分類分け) >>
+def upload_directory_path(instance, filename):
+    # プライマリーキーを取得する
+    primary_key = instance.pk
+    # 'documents/プライマリーキー/filename' のパスを返す
+    return 'uploads/{}/{}'.format(primary_key, filename)
+
+# class Upload(models.Model):
+#     file = models.FileField(upload_to=upload_directory_path)
+
 # << 所見一覧 >>
 def observations_list(request, article_pk, pk):
     context = {}
 
     table = Table.objects.filter(id=pk).first()
-    # print(f"table_name{table}")
+    print(f"table_name:{table}")
 
     if table.dxf:
         encoded_url_path = table.dxf.url
@@ -706,11 +789,127 @@ def observations_list(request, article_pk, pk):
     second_search_title_text = "損傷図"
     
     sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
+    """"""
+    # 全パーツデータを取得
+    print(f"Received article_pk: {article_pk}, id: {pk}")
     
+    infra_name = table.infra.title
+    print(f"infra_name:{infra_name}")
+    parts_data = PartsNumber.objects.filter(infra=pk)
+    print(f"parts_data:{parts_data}")
     
+    material_replace_map = {
+        "鋼": "S",
+        "コンクリート": "C",
+        "アスファルト": "A",
+        "ゴム": "R",
+        "その他": "X",
+    }
+    
+    lank_order = ['a', 'b', 'c', 'd', 'e']  # ランクの順序をリストで定義
+    def get_lank_value(damage_name):
+        """damage_nameのランク部分を取得する"""
+        if "-" in damage_name:
+            return damage_name.split('-')[-1]
+        return None
+    
+    for part in parts_data:
+        part_full_name = f"{part.parts_name} {part.symbol}{part.number}"
+
+        # FullReportDataから該当するデータを取得
+        report_data_list = FullReportData.objects.filter(
+            parts_name=part_full_name,
+            infra=part.infra
+        )
+
+        for report_data in report_data_list:
+            print(f"report_data_list:{report_data.damage_name}")
+                        
+            # DamageListに必要なフィールドを含むインスタンスを作成
+            damage_list_entry = DamageList(
+                parts_name = part.parts_name, # 主桁
+                symbol = part.symbol, # Mg
+                number = part.number, # 0101
+                material = part.material, # S,C
+                main_parts = "〇" if part.main_frame else "",  # 主要部材のフラグ
+                damage_name = report_data.damage_name, # ⑦剥離・鉄筋露出-d
+                damage_max_lank = '',
+                damage_min_lank = '',
+                classification = '', # 損傷写真帳のデータ入力を反映
+                pattern = '', # 損傷写真帳のデータ入力を反映
+                span_number = part.span_number,
+                infra = part.infra
+            )
+
+            try:
+                # DamageListインスタンスを保存
+                damage_list_entry.save()
+                
+            except IntegrityError:
+                # 重複データがある場合の処理
+                print("データが存在しています。")
+                # 必要に応じてログを記録したり、他の処理を追加したりできます
+                continue  # 次のループに進む
+            
+            """所見用のクラス登録"""
+            damage_name = report_data.damage_name.split('-')[0] if '-' in report_data.damage_name else report_data.damage_name
+            
+            main_parts_list_left = ["主桁", "PC定着部"] # 左の数字
+            main_parts_list_right = ["横桁", "橋台"] # 右の数字
+            main_parts_list_zero = ["床版"] # 00になる場合
+            
+            parts_name = f"{part.parts_name} {part.number}"
+            
+            if any(word in parts_name for word in main_parts_list_left):
+                left = parts_name.find(" ")
+                number2 = parts_name[left+1:]
+                number_part = re.search(r'[A-Za-z]*(\d+)', number2).group(1)
+                result_parts_name = parts_name[:left]+" "+number_part[:2] # 主桁 03
+            elif any(word in parts_name for word in main_parts_list_right):
+                right = parts_name.find(" ")
+                number2 = parts_name[right+1:]
+                number_part = re.search(r'[A-Za-z]*(\d+)', number2).group(1)
+                if len(number_part) < 5:
+                    result_parts_name = parts_name[:right]+" "+number_part[2:] # 横桁 02
+                else:
+                    result_parts_name = parts_name[:right]+" "+number_part[2:] # 横桁 103
+            elif any(word in parts_name for word in main_parts_list_zero):
+                right = parts_name.find(" ")
+                result_parts_name = parts_name[:right]+" 00"
+            else:
+                right = parts_name.find(" ")
+                result_parts_name = parts_name[:right]
+            
+            damage_comment_entry = DamageComment(
+                parts_name = result_parts_name, # 主桁 01
+                material = part.material, # S,C
+                main_parts = "〇" if part.main_frame else "", # 主要部材のフラグ
+                damage_name = damage_name,
+                damage_max_lank = '', # e
+                damage_min_lank = '', # b
+                picture = '',
+                jadgement = '',
+                comment = '',
+                cause = '',
+                span_number = part.span_number,
+                infra = part.infra
+            )
+   
+            try:
+                # DamageListインスタンスを保存
+                damage_comment_entry.save()
+                
+            except IntegrityError:
+                # 重複データがある場合の処理
+                print("データが存在しています。")
+                # 必要に応じてログを記録したり、他の処理を追加したりできます
+                continue  # 次のループに進む
+            
+    return render(request, 'observer_list.html', {'data': DamageComment.objects.filter(infra=pk),'article_pk': article_pk, 'pk': pk})
+    """
     # TODO:関数化して、別コードでも使用できるようにする
-    """番号登録のデータを別の(FullReportData)モデルに合体させる"""
-    """損傷写真帳のデータと番号登録のデータを合体、重複の削除と並び替え"""
+    # 番号登録のデータを別の(FullReportData)モデルに合体させる
+    # 損傷写真帳のデータと番号登録のデータを合体、重複の削除と並び替え
     result_items = []
 
     for item in sorted_items:
@@ -731,7 +930,7 @@ def observations_list(request, article_pk, pk):
 
     # << 番号登録のデータを呼び出す >>
     parts_numbers = PartsNumber.objects.filter(infra=pk)
-    print(f"parts_numbers：{parts_numbers}")
+    #print(f"parts_numbers：{parts_numbers}")
     number_create = []
 
     for parts_number in parts_numbers:
@@ -759,8 +958,8 @@ def observations_list(request, article_pk, pk):
 
         number_create.append(dic)
         
-    print(f"number_create:{number_create}")
-    print(f"flattened_join:{flattened_join}")
+    #print(f"number_create:{number_create}")
+    #print(f"flattened_join:{flattened_join}")
     
     # << 材料の置換 >>
     replace_dict = {
@@ -897,7 +1096,7 @@ def observations_list(request, article_pk, pk):
 
     # ソートとマージ
     flattened_join_result = sort_and_merge_list(ordered_result, order_dict, material_dict, order_number, order_lank)
-    """"""
+    
     
     # << 部材名と要素番号を結合 >>
     for item in flattened_join_result:
@@ -994,9 +1193,9 @@ def observations_list(request, article_pk, pk):
         elif isinstance(change_key_item['damage_lank'], str):
             change_key_item['damage_lank'] = change_key_item['damage_lank']
 
-    print(f"change_observer_list:{change_observer_list}")
-
-    return render(request, 'observer_list.html', {'data': change_observer_list, 'article_pk': article_pk, 'pk': pk})
+    #print(f"change_observer_list:{change_observer_list}")
+    """
+    # return render(request, 'observer_list.html', {'data': change_observer_list, 'article_pk': article_pk, 'pk': pk})
 
 # TODO:所見コメント用（写真の中央揃えの確認）
 def observer_comment(request):
@@ -1115,6 +1314,7 @@ def number_list(request, article_pk, pk):
                     dic["parts_name"] = request.POST.get("parts_name")
                     dic["symbol"] = request.POST.get("symbol")
                     dic["material"] = request.POST.getlist("material")
+                    dic["span_number"] = request.POST.get("span_number")
                     dic["main_frame"] = request.POST.get("main_frame") == 'on'
                     dic["infra"] = pk # infraとの紐付け
                     print(f"new_serial_number:{number_items}")
@@ -1136,6 +1336,7 @@ def number_list(request, article_pk, pk):
         dic["parts_name"] = request.POST.get("parts_name")
         dic["symbol"] = request.POST.get("symbol")
         dic["material"] = request.POST.getlist("material")
+        dic["span_number"] = request.POST.get("span_number")
         dic["main_frame"] = request.POST.getlist("main_frame") == 'on'
         dic["infra"] = pk # infraとの紐付け
         print(single_number)

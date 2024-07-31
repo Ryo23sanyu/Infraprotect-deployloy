@@ -11,5 +11,5 @@ urlpatterns = [
     path('signup/', SignupView.as_view(), name='signup'),
     path('register/', views.register_view, name='register'), # アカウント作成ページ
     path('my_page/', views.my_page_view, name='my_page'), # マイページ
-    path('my_page/<int:pk>/', views.MyPage.as_view(), name='my_page'),
+    path('my_page/<int:pk>/', views.MyPage.as_view(), name='my_page_detail'), # マイページの詳細
 ]

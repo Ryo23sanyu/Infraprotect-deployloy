@@ -91,6 +91,12 @@ input[type="checkbox"]:checked + label {
 {# PartsNumber を保存するためにformで囲う #}
     <form action="" method="post">
         {% csrf_token %}
+        
+        <div class="inline-group">
+            <label for="span_number">径間番号</label>
+            <input type="text" id="span_number" name="span_number" value="1">
+        </div>
+
         <div class="form-section">
             <div class="inline-group">
                 <label for="part-name">部材名:</label>
@@ -101,6 +107,7 @@ input[type="checkbox"]:checked + label {
                     </option>
                     {% endfor %}
                 </select>
+                <input type="text" id="custom-part-name" name="custom_parts_name" placeholder="Enter custom part name">
             </div>
 
             <div class="inline-group">
@@ -125,8 +132,8 @@ input[type="checkbox"]:checked + label {
             {% endfor %}
             <input type="checkbox" id="main_frame" name="main_frame">
             <label for="main_frame">主要部材</label>
-
         </div>
+
 
         <div class="form-number-section">
             <label>連続した番号:</label>
@@ -166,7 +173,19 @@ input[type="checkbox"]:checked + label {
         });
         button.classList.add('active');
     }
-    
+    // 部材名を任意に入れられるようにする
+    document.getElementById('part-name').addEventListener('change', function() {
+        var selectElement = document.getElementById('part-name');
+        var selectedOption = selectElement.options[selectElement.selectedIndex];
+        var customInputElement = document.getElementById('custom-part-name');
+        
+        // 選択した値がプルダウンにない場合
+        if (selectedOption.value) {
+            customInputElement.value = selectedOption.text; // カスタムの値を入力
+        } else {
+            customInputElement.value = "";
+        }
+    });    
     // 材料ボタンの選択切り替え
     document.addEventListener("DOMContentLoaded", function() {
         var partsSelect = document.getElementById('part-name');

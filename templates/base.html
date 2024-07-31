@@ -12,7 +12,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>-->
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-    <script src="https://cdn.datatables.net/2.0.3/js/dataTables.js"></script>
+    <!--<script src="https://cdn.datatables.net/2.0.3/js/dataTables.js"></script>-->
     <script src="https://cdn.datatables.net/fixedcolumns/5.0.0/js/dataTables.fixedColumns.js"></script>
     <script src="https://cdn.datatables.net/fixedcolumns/5.0.0/js/fixedColumns.dataTables.js"></script>
     <script src="https://cdn.datatables.net/rowreorder/1.5.0/js/dataTables.rowReorder.js"></script>
@@ -44,7 +44,7 @@
     <nav class="navbar navbar-dark bg-success sticky-top">
       <div class="navbar-nav d-flex flex-row">
         {% if user.is_authenticated %}
-        <a class="nav-link mx-3" href="{% url 'accounts:my_page' user.pk %}">マイページ</a>
+        <a class="nav-link mx-3" href="{% url 'accounts:my_page'%}">マイページ</a>
         {% endif %}
         <a class="nav-link mx-3" href="{% url 'list-article' %}">案件一覧</a>
       </div>

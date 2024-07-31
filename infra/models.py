@@ -2,6 +2,44 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 
+# 会社別に表示
+class CustomUser(AbstractUser):
+    company = models.CharField(max_length=100)
+
+class Company(models.Model):
+    name = models.CharField(max_length=100)
+
+# 写真シート
+class Panorama(models.Model):
+    image = models.ImageField(upload_to='panorama/')
+    checked = models.BooleanField(default=False)
+    # チェックボックスの状態を保存するフィールド
+    # is_checked = models.BooleanField(default=False)
+
+# ファイルアップロード(プライマリーキーで分類分け)
+class Uploads(models.Model):
+    primary_key = models.AutoField(primary_key=True)
+    file = models.FileField(upload_to='uploads/')
+
+class Damage(models.Model):
+    notes = models.TextField(blank=True, null=True)
+
+# 全景写真
+class Photo(models.Model):
+    image = models.ImageField(upload_to='photos/')
+
+class Image(models.Model):
+    #title = models.CharField(max_length=255) # 画像のタイトル
+    photo = models.ImageField(upload_to='photos/') # 画像ファイル, 'photos/'はMEDIA_ROOT下の保存先ディレクトリ
+
+    def __str__(self):
+        return self.photo
+
+# 損傷メモ
+class DamageReport(models.Model):
+    first = models.CharField(max_length=100)
+    second = models.TextField()
+    
 # << 案件作成のモデル >>
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 class Article(models.Model):
@@ -138,61 +176,23 @@ class PartsNumber(models.Model):
     material = models.ManyToManyField(Material)
     main_frame = models.BooleanField()
     #Infraと1対多のリレーションを組む。
+    span_number = models.CharField(max_length=50)
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE)
     
     def __str__(self):
-        return f"{self.parts_name}({self.symbol}{self.number}):{self.material}/{self.main_frame}"
+        materials_list = ", ".join([str(material) for material in self.material.all()])
+        return f"{self.parts_name}({self.symbol}{self.number}):{materials_list}/{self.main_frame}:{self.span_number}径間"
         # return f"{self.parts_name}({self.symbol}{self.number})" # 管理サイトには「主桁(Mg0101)」のように表示
-           
-# 会社別に表示
-class CustomUser(AbstractUser):
-    company = models.CharField(max_length=100)
-
-class Company(models.Model):
-    name = models.CharField(max_length=100)
-
-# 写真シート
-class Panorama(models.Model):
-    image = models.ImageField(upload_to='panorama/')
-    checked = models.BooleanField(default=False)
-    # チェックボックスの状態を保存するフィールド
-    # is_checked = models.BooleanField(default=False)
-
-# ファイルアップロード(プライマリーキーで分類分け)
-class Uploads(models.Model):
-    primary_key = models.AutoField(primary_key=True)
-    file = models.FileField(upload_to='uploads/')
-
-class Damage(models.Model):
-    notes = models.TextField(blank=True, null=True)
-
-# 全景写真
-class Photo(models.Model):
-    image = models.ImageField(upload_to='photos/')
-
-class Image(models.Model):
-    #title = models.CharField(max_length=255) # 画像のタイトル
-    photo = models.ImageField(upload_to='photos/') # 画像ファイル, 'photos/'はMEDIA_ROOT下の保存先ディレクトリ
-
-    def __str__(self):
-        return self.photo
-
-# 損傷メモ
-class DamageReport(models.Model):
-    first = models.CharField(max_length=100)
-    second = models.TextField()
     
 # << 損傷用のデータをDBに格納 >>
 class FullReportData(models.Model):
     parts_name = models.CharField(max_length=255) # '排水管 Dp0101'
     damage_name = models.CharField(max_length=255) # '①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e'
-    # damage_split = models.CharField(max_length=255) # '①腐食'
-    # damage_lank = models.CharField(max_length=50) # 'e'
     parts_split = models.CharField(max_length=255) # '排水管 Dp00'
     join = models.CharField(max_length=255) # {'parts_name': ['排水管 Dp0101'], 'damage_name': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}
-    picture_number = models.IntegerField(null=True, blank=True) # '写真番号-31'
-    this_time_picture = models.ImageField(upload_to='pictures/', null=True, blank=True) # 'infra/img\\9月7日\u3000佐藤\u3000地上\\P9070617.JPG'
-    last_time_picture = models.ImageField(upload_to='pictures/', null=True, blank=True) # None
+    picture_number = models.CharField(max_length=255, null=True, blank=True) # '写真番号-31'
+    this_time_picture = models.CharField(max_length=255, null=True, blank=True) # 'infra/img\\9月7日\u3000佐藤\u3000地上\\P9070617.JPG'
+    last_time_picture = models.CharField(max_length=255, null=True, blank=True) # None
     textarea_content = models.CharField(max_length=255) # '排水管に板厚減少を伴う拡がりのある腐食,点錆が見られる。\n【関連損傷】\n排水管 Dp0101:⑤防食機能の劣化(分類1)-e'
     damage_coordinate_x = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
     damage_coordinate_y = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
@@ -200,17 +200,58 @@ class FullReportData(models.Model):
     picture_coordinate_y = models.CharField(max_length=255, null=True, blank=True) # '538810.3087944178', '228910.3502713814'
     span_number = models.CharField(max_length=255) # 1径間
     special_links = models.CharField(max_length=255) # 排水管 Dp00/①腐食(大大)-e/1径間
+    measurement = models.CharField(max_length=255, null=True, blank=True) # 面積
+    damage_size = models.CharField(max_length=255, null=True, blank=True) # 100×100
+    damage_unit = models.CharField(max_length=255, null=True, blank=True) # mm²
+    classification = models.CharField(max_length=255, null=True, blank=True) # 分類「1」
+    pattern = models.CharField(max_length=255, null=True, blank=True) # パターン「6」
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE)
+    class Meta:
+        # ユニークの設定(fieldsの組み合わせを一意とする。nullが許可されているとデータが重複する可能性があるため、notnullの要素を扱う)
+        constraints = [
+            models.UniqueConstraint(fields=['parts_name', 'damage_name', 'parts_split', 'join', 
+                                            'damage_coordinate_x', 'damage_coordinate_y', 'span_number', 'special_links'], name='unique_parts_damage')
+        ]
     def __str__(self):
         return f"{self.parts_name}　{self.damage_name}：{self.span_number}　({self.special_links})"
-    
+
+class DamageList(models.Model):
+    parts_name = models.CharField(max_length=255) # 主桁
+    symbol = models.CharField(max_length=255) # Mg
+    number = models.CharField(max_length=255) # 0101
+    material = models.CharField(max_length=255) # S,C
+    main_parts = models.CharField(max_length=255) # 主要部材「〇」
+    damage_name = models.CharField(max_length=255) # 腐食
+    damage_max_lank = models.CharField(max_length=255, null=True, blank=True) # e
+    damage_min_lank = models.CharField(max_length=255, null=True, blank=True) # b
+    classification = models.CharField(max_length=255, null=True, blank=True) # 分類「1」
+    pattern = models.CharField(max_length=255, null=True, blank=True) # パターン「6」
+    span_number = models.CharField(max_length=255)
+    infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE) # サンプル橋
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['parts_name', 'symbol', 'number', 'material', 'main_parts', 
+                                            'damage_name', 'span_number', 'infra'], name='unique_damage_list')
+        ]
+    def __str__(self):
+        return f"{self.parts_name} {self.symbol}{self.number}：{self.damage_name}({self.damage_max_lank}～{self.damage_max_lank})"
+
 class DamageComment(models.Model):
-    parts_name = "" # 排水管 00
-    main_parts = "" # 主要部材「〇」
-    damage_name = "" # 腐食
-    damage_lank = "" # e
-    picture = "" # 表示する写真
-    jadgement = "" # 対策区分「C1」
-    cause = "" # 損傷原因「経年変化」
-    comment = "" # 〇〇が見られる。
-    special_links = "" # 1径間-排水管 Dp00-①腐食(大大)-e
+    parts_name = models.CharField(max_length=255) # 排水管 00
+    main_parts = models.CharField(max_length=255) # 主要部材「〇」
+    material = models.CharField(max_length=255) # S,C
+    damage_name = models.CharField(max_length=255) # 腐食
+    damage_max_lank = models.CharField(max_length=255, null=True, blank=True) # e
+    damage_min_lank = models.CharField(max_length=255, null=True, blank=True) # b
+    picture = models.ImageField(upload_to='pictures/', null=True, blank=True) # 表示する写真
+    jadgement = models.CharField(max_length=255, null=True, blank=True) # 対策区分「C1」
+    cause = models.CharField(max_length=255, null=True, blank=True) # 損傷原因「経年変化」
+    comment = models.CharField(max_length=255, null=True, blank=True) # 〇〇が見られる。
+    span_number = models.CharField(max_length=255) # 1径間
+    infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE) # サンプル橋
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['parts_name', 'main_parts', 'damage_name', 'span_number', 'infra'], name='unique_damage_comment')
+        ]
+    def __str__(self):
+        return f"{self.parts_name}　{self.damage_name}：{self.jadgement}　({self.cause})"
