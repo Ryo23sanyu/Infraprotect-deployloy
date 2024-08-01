@@ -4,7 +4,7 @@ import datetime
 from django import forms
 from django.core.files.storage import default_storage
 
-from .models import CustomUser, FullReportData, Image, Infra, Regulation, UploadedFile
+from .models import CustomUser, DamageComment, FullReportData, Image, Infra, Regulation, UploadedFile
 from .models import Photo, Company, Table, NameEntry, PartsNumber
 
 from django.core.exceptions import ValidationError
@@ -129,3 +129,39 @@ class FullReportDataForm(forms.ModelForm):
         model = FullReportData
         fields = ['parts_name', 'damage_name', 'join', 'picture_number', 'this_time_picture', 'last_time_picture', 
                   'textarea_content', 'damage_coordinate_x', 'damage_coordinate_y', 'picture_coordinate_x', 'picture_coordinate_y']
+
+# << 損傷写真帳の損傷面積を登録 >>
+class FullReportDataSizeEditForm(forms.ModelForm):
+    class Meta:
+        model = FullReportData
+        fields = ["damage_size"]
+
+# << 損傷写真帳の分類を登録 >>
+class FullReportDataClassificationEditForm(forms.ModelForm):
+    class Meta:
+        model = FullReportData
+        fields = ["classification"]
+        
+# << 損傷写真帳のパターンを登録 >>
+class FullReportDataPatternEditForm(forms.ModelForm):
+    class Meta:
+        model = FullReportData
+        fields = ["pattern"]
+        
+# << 所見のコメントを登録 >>
+class DamageCommentEditForm(forms.ModelForm):
+    class Meta:
+        model = DamageComment # モデルのクラス名
+        fields = ["comment"] # モデルのフィールド名
+
+# << 判定区分のボタンを登録 >>
+class DamageCommentJadgementEditForm(forms.ModelForm):
+    class Meta:
+        model = DamageComment
+        fields = ["jadgement"]
+        
+# << 損傷原因のボタンを登録 >>
+class DamageCommentCauseEditForm(forms.ModelForm):
+    class Meta:
+        model = DamageComment
+        fields = ["cause"]

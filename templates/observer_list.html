@@ -1,6 +1,7 @@
 <!-- opinion.html -->
 {% extends "base.html" %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}所見一覧{% endblock title %}
 {% block h1 %}所見一覧{% endblock %}
@@ -123,17 +124,24 @@
     </tr>
   </thead>
   <tbody>
-    {% for item in data %}
+    {% for item in data %} {% comment %} data ← DamageCommentのデータ(ビューのcontext)、そのためitem.idはDamageCommentの引数となる {% endcomment %}
     <tr>
         <td id="parts_name_{{ forloop.counter }}">{{ item.main_parts }}</td>
         <td id="parts_name_{{ forloop.counter }}">{{ item.parts_name }}</td>
-        <td id="damage_name_{{ forloop.counter }}">{{ item.damage_name }}<br> [ {{ item.damage_max_lank }} ～ {{ item.damage_min_lank }} ]</td>
+        <td id="damage_name_{{ forloop.counter }}">{{ item.damage_name }}<br>
+          [{% if item.damage_max_lank == item.damage_min_lank %}
+              {{ item.damage_max_lank }} 
+           {% else %}
+              {{ item.damage_max_lank }} ～ {{ item.damage_min_lank }} {% endif %}]
+        </td>
         <td>
           <div class="image-scroll-container">
             {% if item.this_time_picture %}
-              {% for this_time_picture in item.this_time_picture %}
-                <img id="photo_{{ forloop.counter }}" src="{% static this_time_picture %}" alt="損傷写真">
-              {% endfor %}
+            {% for picture in item.this_time_picture|split_comma %}
+              {% comment %} {% for this_time_picture in item.this_time_picture %} {% endcomment %}
+              <img id="photo_{{ forloop.counter }}" src="{% static picture.strip %}" alt="損傷写真">
+              {% comment %} {% endfor %} {% endcomment %}
+            {% endfor %}
             {% else %}
               <img src="{% static 'infra/noImage.png' %}" alt="サンプル画像">
             {% endif %}
@@ -141,14 +149,14 @@
         </td>
         <td>
           <div class="judge-container">
-            <button id="{{ forloop.counter }}" data-judge="B">B</button>
-            <button id="{{ forloop.counter }}" data-judge="M">M</button>
-            <button id="{{ forloop.counter }}" data-judge="C1">C1</button>
-            <button id="{{ forloop.counter }}" data-judge="S1">S1</button>
-            <button id="{{ forloop.counter }}" data-judge="C2">C2</button>
-            <button id="{{ forloop.counter }}" data-judge="S2">S2</button>
-            <button id="{{ forloop.counter }}" data-judge="E2">E2</button>
-            <button id="{{ forloop.counter }}" data-judge="E1">E1</button>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="B" name="jadgement" value="B">B</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="M"  name="jadgement" value="M" >M</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="C1" name="jadgement" value="C1">C1</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S1" name="jadgement" value="S1">S1</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="C2" name="jadgement" value="C2">C2</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S2" name="jadgement" value="S2">S2</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E2" name="jadgement" value="E2">E2</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E1" name="jadgement" value="E1">E1</button></form>
           </div>
         </td>
         <td>
@@ -177,7 +185,11 @@
           </div>
         </td>
         <td>
-            <textarea name="notes" rows="6" style="margin:0 10px;">点錆が見られる。</textarea>
+          <form action="{% url 'damage_comment_edit' item.id %}" method="post">
+            {% csrf_token %}
+            <textarea name="comment" rows="6" style="margin:0 10px;">{{ item.get_jadgement_message|default:"" }}{{ item.comment }}</textarea>
+            <input type="submit" value="保存">{% comment %} style="display: none;" {% endcomment %}
+          </form>
         </td>
     </tr>
     {% endfor %}
@@ -185,6 +197,34 @@
 </table>
 
 <script>
+    //保存ボタンを押さなくてもデータを保存する(リアルタイム保存)
+    $(document).ready(function(){ // ドキュメントが完全に読み込まれた後に関数を実行する
+      $('textarea[name="comment"]').on('input', function() { // 範囲指定：指定されたテキストエリアの名前属性を持つすべてのテキストエリア
+          let comment = $(this).val(); // テキストエリアに入力された値を取得してcomment変数に格納
+          let itemId = $(this).attr('id').split('-')[1]; // idからitemIdを取得
+          // AJAXリクエストを設定して送信
+          $.ajax({
+              type: 'POST', // リクエストのタイプをPOSTに設定
+              url: "/save_comment/" + itemId + "/",  // リクエストを送信するURLを動的に設定
+              // リクエストにデータを含める。コメントとCSRFトークンを送信
+              data: {
+                  'comment': comment, // 取得したコメントの値
+                  'csrfmiddlewaretoken': '{{ csrf_token }}' // CSRFトークンの値
+              },
+              // リクエスト成功時のコールバック関数
+              success: function(response) {
+                  if (response.status === 'success') { // サーバーからのレスポンスのステータスが'success'の場合
+                      console.log("所見コメントを保存しました。");
+                  } else {
+                      console.log("保存時にエラーが発生しました。");
+                  }
+              },
+              error: function(xhr, status, error){
+                console.error("保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
+            }
+          });
+      });
+    });
     // 写真が3枚未満の場合は中央揃えにする
     document.addEventListener("DOMContentLoaded", function() {
       var imageContainer = document.querySelector('.image-scroll-container');

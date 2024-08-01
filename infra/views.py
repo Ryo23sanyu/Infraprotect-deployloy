@@ -28,12 +28,12 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import FileSystemStorage
-from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
+from django.views.decorators.csrf import csrf_protect
 
 from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentEditForm, DamageCommentJadgementEditForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 
 
 class ListInfraView(LoginRequiredMixin, ListView):
@@ -806,6 +806,35 @@ def observations_list(request, article_pk, pk):
         "その他": "X",
     }
     
+    number_change = {
+        '①': '腐食',
+        '②': '亀裂',
+        '③': 'ゆるみ・脱落',
+        '④': '破断',
+        '⑤': '防食機能の劣化',
+        '⑥': 'ひびわれ',
+        '⑦': '剥離・鉄筋露出',
+        '⑧': '漏水・遊離石灰',
+        '⑨': '抜け落ち',
+        '⑩': '補修・補強材の損傷',
+        '⑪': '床版ひびわれ',
+        '⑫': 'うき',
+        '⑬': '遊間の異常',
+        '⑭': '路面の凹凸',
+        '⑮': '舗装の異常',
+        '⑯': '支承部の機能障害',
+        '⑰': 'その他',
+        '⑱': '定着部の異常',
+        '⑲': '変色・劣化',
+        '⑳': '漏水・滞水',
+        '㉑': '異常な音・振動',
+        '㉒': '異常なたわみ',
+        '㉓': '変形・欠損',
+        '㉔': '土砂詰まり',
+        '㉕': '沈下・移動・傾斜',
+        '㉖': '洗掘',
+    }
+    
     lank_order = ['a', 'b', 'c', 'd', 'e']  # ランクの順序をリストで定義
     def get_lank_value(damage_name):
         """damage_nameのランク部分を取得する"""
@@ -815,28 +844,47 @@ def observations_list(request, article_pk, pk):
     
     for part in parts_data:
         part_full_name = f"{part.parts_name} {part.symbol}{part.number}"
+        span_number = part.span_number + '径間'
 
         # FullReportDataから該当するデータを取得
         report_data_list = FullReportData.objects.filter(
-            parts_name=part_full_name,
-            infra=part.infra
-        )
+            parts_name=part_full_name, # FullReportDataのparts_nameオブジェクトがpart_full_name(主桁 Mg0101)と同じ、かつ
+            span_number=span_number, # FullReportDataのspan_numberオブジェクトがspan_number(1径間)と同じ、かつ
+            infra=part.infra # FullReportDataのinfraオブジェクトがpart.infraと同じ場合
+        )  
 
         for report_data in report_data_list:
             print(f"report_data_list:{report_data.damage_name}")
-                        
+            print(f"picture:{report_data.this_time_picture}")
+
+            damage_list_material = "" # 空のdamage_list_materialを用意
+            for m in part.material.all(): # part.materialの全データを取得し「m」変数に入れる
+                damage_list_material += m.材料 + "," # 「m」の材料フィールドを指定してdamage_list_materialに入れる
+                
+            elements = damage_list_material.split(',')
+            replaced_elements = [material_replace_map.get(element, element) for element in elements] # それぞれの要素を置換辞書に基づいて変換します
+            damage_list_materials = ','.join(replaced_elements) # カンマで結合します。
+            
+            damage_name = report_data.damage_name.split('-')[0] if '-' in report_data.damage_name else report_data.damage_name
+            if damage_name == "NON":
+                damage_name = damage_name
+            elif damage_name[0] != '⑰':
+                damage_name = number_change[damage_name[0]]
+            else:
+                damage_name = damage_name[1:] # ⑦剥離・鉄筋露出から先頭の一文字を省く
+                
+            damage_lank = report_data.damage_name.split('-')[1] if '-' in report_data.damage_name else report_data.damage_name
+            
             # DamageListに必要なフィールドを含むインスタンスを作成
+            # << 損傷一覧(Excel)用データ登録 >>
             damage_list_entry = DamageList(
                 parts_name = part.parts_name, # 主桁
                 symbol = part.symbol, # Mg
                 number = part.number, # 0101
-                material = part.material, # S,C
-                main_parts = "〇" if part.main_frame else "",  # 主要部材のフラグ
-                damage_name = report_data.damage_name, # ⑦剥離・鉄筋露出-d
-                damage_max_lank = '',
-                damage_min_lank = '',
-                classification = '', # 損傷写真帳のデータ入力を反映
-                pattern = '', # 損傷写真帳のデータ入力を反映
+                material = damage_list_materials[:-1], # 最後のコンマが不要なため[-1:]（S,C）
+                main_parts = "〇" if part.main_frame else "", # 主要部材のフラグ
+                damage_name = damage_name, # 剥離・鉄筋露出
+                damage_lank = damage_lank, # d
                 span_number = part.span_number,
                 infra = part.infra
             )
@@ -849,63 +897,148 @@ def observations_list(request, article_pk, pk):
                 # 重複データがある場合の処理
                 print("データが存在しています。")
                 # 必要に応じてログを記録したり、他の処理を追加したりできます
-                continue  # 次のループに進む
+                # continue  # 次のループに進む
             
             """所見用のクラス登録"""
-            damage_name = report_data.damage_name.split('-')[0] if '-' in report_data.damage_name else report_data.damage_name
-            
-            main_parts_list_left = ["主桁", "PC定着部"] # 左の数字
-            main_parts_list_right = ["横桁", "橋台"] # 右の数字
-            main_parts_list_zero = ["床版"] # 00になる場合
-            
+    damage_comments = defaultdict(lambda: {'damage_lanks': [], 'this_time_pictures': []})
+
+    for part in parts_data:
+        part_full_name = f"{part.parts_name} {part.symbol}{part.number}"
+        span_number = part.span_number + '径間'
+
+        report_data_list = FullReportData.objects.filter(
+            parts_name=part_full_name,
+            span_number=span_number,
+            infra=part.infra
+        )
+
+        for report_data in report_data_list:
+            main_parts_list_left = ["主桁", "PC定着部"]
+            main_parts_list_right = ["横桁", "橋台"]
+            main_parts_list_zero = ["床版"]
+
             parts_name = f"{part.parts_name} {part.number}"
-            
+
             if any(word in parts_name for word in main_parts_list_left):
                 left = parts_name.find(" ")
                 number2 = parts_name[left+1:]
                 number_part = re.search(r'[A-Za-z]*(\d+)', number2).group(1)
-                result_parts_name = parts_name[:left]+" "+number_part[:2] # 主桁 03
+                result_parts_name = parts_name[:left] + " " + number_part[:2]
             elif any(word in parts_name for word in main_parts_list_right):
                 right = parts_name.find(" ")
                 number2 = parts_name[right+1:]
                 number_part = re.search(r'[A-Za-z]*(\d+)', number2).group(1)
-                if len(number_part) < 5:
-                    result_parts_name = parts_name[:right]+" "+number_part[2:] # 横桁 02
-                else:
-                    result_parts_name = parts_name[:right]+" "+number_part[2:] # 横桁 103
+                result_parts_name = parts_name[:right] + " " + number_part[2:] if len(number_part) < 5 else number_part[2:]
             elif any(word in parts_name for word in main_parts_list_zero):
                 right = parts_name.find(" ")
-                result_parts_name = parts_name[:right]+" 00"
+                result_parts_name = parts_name[:right] + " 00"
             else:
                 right = parts_name.find(" ")
                 result_parts_name = parts_name[:right]
+
+            damage_name = report_data.damage_name.split('-')[0] if '-' in report_data.damage_name else report_data.damage_name
+            if damage_name == "NON":
+                damage_name = damage_name
+            elif damage_name[0] != '⑰':
+                damage_name = number_change[damage_name[0]]
+            else:
+                damage_name = damage_name[1:] 
+            damage_lank = report_data.damage_name.split('-')[1] if '-' in report_data.damage_name else report_data.damage_name    
+
+            damage_comments[(result_parts_name, damage_name)]['damage_lanks'].append(damage_lank)
+            damage_comments[(result_parts_name, damage_name)]['this_time_pictures'].append(report_data.this_time_picture)
             
+            damage_comment_material = ""
+            for m in part.material.all():
+                damage_comment_material += m.材料 + ","
+            elements = damage_comment_material.split(',')
+            replaced_elements = [material_replace_map.get(element, element) for element in elements]
+            damage_comment_materials = ','.join(replaced_elements)
+
+            damage_comments[(result_parts_name, damage_name)]['material'] = damage_comment_materials[:-1]
+            damage_comments[(result_parts_name, damage_name)]['main_parts'] = "〇" if part.main_frame else ""
+            damage_comments[(result_parts_name, damage_name)]['span_number'] = part.span_number
+            damage_comments[(result_parts_name, damage_name)]['infra'] = part.infra
+
+    for (result_parts_name, damage_name), data in damage_comments.items():
+        damage_lanks = data['damage_lanks']
+        damage_max_lank = max(damage_lanks)
+        damage_min_lank = min(damage_lanks)
+        
+        combined_pictures = ','.join(str(picture) for picture in set(data['this_time_pictures']) if picture is not None) # 重複なし
+
+        try:
             damage_comment_entry = DamageComment(
-                parts_name = result_parts_name, # 主桁 01
-                material = part.material, # S,C
-                main_parts = "〇" if part.main_frame else "", # 主要部材のフラグ
-                damage_name = damage_name,
-                damage_max_lank = '', # e
-                damage_min_lank = '', # b
-                picture = '',
-                jadgement = '',
-                comment = '',
-                cause = '',
-                span_number = part.span_number,
-                infra = part.infra
+                parts_name=result_parts_name,
+                material=data['material'],
+                main_parts=data['main_parts'],
+                damage_name=damage_name,
+                damage_max_lank=damage_max_lank,
+                damage_min_lank=damage_min_lank,
+                this_time_picture=combined_pictures,
+                span_number=data['span_number'],
+                infra=data['infra']
             )
-   
-            try:
-                # DamageListインスタンスを保存
-                damage_comment_entry.save()
-                
-            except IntegrityError:
-                # 重複データがある場合の処理
-                print("データが存在しています。")
-                # 必要に応じてログを記録したり、他の処理を追加したりできます
-                continue  # 次のループに進む
+            damage_comment_entry.save()
+
+        except IntegrityError:
+            # 重複データがある場合の処理
+            print("データが存在しています。")
+            # 必要に応じてログを記録したり、他の処理を追加したりできます
+            continue  # 次のループに進む
             
-    return render(request, 'observer_list.html', {'data': DamageComment.objects.filter(infra=pk),'article_pk': article_pk, 'pk': pk})
+    return render(request, 'observer_list.html', {'data': DamageComment.objects.filter(infra=pk), 'article_pk': article_pk, 'pk': pk})
+    
+# << 所見コメントの登録 >>
+def damage_comment_edit(request, pk):
+    if request.method == "POST":
+        # TODO: 編集を受け付ける
+        # DamageComment の idを受け取る。
+        # URL：path('damage_comment_edit/<int:pk>/', views.damage_comment_edit , name="damage_comment_edit")
+        damage_comment = DamageComment.objects.get(id=pk) # idが同じDamageCommentデータを取得(int:pk 1種類のidが必要)
+        print(damage_comment)
+        form = DamageCommentEditForm(request.POST, instance=damage_comment)
+     # ユーザーが送信したPOSTデータをFormに渡す ↑　　　　　　　　↑ 編集するオブジェクト
+        print("編集します。")
+
+        if form.is_valid(): # バリデーション
+            form.save()
+            print("編集保存完了")
+        else:
+            print(form.errors)
+        # リダイレクト処理  　　　　　　　　　　　　　↓　damage_commentクラス → infraフィールド(infraクラスに移る) → articleフィールド(articleクラスに移る)からarticle.idを取得
+        return redirect("observations-list", damage_comment.infra.article.id, damage_comment.infra.id )
+        # damage_commentクラス → infraフィールド(infraクラスに移る)からinfra.idを取得　↑　　　　　(int:article_pk、int:pk 2種類のidが必要)
+        # path('article/<int:article_pk>/infra/<int:pk>/observations/', views.observations_list, name='observations-list')
+        
+# << Ajaxを使用した所見のリアルタイム保存 >>
+@csrf_protect  # CSRF保護を有効にする
+def save_comment(request, pk):
+    damage_comment = get_object_or_404(DamageComment, id=pk)
+    form = DamageCommentEditForm(request.POST, instance=damage_comment)
+    
+    if form.is_valid():
+        form.save()
+        return JsonResponse({"status": "success"})
+    return JsonResponse({"status": "error", "errors": form.errors})
+
+# << 対策区分のボタンを保存 >>
+def damage_comment_jadgement_edit(request, pk):
+    if request.method == "POST":
+        #TODO: 編集を受け付ける。
+        # DamageComment の idを受け取る。
+        print("DamageCommentJadgementEditForm 発動。")
+        damage_comment = DamageComment.objects.get(id=pk)
+        form = DamageCommentJadgementEditForm(request.POST, instance=damage_comment)
+        
+        if form.is_valid():
+            form.save()
+            print("編集保存完了")
+        else:
+            print(form.errors)
+
+        return redirect("observations-list", damage_comment.infra.article.id, damage_comment.infra.id )
+    
     """
     # TODO:関数化して、別コードでも使用できるようにする
     # 番号登録のデータを別の(FullReportData)モデルに合体させる
@@ -1290,8 +1423,7 @@ def number_list(request, article_pk, pk):
     
     # 単一の番号、連続の番号 を部材名と紐付けて保存
     for new_serial_number in new_serial_numbers:
-        
-        if "~" in new_serial_number:
+        if "~" in new_serial_number and new_serial_number.isdigit():
             # new_serial_number = "0101~0205"
             one = new_serial_number.find("~")
 
@@ -1331,25 +1463,26 @@ def number_list(request, article_pk, pk):
                         
     # TODO:single_numberが主要部材判定されていない
     for single_number in single_numbers:
-        dic = {}
-        dic["number"] = single_number
-        dic["parts_name"] = request.POST.get("parts_name")
-        dic["symbol"] = request.POST.get("symbol")
-        dic["material"] = request.POST.getlist("material")
-        dic["span_number"] = request.POST.get("span_number")
-        dic["main_frame"] = request.POST.getlist("main_frame") == 'on'
-        dic["infra"] = pk # infraとの紐付け
-        print(single_number)
+        if single_number.isdigit():
+            dic = {}
+            dic["number"] = single_number
+            dic["parts_name"] = request.POST.get("parts_name")
+            dic["symbol"] = request.POST.get("symbol")
+            dic["material"] = request.POST.getlist("material")
+            dic["span_number"] = request.POST.get("span_number")
+            dic["main_frame"] = request.POST.get("main_frame") == 'on'
+            dic["infra"] = pk # infraとの紐付け
+            print(single_number)
 
-        # 1個ずつバリデーションして保存する
-        form    = PartsNumberForm(dic)
+            # 1個ずつバリデーションして保存する
+            form    = PartsNumberForm(dic)
 
-        if form.is_valid():
-            form.save()
-            parts_number = form.save()
-            parts_number.material.set(request.POST.getlist("material"))
-        else:
-            print(form.errors)
+            if form.is_valid():
+                form.save()
+                parts_number = form.save()
+                parts_number.material.set(request.POST.getlist("material"))
+            else:
+                print(form.errors)
         
     parts_names = PartsName.objects.all()
     # materials = Material.objects.all()

@@ -17,7 +17,9 @@ class SignupView(CreateView):
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        self.object.company = Company.objects.create(name=self.request.POST.get('company_name'))
+        #self.object.company = Company.objects.create(name=self.request.POST.get('company_name'))
+        company = Company.objects.create(name=self.request.POST.get('company_name'))
+        self.object.company = company.name
         self.object.save()
         return response
 

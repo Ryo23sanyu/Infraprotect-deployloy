@@ -163,9 +163,7 @@ class PartsName(models.Model):
         return self.部材名
 
 class PartsNumber(models.Model):
-    #parts_name = models.ManyToManyField(PartsName)
     parts_name = models.ForeignKey(PartsName, verbose_name="部材名", on_delete=models.CASCADE) # 多対多のリレーションに必要
-    
     # 4040 もしくは 2020~4030 2パターンだけを許可する正規表現のバリデーションを作る
     # 4桁 と 4桁~4桁 を許す正規表現　　　　　　　 　　↓ もしくは
     number_regex = RegexValidator(regex=r"(^\d{4}$)|(^\d{4}~\d{4}$)")
@@ -202,7 +200,6 @@ class FullReportData(models.Model):
     special_links = models.CharField(max_length=255) # 排水管 Dp00/①腐食(大大)-e/1径間
     measurement = models.CharField(max_length=255, null=True, blank=True) # 面積
     damage_size = models.CharField(max_length=255, null=True, blank=True) # 100×100
-    damage_unit = models.CharField(max_length=255, null=True, blank=True) # mm²
     classification = models.CharField(max_length=255, null=True, blank=True) # 分類「1」
     pattern = models.CharField(max_length=255, null=True, blank=True) # パターン「6」
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE)
@@ -222,8 +219,7 @@ class DamageList(models.Model):
     material = models.CharField(max_length=255) # S,C
     main_parts = models.CharField(max_length=255) # 主要部材「〇」
     damage_name = models.CharField(max_length=255) # 腐食
-    damage_max_lank = models.CharField(max_length=255, null=True, blank=True) # e
-    damage_min_lank = models.CharField(max_length=255, null=True, blank=True) # b
+    damage_lank = models.CharField(max_length=255, null=True, blank=True)
     classification = models.CharField(max_length=255, null=True, blank=True) # 分類「1」
     pattern = models.CharField(max_length=255, null=True, blank=True) # パターン「6」
     span_number = models.CharField(max_length=255)
@@ -234,7 +230,7 @@ class DamageList(models.Model):
                                             'damage_name', 'span_number', 'infra'], name='unique_damage_list')
         ]
     def __str__(self):
-        return f"{self.parts_name} {self.symbol}{self.number}：{self.damage_name}({self.damage_max_lank}～{self.damage_max_lank})"
+        return f"{self.parts_name} {self.symbol}{self.number}({self.damage_name}：{self.damage_lank})"
 
 class DamageComment(models.Model):
     parts_name = models.CharField(max_length=255) # 排水管 00
@@ -243,7 +239,7 @@ class DamageComment(models.Model):
     damage_name = models.CharField(max_length=255) # 腐食
     damage_max_lank = models.CharField(max_length=255, null=True, blank=True) # e
     damage_min_lank = models.CharField(max_length=255, null=True, blank=True) # b
-    picture = models.ImageField(upload_to='pictures/', null=True, blank=True) # 表示する写真
+    this_time_picture = models.CharField(max_length=255, null=True, blank=True) # 表示する写真
     jadgement = models.CharField(max_length=255, null=True, blank=True) # 対策区分「C1」
     cause = models.CharField(max_length=255, null=True, blank=True) # 損傷原因「経年変化」
     comment = models.CharField(max_length=255, null=True, blank=True) # 〇〇が見られる。
@@ -255,3 +251,17 @@ class DamageComment(models.Model):
         ]
     def __str__(self):
         return f"{self.parts_name}　{self.damage_name}：{self.jadgement}　({self.cause})"
+    
+    def jadgement_message(self):
+        judgment_category = {
+            "B": "状況に応じて補修を行う必要がある。",
+            "M": "維持工事で対応する必要がある。",
+            "C1": "予防保全の観点から，速やかに補修等を行う必要がある。",
+            "C2": "橋梁構造の安全性の観点から，速やかに補修等を行う必要がある。",
+            "S1": "詳細調査の必要がある。",
+            "S2": "追跡調査の必要がある。",
+            "E1": "橋梁構造の安全性の観点から，緊急対応の必要がある。",
+            "E2": "その他，緊急対応の必要がある。",
+        }
+        return judgment_category.get(self.jadgement, "")
+    # self.jadgement と ↑を比較して、一致すればメッセージを返す

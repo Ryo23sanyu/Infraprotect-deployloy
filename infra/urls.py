@@ -36,9 +36,15 @@ urlpatterns = [
     path('article/<int:article_pk>/infra/<int:pk>/number/', views.number_list, name='number-list'),# 要素番号登録
     # << 所見一覧 >>
     path('article/<int:article_pk>/infra/<int:pk>/observations/', views.observations_list, name='observations-list'),# 所見一覧
+    # << 管理サイトへの保存 >>
+    path('damage_comment_edit/<int:pk>/', views.damage_comment_edit , name="damage_comment_edit"), # 所見コメントの保存
+    path('damage_comment_jadgement_edit/<int:pk>/', views.damage_comment_jadgement_edit , name="damage_comment_jadgement_edit"), # 対策区分ボタンの保存
+    #path('damage_comment_cause_edit/<int:pk>/', views.damage_comment_cause_edit , name="damage_comment_cause_edit"), # 損傷原因ボタンの保存
+
     # << Ajax >>
     path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更
     path('ajax-get-symbol/', views.get_symbol, name='ajax_get_symbol'),# 部材名と部材記号の紐付け
+    path('save_comment/<int:pk>/', views.save_comment, name='save_comment'), # 所見コメントのリアルタイム保存
     
     # << 未完成 >>
     path('photos/', views.photo_list, name='photo_list'),
