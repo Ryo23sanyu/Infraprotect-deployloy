@@ -119,12 +119,25 @@
   </div>
 
   <script>
-      $(document).ready(function () {
-          new DataTable('.my-table', {
-              fixedColumns: true,
-              "order": [],
-          });
+      //　スクロール位置を保存
+      window.addEventListener('beforeunload', () => {
+          localStorage.setItem('scrollPosition', window.scrollY);
       });
+
+      window.addEventListener('load', () => {
+          const scrollPosition = localStorage.getItem('scrollPosition');
+          if (scrollPosition !== null) {
+              window.scrollTo(0, parseInt(scrollPosition, 10));
+              localStorage.removeItem('scrollPosition');
+          }
+      });
+          $(document).ready(function () {
+              new DataTable('.my-table', {
+                  fixedColumns: true,
+                  "order": [],
+              });
+          });
+
       function updatePlaceholder(select) {
           var input = document.getElementById('input_'+select.name.split('_')[1]); // 対応するinput要素を取得
           if (select.value === "width") {

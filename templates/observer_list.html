@@ -111,7 +111,7 @@
 </form>
 {# HTMLのtableタグのルールとして、table系のタグ以外(formタグなど)が使われた時、中の要素だけ外に追い出される。 #}
 {% endcomment %}
-<table class="bordered-table">
+<table id="observer-list" class="bordered-table">
   <thead>
     <tr>
         <th class="col-1">主要部材</th>
@@ -137,11 +137,9 @@
         <td>
           <div class="image-scroll-container">
             {% if item.this_time_picture %}
-            {% for picture in item.this_time_picture|split_comma %}
-              {% comment %} {% for this_time_picture in item.this_time_picture %} {% endcomment %}
-              <img id="photo_{{ forloop.counter }}" src="{% static picture.strip %}" alt="損傷写真">
-              {% comment %} {% endfor %} {% endcomment %}
-            {% endfor %}
+              {% for picture in item.this_time_picture|split_comma %}
+                <img id="photo_{{ forloop.counter }}" src="{% static picture.strip %}" alt="損傷写真">
+              {% endfor %}
             {% else %}
               <img src="{% static 'infra/noImage.png' %}" alt="サンプル画像">
             {% endif %}
@@ -152,11 +150,11 @@
             <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="B" name="jadgement" value="B">B</button></form>
             <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="M"  name="jadgement" value="M" >M</button></form>
             <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="C1" name="jadgement" value="C1">C1</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S1" name="jadgement" value="S1">S1</button></form>
             <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="C2" name="jadgement" value="C2">C2</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S1" name="jadgement" value="S1">S1</button></form>
             <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S2" name="jadgement" value="S2">S2</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E2" name="jadgement" value="E2">E2</button></form>
             <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E1" name="jadgement" value="E1">E1</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E2" name="jadgement" value="E2">E2</button></form>
           </div>
         </td>
         <td>
@@ -187,8 +185,12 @@
         <td>
           <form action="{% url 'damage_comment_edit' item.id %}" method="post">
             {% csrf_token %}
-            <textarea name="comment" rows="6" style="margin:0 10px;">{{ item.get_jadgement_message|default:"" }}{{ item.comment }}</textarea>
-            <input type="submit" value="保存">{% comment %} style="display: none;" {% endcomment %}
+            {% if item.damage_name == "NON" %}
+              <textarea name="comment" id="comment-{{ item.id }}" rows="6" style="margin:0 10px;">{{ item.comment|default:item.damage_name }}</textarea>
+            {% else %}
+              <textarea name="comment" id="comment-{{ item.id }}" rows="6" style="margin:0 10px;">{{ item.comment|default:'' }}</textarea>
+            {% endif %}
+            <input type="submit" value="保存" style="display: none;">{% comment %} style="display: none;" {% endcomment %}
           </form>
         </td>
     </tr>
@@ -200,39 +202,46 @@
     //保存ボタンを押さなくてもデータを保存する(リアルタイム保存)
     $(document).ready(function(){ // ドキュメントが完全に読み込まれた後に関数を実行する
       $('textarea[name="comment"]').on('input', function() { // 範囲指定：指定されたテキストエリアの名前属性を持つすべてのテキストエリア
-          let comment = $(this).val(); // テキストエリアに入力された値を取得してcomment変数に格納
-          let itemId = $(this).attr('id').split('-')[1]; // idからitemIdを取得
-          // AJAXリクエストを設定して送信
-          $.ajax({
-              type: 'POST', // リクエストのタイプをPOSTに設定
-              url: "/save_comment/" + itemId + "/",  // リクエストを送信するURLを動的に設定
-              // リクエストにデータを含める。コメントとCSRFトークンを送信
-              data: {
-                  'comment': comment, // 取得したコメントの値
-                  'csrfmiddlewaretoken': '{{ csrf_token }}' // CSRFトークンの値
-              },
-              // リクエスト成功時のコールバック関数
-              success: function(response) {
-                  if (response.status === 'success') { // サーバーからのレスポンスのステータスが'success'の場合
-                      console.log("所見コメントを保存しました。");
-                  } else {
-                      console.log("保存時にエラーが発生しました。");
-                  }
-              },
-              error: function(xhr, status, error){
-                console.error("保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
+        let comment = $(this).val(); // テキストエリアに入力された値を取得してcomment変数に格納
+        let itemId = $(this).attr('id').split('-')[1]; // idからitemIdを取得
+        // AJAXリクエストを設定して送信
+        $.ajax({
+            type: 'POST', // リクエストのタイプをPOSTに設定
+            url: "/save_comment/" + itemId + "/",  // リクエストを送信するURLを動的に設定
+            // path('save_comment/<int:pk>/', views.save_comment, name='save_comment'),
+            // リクエストにデータを含める。コメントとCSRFトークンを送信
+            data: {
+                'comment': comment, // 取得したコメントの値
+                'csrfmiddlewaretoken': '{{ csrf_token }}' // CSRFトークンの値
+            },
+            // リクエスト成功時のコールバック関数
+            success: function(response) {
+                if (response.status === 'success') { // サーバーからのレスポンスのステータスが'success'の場合
+                    console.log("所見コメントを保存しました。");
+                } else {
+                    console.log("保存時にエラーが発生しました。:", response.errors);
+                }
+            },
+            error: function(xhr, status, error){
+              console.error("保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
             }
-          });
+        });
       });
     });
     // 写真が3枚未満の場合は中央揃えにする
     document.addEventListener("DOMContentLoaded", function() {
-      var imageContainer = document.querySelector('.image-scroll-container');
-      var images = imageContainer.querySelectorAll('img');
+      // すべての .image-scroll-container を取得
+      var imageContainers = document.querySelectorAll('.image-scroll-container');
       
-      if (images.length < 3) {
-        imageContainer.classList.add('center-justify');
-      }
+      // 各 .image-scroll-container に対して処理を実行
+      imageContainers.forEach(function(container) {
+        var images = container.querySelectorAll('img');
+        
+        // 画像が3枚未満の場合は中央揃えにする
+        if (images.length < 3) {
+          container.classList.add('center-justify');
+        }
+      });
     });
     // ボタンを押したときのアクション
     document.addEventListener('DOMContentLoaded', (event) => {

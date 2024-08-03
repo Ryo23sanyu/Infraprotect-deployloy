@@ -1,3 +1,4 @@
+import re
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
@@ -234,17 +235,81 @@ class DamageList(models.Model):
 
 class DamageComment(models.Model):
     parts_name = models.CharField(max_length=255) # 排水管 00
+    comment_parts_name = models.CharField(max_length=255) # 排水管
+    replace_name = models.CharField(max_length=255) # 50(排水管)
+    parts_number = models.CharField(max_length=255, null=True, blank=True) # 00
     main_parts = models.CharField(max_length=255) # 主要部材「〇」
     material = models.CharField(max_length=255) # S,C
     damage_name = models.CharField(max_length=255) # 腐食
+    number = models.IntegerField(null=True, blank=True) # 1(腐食)
     damage_max_lank = models.CharField(max_length=255, null=True, blank=True) # e
     damage_min_lank = models.CharField(max_length=255, null=True, blank=True) # b
     this_time_picture = models.CharField(max_length=255, null=True, blank=True) # 表示する写真
     jadgement = models.CharField(max_length=255, null=True, blank=True) # 対策区分「C1」
     cause = models.CharField(max_length=255, null=True, blank=True) # 損傷原因「経年変化」
     comment = models.CharField(max_length=255, null=True, blank=True) # 〇〇が見られる。
-    span_number = models.CharField(max_length=255) # 1径間
+    span_number = models.CharField(max_length=255) # 1(径間)
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE) # サンプル橋
+    
+    """ 並び替えに必要な動作(値を入れるフィールドを用意) """
+    def save(self, *args, **kwargs):
+        replace_dict = {
+            "排水管": "12",
+            "主桁": "01",
+            "横桁": "02",
+            "床版": "13",
+        }
+        # 正規表現でスペース+2桁以上の数字を抽出
+        match = re.search(r'(\D+)\s(\d{2,})', self.parts_name)
+        
+        if match:
+            original_name = match.group(1).strip()
+            self.comment_parts_name = original_name
+            self.parts_number = match.group(2)
+        else:
+            original_name = self.parts_name
+            self.comment_parts_name = original_name
+            self.parts_number = '00'
+        # 辞書を使って置換(部分一致)
+        if original_name in replace_dict:
+            # 置換処理
+            for key in replace_dict.keys():
+                if key in original_name:
+                    # 対応する値に置き換える
+                    self.replace_name = replace_dict[key]
+                    break
+        else:
+            self.replace_name = original_name
+            
+        # materialの部分一致チェックとnumberの設定
+        if '腐食' in self.damage_name:
+            self.number = 1
+        elif '防食機能の劣化' in self.damage_name:
+            self.number = 5
+        elif 'ひびわれ' in self.damage_name:
+            self.number = 6
+        elif '剥離・鉄筋露出' in self.damage_name:
+            self.number = 7
+        elif '漏水・遊離石灰' in self.damage_name:
+            self.number = 8
+        elif 'うき' in self.damage_name:
+            self.number = 12
+        elif '路面の凹凸' in self.damage_name:
+            self.number = 14
+        elif '舗装の異常' in self.damage_name:
+            self.number = 15
+        elif '漏水・滞水' in self.damage_name:
+            self.number = 20
+        elif '変色・劣化' in self.damage_name:
+            self.number = 23
+        elif '土砂詰まり' in self.damage_name:
+            self.number = 24
+        else:
+            self.number = 17
+        # get_combined_textメソッドで生成されたテキストをcommentフィールドに代入
+        self.comment = self.get_combined_text()
+        super().save(*args, **kwargs)
+    """"""
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['parts_name', 'main_parts', 'damage_name', 'span_number', 'infra'], name='unique_damage_comment')
@@ -252,16 +317,39 @@ class DamageComment(models.Model):
     def __str__(self):
         return f"{self.parts_name}　{self.damage_name}：{self.jadgement}　({self.cause})"
     
-    def jadgement_message(self):
-        judgment_category = {
-            "B": "状況に応じて補修を行う必要がある。",
-            "M": "維持工事で対応する必要がある。",
-            "C1": "予防保全の観点から，速やかに補修等を行う必要がある。",
-            "C2": "橋梁構造の安全性の観点から，速やかに補修等を行う必要がある。",
-            "S1": "詳細調査の必要がある。",
-            "S2": "追跡調査の必要がある。",
-            "E1": "橋梁構造の安全性の観点から，緊急対応の必要がある。",
-            "E2": "その他，緊急対応の必要がある。",
-        }
-        return judgment_category.get(self.jadgement, "")
-    # self.jadgement と ↑を比較して、一致すればメッセージを返す
+    def get_combined_text(self):
+        if self.damage_name == "腐食" and self.damage_max_lank == "c":
+            name_lank = "全体的かつ軽微な錆"
+        elif self.damage_name == "剥離・鉄筋露出" and self.damage_max_lank == "c":
+            name_lank = "剥離"
+        elif self.damage_name == "剥離・鉄筋露出" and self.damage_max_lank == "d":
+            name_lank = "鉄筋露出"
+        elif self.damage_name.startswith("その他"):
+            # 正規表現で「:」と「)」の間の文字を抽出
+            match = re.search(r':(.*?)\)', self.damage_name)
+            if match:
+                name_lank = match.group(1)
+            else:
+                name_lank = ""
+        else:
+            name_lank = ""
+            
+        if self.jadgement == "B":
+            jadgement_text = "状況に応じて補修を行う必要がある。"
+        elif self.jadgement == "M":
+            jadgement_text = "維持工事で対応する必要がある。"
+        elif self.jadgement == "C1":
+            jadgement_text = "予防保全の観点から，速やかに補修等を行う必要がある。"
+        elif self.jadgement == "C2":
+            jadgement_text = "橋梁構造の安全性の観点から，速やかに補修等を行う必要がある。"
+        elif self.jadgement == "S1":
+            jadgement_text = "詳細調査の必要がある。"
+        elif self.jadgement == "S2":
+            jadgement_text = "追跡調査の必要がある。"
+        elif self.jadgement == "E1":
+            jadgement_text = "橋梁構造の安全性の観点から，緊急対応の必要がある。"
+        elif self.jadgement == "E2":
+            jadgement_text = "その他，緊急対応の必要がある。"
+        else:
+            jadgement_text = ""
+        return f"{self.comment_parts_name}に{name_lank}が見られる。{jadgement_text}"

@@ -899,7 +899,7 @@ def observations_list(request, article_pk, pk):
                 # 必要に応じてログを記録したり、他の処理を追加したりできます
                 # continue  # 次のループに進む
             
-            """所見用のクラス登録"""
+    """所見用のクラス登録"""
     damage_comments = defaultdict(lambda: {'damage_lanks': [], 'this_time_pictures': []})
 
     for part in parts_data:
@@ -986,9 +986,12 @@ def observations_list(request, article_pk, pk):
             print("データが存在しています。")
             # 必要に応じてログを記録したり、他の処理を追加したりできます
             continue  # 次のループに進む
-            
-    return render(request, 'observer_list.html', {'data': DamageComment.objects.filter(infra=pk), 'article_pk': article_pk, 'pk': pk})
-    
+        
+    # span_numberの順かつ、replace_nameの順かつ、parts_numberの順かつ、numberの順に並び替え 
+    sorted_data = DamageComment.objects.filter(infra=pk).order_by('span_number', 'replace_name', 'parts_number', 'number')
+                                                                  #   1(径間)  ,      1(主桁)  ,        01     ,    6(ひびわれ)
+    return render(request, 'observer_list.html', {'data': sorted_data, 'article_pk': article_pk, 'pk': pk})
+
 # << 所見コメントの登録 >>
 def damage_comment_edit(request, pk):
     if request.method == "POST":
@@ -1014,13 +1017,16 @@ def damage_comment_edit(request, pk):
 # << Ajaxを使用した所見のリアルタイム保存 >>
 @csrf_protect  # CSRF保護を有効にする
 def save_comment(request, pk):
-    damage_comment = get_object_or_404(DamageComment, id=pk)
-    form = DamageCommentEditForm(request.POST, instance=damage_comment)
-    
-    if form.is_valid():
-        form.save()
-        return JsonResponse({"status": "success"})
-    return JsonResponse({"status": "error", "errors": form.errors})
+    if request.method == "POST":
+        damage_comment = get_object_or_404(DamageComment, infra=pk)
+        form = DamageCommentEditForm(request.POST, instance=damage_comment)
+        
+        if form.is_valid():
+            form.save()
+            return JsonResponse({"status": "success"})
+        return JsonResponse({"status": "error", "errors": form.errors})
+    return JsonResponse({"status": "error", "message": "Invalid request method."})
+
 
 # << 対策区分のボタンを保存 >>
 def damage_comment_jadgement_edit(request, pk):
@@ -1039,6 +1045,8 @@ def damage_comment_jadgement_edit(request, pk):
 
         return redirect("observations-list", damage_comment.infra.article.id, damage_comment.infra.id )
     
+
+
     """
     # TODO:関数化して、別コードでも使用できるようにする
     # 番号登録のデータを別の(FullReportData)モデルに合体させる
