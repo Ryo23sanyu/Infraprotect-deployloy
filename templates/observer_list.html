@@ -183,13 +183,9 @@
           </div>
         </td>
         <td>
-          <form action="{% url 'damage_comment_edit' item.id %}" method="post">
+          <form id  action="{% url 'damage_comment_edit' item.id %}" method="post">
             {% csrf_token %}
-            {% if item.damage_name == "NON" %}
-              <textarea name="comment" id="comment-{{ item.id }}" rows="6" style="margin:0 10px;">{{ item.comment|default:item.damage_name }}</textarea>
-            {% else %}
-              <textarea name="comment" id="comment-{{ item.id }}" rows="6" style="margin:0 10px;">{{ item.comment|default:'' }}</textarea>
-            {% endif %}
+            <textarea name="comment" id="comment-{{ item.id }}" rows="6" style="margin:0 10px;">{{ item.comment|default:item.auto_comment }}</textarea>
             <input type="submit" value="保存" style="display: none;">{% comment %} style="display: none;" {% endcomment %}
           </form>
         </td>
@@ -202,30 +198,29 @@
     //保存ボタンを押さなくてもデータを保存する(リアルタイム保存)
     $(document).ready(function(){ // ドキュメントが完全に読み込まれた後に関数を実行する
       $('textarea[name="comment"]').on('input', function() { // 範囲指定：指定されたテキストエリアの名前属性を持つすべてのテキストエリア
-        let comment = $(this).val(); // テキストエリアに入力された値を取得してcomment変数に格納
-        let itemId = $(this).attr('id').split('-')[1]; // idからitemIdを取得
-        // AJAXリクエストを設定して送信
-        $.ajax({
-            type: 'POST', // リクエストのタイプをPOSTに設定
-            url: "/save_comment/" + itemId + "/",  // リクエストを送信するURLを動的に設定
-            // path('save_comment/<int:pk>/', views.save_comment, name='save_comment'),
-            // リクエストにデータを含める。コメントとCSRFトークンを送信
-            data: {
-                'comment': comment, // 取得したコメントの値
-                'csrfmiddlewaretoken': '{{ csrf_token }}' // CSRFトークンの値
-            },
-            // リクエスト成功時のコールバック関数
-            success: function(response) {
-                if (response.status === 'success') { // サーバーからのレスポンスのステータスが'success'の場合
-                    console.log("所見コメントを保存しました。");
-                } else {
-                    console.log("保存時にエラーが発生しました。:", response.errors);
-                }
-            },
-            error: function(xhr, status, error){
-              console.error("保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
+          let comment = $(this).val(); // テキストエリアに入力された値を取得してcomment変数に格納
+          let itemId = $(this).attr('id').split('-')[1]; // idからitemIdを取得
+          // AJAXリクエストを設定して送信
+          $.ajax({
+              type: 'POST', // リクエストのタイプをPOSTに設定
+              url: "/save_comment/" + itemId + "/",  // リクエストを送信するURLを動的に設定
+              // リクエストにデータを含める。コメントとCSRFトークンを送信
+              data: {
+                  'comment': comment, // 取得したコメントの値
+                  'csrfmiddlewaretoken': '{{ csrf_token }}' // CSRFトークンの値
+              },
+              // リクエスト成功時のコールバック関数
+              success: function(response) {
+                  if (response.status === 'success') { // サーバーからのレスポンスのステータスが'success'の場合
+                      console.log("所見コメントを保存しました。");
+                  } else {
+                      console.log("保存時にエラーが発生しました。");
+                  }
+              },
+              error: function(xhr, status, error){
+                console.error("保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
             }
-        });
+          });
       });
     });
     // 写真が3枚未満の場合は中央揃えにする

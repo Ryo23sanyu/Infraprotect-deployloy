@@ -24,102 +24,154 @@
         </tr>
     </thead>
     <tbody id="sortable">
-        {% for group in grouped_data %}
-        {% for bridge in group %}
+        {% for groupded_data in grouped_by_span.items %}
         <tr>
-            {% if forloop.first %}
-            {% comment %} <form id="ajax-file-send" action="#" method="post" enctype="multipart/form-data"> {% endcomment %}
-                <!--ajaxの設定：methodはpostにする、mulitpart/form-dataとする、CSRF対策を行う-->
-                {% csrf_token %}
-                <td>
-                    <div style="border: 1px solid black; padding: 5px; margin-bottom: 10px; width: 410px;">
-                        {% for bridge_list in group %}
-                            <span style="background-color: Pink;">{{ bridge_list.parts_name }}</span> <!-- first項目に色付け -->
-                            <br>
-                            {{ bridge_list.damage_name }}
-                            {% if "NON-a" not in bridge_list.damage_name %} <!-- NON-aを含まない場合 -->
-                                <br>
-                                <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)" style="width: 100px;">
-                                    <option value=""></option>
-                                    <option value="width">幅</option>
-                                    <option value="area">面積</option>
-                                    <option value="bolt">本数</option>
-                                    <option value="level">段差量</option>
-                                    <!-- 必要に応じて他のオプションを追加 -->
-                                </select>
-                                <input type="text" name="input3_{{ forloop.counter }}" placeholder="数量" style="width: 100px;" />
-                                <input type="text" name="input2_{{ forloop.counter }}" placeholder="単位" style="width: 60px;" id="input_{{ forloop.counter }}" />
-                                <input type="text" name="input4_{{ forloop.counter }}" placeholder="分類" style="width: 60px;" />
-                                <input type="text" name="input5_{{ forloop.counter }}" placeholder="パターン" style="width: 60px;" />
-                                <br>
-                            {% else %}
-                            <br>
+            <td colspan="2">
+                <button class="accordion">{{ span_number }} (径間)</button>
+                <div class="panel">
+                    {% for group in grouped_data %}
+                    {% for bridge in group %}
+                    <tr>
+                        {% if forloop.first %}
+                        {% comment %} <form id="ajax-file-send" action="#" method="post" enctype="multipart/form-data"> {% endcomment %}
+                            <!--ajaxの設定：methodはpostにする、mulitpart/form-dataとする、CSRF対策を行う-->
+                            {% csrf_token %}
+                            <td>
+                                <div style="border: 1px solid black; padding: 5px; margin-bottom: 10px; width: 410px;">
+                                    {% for bridge_list in group %}
+                                        <span style="background-color: Pink;">{{ bridge_list.parts_name }}</span> <!-- first項目に色付け -->
+                                        <br>
+                                        {{ bridge_list.damage_name }}
+                                        {% if "NON-a" not in bridge_list.damage_name %} <!-- NON-aを含まない場合 -->
+                                            <br>
+                                            <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)" style="width: 100px;">
+                                                <option value=""></option>
+                                                <option value="width">幅</option>
+                                                <option value="area">面積</option>
+                                                <option value="bolt">本数</option>
+                                                <option value="level">段差量</option>
+                                                <!-- 必要に応じて他のオプションを追加 -->
+                                            </select>
+                                            <input type="text" name="input3_{{ forloop.counter }}" placeholder="数量" style="width: 100px;" />
+                                            <input type="text" name="input2_{{ forloop.counter }}" placeholder="単位" style="width: 60px;" id="input_{{ forloop.counter }}" />
+                                            <input type="text" name="input4_{{ forloop.counter }}" placeholder="分類" style="width: 60px;" />
+                                            <input type="text" name="input5_{{ forloop.counter }}" placeholder="パターン" style="width: 60px;" />
+                                            <br>
+                                        {% else %}
+                                        <br>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <br>
+                                    <button>変更</button>
+                                    <button>削除</button>
+                                </div>
+                            </td>
+                            {% if forloop.first %}
+                            <td class="center-align" rowspan="{{ group|length }}">
+                                <ul class="vert"> 
+                                    {% if bridge.this_time_picture is not None %}
+                                    {% for picture in bridge.this_time_picture|split_comma %}
+                                        <ul class="side">
+                                            <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                                <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
+                                                
+                                                    <div>
+                                                        <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static picture.strip %}" width="200" height="150" style="margin:0 10px;">
+                                                    </div>
+                                                
+                                                    <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
+                                                        <input id="upload-file-{{ forloop.parentloop.counter }}" name="upload-file" type="file" style="display: none">
+                                                        <button id="fileSelect-{{ forloop.parentloop.counter }}" type="button" style="margin-bottom: 10px;" value="{% static this_time_picture_item %}">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
+                                                        <button style="margin-bottom: 10px;">追加</button>
+                                                        <button>削除</button> <!--縦文字に変更-->
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                                <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
+                                                    <div>
+                                                    {% if bridge.last_time_picture is None %}
+                                                        <img id="before-image" src="{% static 'infra/noImage.png' %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                    {% else %}
+                                                        <img id="before-image" src="{% static bridge.last_time_picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
+                                                    {% endif %}
+                                                    </div>
+                                                    <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
+                                                        <input id="upload-file" name="upload-file" type="file" style="display: none">
+                                                        <button id="fileSelect" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button>
+                                                        <!--<button id="fileSelect" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button>-->
+                                                        <!--<button style="margin-bottom: 10px;">変更</button> bottom(下方向)に10pxの間隔を空ける-->
+                                                        <button>削除</button>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
+                                                {% spaceless %}
+                                                    {% if bridge.textarea_content %} <!-- damage_tableのforループ(bridge)とviews.pyのtextarea_content-->
+                                                        <textarea name="notes" rows="6" style="margin:0 10px;">{{ bridge.textarea_content|safe }}</textarea>
+                                                    {% else %}
+                                                        <textarea name="notes" rows="6" style="margin:0 10px;" placeholder="写真メモを入力してください。"></textarea>
+                                                    {% endif %}
+                                                {% endspaceless %}
+                                            </li>
+                                        </ul>  
+                                    {% endfor %}                                
+                                    {% endif %}
+                                </ul>
+                            </td>
                             {% endif %}
-                        {% endfor %}
-                        <br>
-                        <button>変更</button>
-                        <button>削除</button>
-                    </div>
-                </td>
-                {% if forloop.first %}
-                <td class="center-align" rowspan="{{ group|length }}">
-                    <ul class="vert"> 
-                        {% if bridge.this_time_picture is not None %}
-                        {% for picture in bridge.this_time_picture|split_comma %}
-                            <ul class="side">
-                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                    <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
-                                    
-                                        <div>
-                                            <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static picture.strip %}" width="200" height="150" style="margin:0 10px;">
-                                        </div>
-                                    
-                                        <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
-                                            <input id="upload-file-{{ forloop.parentloop.counter }}" name="upload-file" type="file" style="display: none">
-                                            <button id="fileSelect-{{ forloop.parentloop.counter }}" type="button" style="margin-bottom: 10px;" value="{% static this_time_picture_item %}">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
-                                            <button style="margin-bottom: 10px;">追加</button>
-                                            <button>削除</button> <!--縦文字に変更-->
-                                        </div>
-                                    </div>
-                                </li>
-                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                    <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
-                                        <div>
-                                        {% if bridge.last_time_picture is None %}
-                                            <img id="before-image" src="{% static 'infra/noImage.png' %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
-                                        {% else %}
-                                            <img id="before-image" src="{% static bridge.last_time_picture %}" width="200" height="150" style="margin:0 10px; border: 1px solid grey;">
-                                        {% endif %}
-                                        </div>
-                                        <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
-                                            <input id="upload-file" name="upload-file" type="file" style="display: none">
-                                            <button id="fileSelect" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button>
-                                            <!--<button id="fileSelect" type="button" style="margin-bottom: 10px;" value="{% static item %}">変更</button>-->
-                                            <!--<button style="margin-bottom: 10px;">変更</button> bottom(下方向)に10pxの間隔を空ける-->
-                                            <button>削除</button>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                    {% spaceless %}
-                                        {% if bridge.textarea_content %} <!-- damage_tableのforループ(bridge)とviews.pyのtextarea_content-->
-                                            <textarea name="notes" rows="6" style="margin:0 10px;">{{ bridge.textarea_content|safe }}</textarea>
-                                        {% else %}
-                                            <textarea name="notes" rows="6" style="margin:0 10px;" placeholder="写真メモを入力してください。"></textarea>
-                                        {% endif %}
-                                    {% endspaceless %}
-                                </li>
-                            </ul>  
-                        {% endfor %}                                
-                        {% endif %}
-                    </ul>
-                </td>
-                {% endif %}
-            {% comment %} </form> {% endcomment %}
-            {% endif %}  
+                        {% comment %} </form> {% endcomment %}
+                        {% endif %}  
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </div>
+            </td>
         </tr>
-        {% endfor %}
         {% endfor %}
     </tbody>
 </table>
+
+<style>
+    .accordion {
+        background-color: #eee;
+        color: #444;
+        cursor: pointer;
+        padding: 10px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 15px;
+        transition: 0.4s;
+    }
+    
+    .active, .accordion:hover {
+        background-color: #ccc;
+    }
+    
+    .panel {
+        padding: 0 18px;
+        display: none;
+        background-color: white;
+        overflow: hidden;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var acc = document.getElementsByClassName("accordion");
+        for (var i = 0; i < acc.length; i++) {
+            acc[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var panel = this.nextElementSibling;
+                if (panel.style.display === "block") {
+                    panel.style.display = "none";
+                } else {
+                    panel.style.display = "block";
+                }
+            });
+        }
+    });
+</script>
 {% endblock content %}

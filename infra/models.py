@@ -248,6 +248,7 @@ class DamageComment(models.Model):
     jadgement = models.CharField(max_length=255, null=True, blank=True) # 対策区分「C1」
     cause = models.CharField(max_length=255, null=True, blank=True) # 損傷原因「経年変化」
     comment = models.CharField(max_length=255, null=True, blank=True) # 〇〇が見られる。
+    auto_comment = models.CharField(max_length=255, null=True, blank=True) # 自動表示のコメント
     span_number = models.CharField(max_length=255) # 1(径間)
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE) # サンプル橋
     
@@ -306,8 +307,8 @@ class DamageComment(models.Model):
             self.number = 24
         else:
             self.number = 17
-        # get_combined_textメソッドで生成されたテキストをcommentフィールドに代入
-        self.comment = self.get_combined_text()
+        # get_combined_textメソッドで生成されたテキストをauto_commentフィールドに代入
+        self.auto_comment = self.get_combined_text()
         super().save(*args, **kwargs)
     """"""
     class Meta:
