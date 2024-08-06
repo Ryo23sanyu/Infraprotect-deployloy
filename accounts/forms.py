@@ -1,97 +1,20 @@
+from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from infra.models import CustomUser
-
-
+from .models import CustomUser
+       
 class SignupForm(UserCreationForm):
-  class Meta:
-    model = CustomUser
-    fields = ('username',)# == This code was created by https://noauto-nolife.com/post/django-auto-create-models-forms-admin/ == #
+    first_name = forms.CharField(max_length=30, required=True, label="姓　　　　")
+    last_name = forms.CharField(max_length=30, required=True, label="名　　　　")
+    company_name = forms.CharField(max_length=100, required=False, label="会社名　　")
 
-from django import forms
-from .models import Company,CustomUser
-
-class CompanyForm(forms.ModelForm):
-  class Meta:
-    model	= Company
-    fields	= [ "name" ]
-
-class CustomUserForm(forms.ModelForm):
-  class Meta:
-    model	= CustomUser
-    fields	= [ "name" ]
-
-# == This code was created by https://noauto-nolife.com/post/django-auto-create-models-forms-admin/ == #
-
-from django import forms
-from .models import Company,CustomUser
-
-class CompanyForm(forms.ModelForm):
     class Meta:
-        model	= Company
-        fields	= [ "name" ]
-
-class CustomUserForm(forms.ModelForm):
-    class Meta:
-        model	= CustomUser
-        fields	= [ "name" ]
-
-# == This code was created by https://noauto-nolife.com/post/django-auto-create-models-forms-admin/ == #
-
-from django import forms
-from .models import Company,CustomUser
-
-class CompanyForm(forms.ModelForm):
-    class Meta:
-        model	= Company
-        fields	= [ "name" ]
-
-class CustomUserForm(forms.ModelForm):
-    class Meta:
-        model	= CustomUser
-        fields	= [ "name" ]
-
-# == This code was created by https://noauto-nolife.com/post/django-auto-create-models-forms-admin/ == #
-
-from django import forms
-from .models import Company,CustomUser
-
-class CompanyForm(forms.ModelForm):
-    class Meta:
-        model	= Company
-        fields	= [ "name" ]
-
-class CustomUserForm(forms.ModelForm):
-    class Meta:
-        model	= CustomUser
-        fields	= [ "name" ]
-
-# == This code was created by https://noauto-nolife.com/post/django-auto-create-models-forms-admin/ == #
-
-from django import forms
-from .models import Company,CustomUser
-
-class CompanyForm(forms.ModelForm):
-    class Meta:
-        model	= Company
-        fields	= [ "name" ]
-
-class CustomUserForm(forms.ModelForm):
-    class Meta:
-        model	= CustomUser
-        fields	= [ "name" ]
-
-# == This code was created by https://noauto-nolife.com/post/django-auto-create-models-forms-admin/ == #
-
-from django import forms
-from .models import Company,CustomUser
-
-class CompanyForm(forms.ModelForm):
-    class Meta:
-        model	= Company
-        fields	= [ "name" ]
-
-class CustomUserForm(forms.ModelForm):
-    class Meta:
-        model	= CustomUser
-        fields	= [ "name" ]
+        model = CustomUser
+        fields = ('username', 'first_name', 'last_name', 'email', 'company_name', 'password1', 'password2')
+        labels = {
+            'username': 'ユーザーネーム',
+            'first_name': '名前',
+            'last_name': '姓',
+            'email': 'メールアドレス',
+            'password1': 'パスワード',
+            'password2': '確認用パスワード',
+        }

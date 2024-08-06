@@ -4,11 +4,28 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 
 # 会社別に表示
-class CustomUser(AbstractUser):
-    company = models.CharField(max_length=100)
-
 class Company(models.Model):
     name = models.CharField(max_length=100)
+    
+class CustomUser(AbstractUser):
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    email = models.EmailField(unique=True)
+
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='infra_customuser_set',
+        blank=True,
+        help_text='The groups this user belongs to.'
+    )
+    
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='infra_customuser_set',
+        blank=True,
+        help_text='Specific permissions for this user.'
+    )
+
 
 # 写真シート
 class Panorama(models.Model):
@@ -255,10 +272,10 @@ class DamageComment(models.Model):
     """ 並び替えに必要な動作(値を入れるフィールドを用意) """
     def save(self, *args, **kwargs):
         replace_dict = {
-            "排水管": "12",
             "主桁": "01",
             "横桁": "02",
             "床版": "13",
+            "排水管": "12",
         }
         # 正規表現でスペース+2桁以上の数字を抽出
         match = re.search(r'(\D+)\s(\d{2,})', self.parts_name)
@@ -309,6 +326,7 @@ class DamageComment(models.Model):
             self.number = 17
         # get_combined_textメソッドで生成されたテキストをauto_commentフィールドに代入
         self.auto_comment = self.get_combined_text()
+
         super().save(*args, **kwargs)
     """"""
     class Meta:

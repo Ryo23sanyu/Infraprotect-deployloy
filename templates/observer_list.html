@@ -147,14 +147,14 @@
         </td>
         <td>
           <div class="judge-container">
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="B" name="jadgement" value="B">B</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="M"  name="jadgement" value="M" >M</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="C1" name="jadgement" value="C1">C1</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="C2" name="jadgement" value="C2">C2</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S1" name="jadgement" value="S1">S1</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S2" name="jadgement" value="S2">S2</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E1" name="jadgement" value="E1">E1</button></form>
-            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E2" name="jadgement" value="E2">E2</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="B" name="jadgement" value="B" class="{% if item.jadgement == 'B' %}selected{% endif %}">B</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="M"  name="jadgement" value="M" class="{% if item.jadgement == 'M' %}selected{% endif %}">M</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="C1" name="jadgement" value="C1" class="{% if item.jadgement == 'C1' %}selected{% endif %}">C1</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="C2" name="jadgement" value="C2" class="{% if item.jadgement == 'C2' %}selected{% endif %}">C2</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S1" name="jadgement" value="S1" class="{% if item.jadgement == 'S1' %}selected{% endif %}">S1</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="S2" name="jadgement" value="S2" class="{% if item.jadgement == 'S2' %}selected{% endif %}">S2</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E1" name="jadgement" value="E1" class="{% if item.jadgement == 'E1' %}selected{% endif %}">E1</button></form>
+            <form action="{% url 'damage_comment_jadgement_edit' item.id %}" method="post">{% csrf_token %} <button id="{{ forloop.counter }}" data-judge="E2" name="jadgement" value="E2" class="{% if item.jadgement == 'E2' %}selected{% endif %}">E2</button></form>
           </div>
         </td>
         <td>

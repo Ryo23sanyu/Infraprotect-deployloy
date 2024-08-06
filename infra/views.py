@@ -379,10 +379,11 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     # 絶対パスと合体
     dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
     
-    context["object"] = table
+    # context["object"] = table
     # keikan_infra = Infra.objects.filter(id=pk).first() # 271行目と同じ
-    context["buttons"] = table.infra.径間数 * " " # Tableクラスのinfraオブジェクトから「径間数」を取り出す
+    # context["buttons"] = table.infra.径間数 * " " # Tableクラスのinfraオブジェクトから「径間数」を取り出す
     
+    # bridge_tableのボタンを押したときのアクション
     if "search_title_text" in request.GET:
         # request.GET：検索URL（http://127.0.0.1:8000/article/1/infra/bridge_table/?search_title_text=1径間） 
         search_title_text = request.GET["search_title_text"]
@@ -392,7 +393,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
 
     second_search_title_text = "損傷図"
     
-    sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
+    # sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
 
     # << 辞書型として、全径間を1つの多重リストに格納 >>
     max_search_title_text = table.infra.径間数
@@ -685,36 +686,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                                 damage_obj.save()
                             except IntegrityError:
                                 print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
-    """
-        # 共通のdata_fieldsを設定
-        data_fields = {
-            'parts_name': names, # parts_name,
-            'damage_name': damages, # damage_name,
-            'parts_split': parts_split,
-            'join': join,
-            'picture_number': numbers_only,
-            'this_time_picture': this_time_picture,
-            'last_time_picture': last_time_picture,
-            'textarea_content': textarea_content,
-            'damage_coordinate_x': damage_coordinate_x,
-            'damage_coordinate_y': damage_coordinate_y,
-            'picture_coordinate_x': picture_coordinate_x,
-            'picture_coordinate_y': picture_coordinate_y,
-            'span_number': span_number,
-            'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
-            'infra': Infra.objects.get(id=pk)
-        }
-        report_data_exists = FullReportData.objects.filter(**data_fields).exists()
 
-        if report_data_exists:
-            print("データが存在しています。")
-        else:
-            try:
-                damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
-                damage_obj.save()
-            except IntegrityError:
-                print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
-    """                
     """辞書型の多重リストをデータベースに登録(ここまで)"""
     # path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table')
 
@@ -723,21 +695,25 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
 
     # # テンプレートをレンダリング
     # return render(request, 'infra/bridge_table.html', context)
-    bridges = FullReportData.objects.filter(infra=pk)
-    
+    bridges = FullReportData.objects.filter(infra=pk, span_number=search_title_text)
+
     # HTMLにまとめて表示するためのグループ化
     grouped_data = []
     for key, group in groupby(bridges, key=attrgetter('join', 'damage_coordinate_x', 'damage_coordinate_y')):
         grouped_data.append(list(group))
-    
+
+    """"""
     # span_number毎にデータをグループ化
     grouped_by_span_temp = defaultdict(list)
     for bridge in bridges:
         grouped_by_span_temp[bridge.span_number].append(bridge)
-        
+
     grouped_by_span = dict(grouped_by_span_temp)
-        
-    context = {'grouped_data': grouped_data, 'grouped_by_span': grouped_by_span}
+    """"""
+    buttons = table.infra.径間数 * " "
+
+    context = {'object': Table.objects.filter(id=pk).first(), 'grouped_data': grouped_data, 'grouped_by_span': grouped_by_span, 'buttons': buttons}
+    # 渡すデータ：　損傷データ　↑　joinと損傷座標毎にグループ化したデータ　↑　　　　　span_number毎にグループ化したデータ　↑　　　　　　　径間ボタン　↑
     # テンプレートをレンダリング
     return render(request, 'infra/bridge_table.html', context)
     #context = {'bridge_table': FullReportData.objects.filter(infra=pk), 'grouped_data': grouped_data}

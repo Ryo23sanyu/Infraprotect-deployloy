@@ -4,18 +4,52 @@
 {% block h1 %}アカウント作成{% endblock %}
 
 {% block content %}
-  <form method="post" class="p-4 m-4 bg-light border border-success rounded form-group">
+  <form method="post" class="p-4 m-4 bg-light border border-success rounded account-form-group">
     {% csrf_token %}
-    <input type="text" name="username" class="form-control my-4" placeholder="アカウント名">
-    <input type="text" name="first_name" class="form-control my-4" placeholder="姓">
-    <input type="text" name="last_name" class="form-control my-4" placeholder="名">
-    <input type="text" name="company_name" class="form-control my-4" placeholder="会社名">
-    <input type="password" name="password1" class="form-control mt-4" placeholder="パスワード">
-    <input type="password" name="password2" class="form-control mt-4" placeholder="パスワード確認用">
-    <small class="mb-2 d-block text-start">パスワードは大文字アルファベット・小文字アルファベット・数字を含めた8文字以上で設定してください。</small>
-    {% if form.errors %}
-      <span class="mb-2 small text-danger d-block text-start">アカウント名の重複やパスワードエラーの可能性があります。入力内容を再度ご確認ください。</span>
-    {% endif %}
-      <button type="submit" class="btn btn-success m-2">アカウント作成</button>
+    <div class="account-form-group">
+      {{ form.username.label_tag }} {{ form.username }}
+    </div>
+    <div class="account-form-group">
+      {{ form.first_name.label_tag }} {{ form.first_name }}
+    </div>
+    <div class="account-form-group">
+      {{ form.last_name.label_tag }} {{ form.last_name }}
+    </div>
+    <div class="account-form-group">
+      {{ form.email.label_tag }} {{ form.email }}
+    </div>
+    <div class="account-form-group">
+      {{ form.company_name.label_tag }} {{ form.company_name }}
+    </div>
+    <div class="account-form-group">
+      {{ form.password1.label_tag }} {{ form.password1 }}
+    </div>
+    <div class="account-form-group">
+      {{ form.password2.label_tag }} {{ form.password2 }}
+    </div>
+    <button type="submit" class="btn btn-success m-2">アカウント作成</button>
   </form>
+
+  <style>
+    .account-form-group {
+      margin-bottom: 20px;
+    }
+    .account-form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .account-form-group input {
+      width: 150%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .account-form-group button {
+      width: auto;
+      padding: 10px 20px;
+    }
+    .account-form .btn {
+      display: block;
+      margin: auto;
+    }
+  </style>
 {% endblock content %}
