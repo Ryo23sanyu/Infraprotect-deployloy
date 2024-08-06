@@ -369,9 +369,10 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     # プロジェクトのメディアディレクトリからdxfファイルまでの相対パス
     # URL：article/<int:article_pk>/infra/<int:pk>/bridge-table/
     table = Table.objects.filter(id=pk).first()
-    #print(f"table_name:{table}") # Table object (17)
+    print(f"table_name:{table}") # Table object (17)
+    print(f"table.infra.title:{table.infra.title}")
     infra_instance = Infra.objects.filter(title = table.infra.title)
-    #print(f"table_name:{infra_instance}") # センサス橋
+    print(f"table_name:{infra_instance}") # センサス橋
     # オブジェクトディレクトリの相対パスを取得
     if table.dxf:
         encoded_url_path = table.dxf.url
@@ -710,7 +711,9 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
 
     grouped_by_span = dict(grouped_by_span_temp)
     """"""
-    buttons = table.infra.径間数 * " "
+    # buttons = table.infra.径間数 * " "
+    buttons = "1径間"
+    print(f"max_search_title_texts:{max_search_title_text}")
 
     context = {'object': Table.objects.filter(id=pk).first(), 'grouped_data': grouped_data, 'grouped_by_span': grouped_by_span, 'buttons': buttons}
     # 渡すデータ：　損傷データ　↑　joinと損傷座標毎にグループ化したデータ　↑　　　　　span_number毎にグループ化したデータ　↑　　　　　　　径間ボタン　↑
