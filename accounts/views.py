@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
+from accounts.models import Company, CustomUser
 from .forms import SignupForm
-from infra.models import Company, CustomUser # CustomUserの追加
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.views import generic

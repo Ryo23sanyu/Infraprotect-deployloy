@@ -139,4 +139,4 @@ LOGOUT_REDIRECT_URL = 'list-article'#'index'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 10  # 10 MBの例
 
-AUTH_USER_MODEL = 'infra.CustomUser'
+AUTH_USER_MODEL = 'accounts.CustomUser'

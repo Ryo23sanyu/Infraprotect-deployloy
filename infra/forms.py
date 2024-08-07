@@ -4,8 +4,8 @@ import datetime
 from django import forms
 from django.core.files.storage import default_storage
 
-from .models import CustomUser, DamageComment, FullReportData, Image, Infra, Regulation, UploadedFile
-from .models import Photo, Company, Table, NameEntry, PartsNumber
+from .models import DamageComment, FullReportData, Image, Infra, Regulation, UploadedFile
+from .models import Photo, Table, NameEntry, PartsNumber
 
 from django.core.exceptions import ValidationError
 # ファイルアップロード
@@ -15,11 +15,11 @@ class FileUploadForm(forms.ModelForm):
         fields = ['file']
 
 # 会社別に表示
-class UserCreationForm(forms.ModelForm):
-    company = forms.ModelChoiceField(queryset=Company.objects.all())
-    class Meta:
-        model = CustomUser
-        fields = ['username', 'password', 'company']
+# class UserCreationForm(forms.ModelForm):
+#     company = forms.ModelChoiceField(queryset=Company.objects.all())
+#     class Meta:
+#         model = CustomUser
+#         fields = ['username', 'password', 'company']
 
 # << Infra毎にdxfファイルを登録 >>
 class TableForm(forms.ModelForm):

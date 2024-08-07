@@ -368,7 +368,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     context = {}
     # プロジェクトのメディアディレクトリからdxfファイルまでの相対パス
     # URL：article/<int:article_pk>/infra/<int:pk>/bridge-table/
-    table = Table.objects.filter(id=pk).first()
+    table = Table.objects.filter(infra=pk).first()
     print(f"table_name:{table}") # Table object (17)
     print(f"table.infra.title:{table.infra.title}")
     infra_instance = Infra.objects.filter(title = table.infra.title)
@@ -385,12 +385,6 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     # context["buttons"] = table.infra.径間数 * " " # Tableクラスのinfraオブジェクトから「径間数」を取り出す
     
     # bridge_tableのボタンを押したときのアクション
-    if "search_title_text" in request.GET:
-        # request.GET：検索URL（http://127.0.0.1:8000/article/1/infra/bridge_table/?search_title_text=1径間） 
-        search_title_text = request.GET["search_title_text"]
-        # 検索URL内のsearch_title_textの値（1径間）を取得する
-    else:
-        search_title_text = "1径間" # 検索URLにsearch_title_textがない場合
 
     second_search_title_text = "損傷図"
     
@@ -696,27 +690,31 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
 
     # # テンプレートをレンダリング
     # return render(request, 'infra/bridge_table.html', context)
+    if "search_title_text" in request.GET:
+        # request.GET：検索URL（http://127.0.0.1:8000/article/1/infra/bridge_table/?search_title_text=1径間） 
+        search_title_text = request.GET["search_title_text"]
+        # 検索URL内のsearch_title_textの値（1径間）を取得する
+    else:
+        search_title_text = "1径間" # 検索URLにsearch_title_textがない場合
+    second_search_title_text = "損傷図"
+    
     bridges = FullReportData.objects.filter(infra=pk, span_number=search_title_text)
-
+    print(f"search_title_texts:{search_title_text}")
     # HTMLにまとめて表示するためのグループ化
     grouped_data = []
     for key, group in groupby(bridges, key=attrgetter('join', 'damage_coordinate_x', 'damage_coordinate_y')):
         grouped_data.append(list(group))
-
-    """"""
-    # span_number毎にデータをグループ化
-    grouped_by_span_temp = defaultdict(list)
-    for bridge in bridges:
-        grouped_by_span_temp[bridge.span_number].append(bridge)
-
-    grouped_by_span = dict(grouped_by_span_temp)
-    """"""
-    # buttons = table.infra.径間数 * " "
-    buttons = "1径間"
-    print(f"max_search_title_texts:{max_search_title_text}")
-
-    context = {'object': Table.objects.filter(id=pk).first(), 'grouped_data': grouped_data, 'grouped_by_span': grouped_by_span, 'buttons': buttons}
-    # 渡すデータ：　損傷データ　↑　joinと損傷座標毎にグループ化したデータ　↑　　　　　span_number毎にグループ化したデータ　↑　　　　　　　径間ボタン　↑
+    
+    buttons_count = int(table.infra.径間数) # 数値として扱う
+    buttons = list(range(1, buttons_count + 1)) # For loopのためのリストを作成
+    # range(一連の整数を作成):range(1からスタート, ストップ引数3 = 2 + 1) → [1, 2](ストップ引数は含まれない)
+    print(buttons)
+    
+    print(f"ボタン:{Table.objects.filter(infra=pk)}")# ボタン:<QuerySet [<Table: Table object (15)>]>
+    print(f"ボタン:{Table.objects.filter(infra=pk).first()}")# ボタン:Table object (18)(QuerySetのままだとうまく動作しない)
+    
+    context = {'object': Table.objects.filter(infra=pk).first(), 'grouped_data': grouped_data, 'buttons': buttons}
+    # 渡すデータ：　損傷データ　↑　joinと損傷座標毎にグループ化したデータ　↑　　　     　　径間ボタン　↑
     # テンプレートをレンダリング
     return render(request, 'infra/bridge_table.html', context)
     #context = {'bridge_table': FullReportData.objects.filter(infra=pk), 'grouped_data': grouped_data}

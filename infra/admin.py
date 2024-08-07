@@ -1,13 +1,11 @@
 from django.contrib import admin
 from django.db import models
-
-from infra.forms import PartsNumberForm
-from .models import Approach, DamageComment, DamageList, FullReportData, Infra, Material, PartsName, Table, Article, CustomUser, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition, PartsNumber, NameEntry
+from .models import Approach, DamageComment, DamageList, FullReportData, Infra, Material, PartsName, Table, Article, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition, PartsNumber, NameEntry
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Case, When, Value, IntegerField
 
 # models.pyのclass名とカッコの中を合わせる
-admin.site.register(CustomUser, UserAdmin)
+#admin.site.register(CustomUser, UserAdmin)
 admin.site.register(Infra) # 橋梁
 admin.site.register(Article) # 案件
 admin.site.register(Regulation) # 道路規制

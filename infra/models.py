@@ -4,11 +4,11 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 
 # 会社別に表示
-class CustomUser(AbstractUser):
-    company = models.CharField(max_length=100)
+# class CustomUser(AbstractUser):
+#     company = models.CharField(max_length=100)
 
-class Company(models.Model):
-    name = models.CharField(max_length=100)
+# class Company(models.Model):
+#     name = models.CharField(max_length=100)
 
 
 # 写真シート
