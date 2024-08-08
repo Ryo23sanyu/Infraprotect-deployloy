@@ -148,7 +148,7 @@ class NameEntry(models.Model):
     
     # 文字列表現を返すために使用
     def __str__(self):
-        return f"{self.name} ({self.alphabet})" # 例：佐藤(S)
+        return f"{self.article} {self.name} ({self.alphabet})" # 例：佐藤(S)
 
 #<< 要素番号の登録 >>
 class Material(models.Model):
@@ -181,8 +181,12 @@ class PartsNumber(models.Model):
     
     def __str__(self):
         materials_list = ", ".join([str(material) for material in self.material.all()])
-        return f"{self.parts_name}({self.symbol}{self.number}):{materials_list}/{self.main_frame}:{self.span_number}径間"
-        # return f"{self.parts_name}({self.symbol}{self.number})" # 管理サイトには「主桁(Mg0101)」のように表示
+        return f"{self.infra}{self.parts_name}({self.symbol}{self.number}):{materials_list}/{self.main_frame}:{self.span_number}径間"
+    # adminに材料を表示できるようにget_material_listを作成
+    def get_material_list(self):
+        return ", ".join([m.材料 for m in self.material.all()])
+
+    get_material_list.short_description = "Material"
     
 # << 損傷用のデータをDBに格納 >>
 class FullReportData(models.Model):

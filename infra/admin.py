@@ -17,11 +17,18 @@ admin.site.register(Thirdparty) # 第三者点検の有無
 admin.site.register(UnderCondition) # 路下条件
 admin.site.register(Table) # 損傷写真帳
 admin.site.register(PartsName) # 番号登録
-admin.site.register(PartsNumber) # 番号登録
+
+class PartsNumberAdmin(admin.ModelAdmin): # 番号登録
+    list_display = ('infra', 'parts_name', 'symbol', 'number', 'get_material_list', 'main_frame', 'span_number')
+admin.site.register(PartsNumber, PartsNumberAdmin)
+
 admin.site.register(Material) # 番号登録(材料)
-admin.site.register(NameEntry) # 名前とアルファベットの紐付け
 admin.site.register(FullReportData) # 損傷写真帳の全データ
-# admin.site.register(DamageComment) # 所見データ
+
+class NameEntryAdmin(admin.ModelAdmin): # 名前とアルファベットの紐付け
+    list_display = ('article', 'name', 'alphabet')
+admin.site.register(NameEntry, NameEntryAdmin)
+
 admin.site.register(DamageList) # 損傷一覧
 """ 管理サイトの並び替え表示に必要な動作 """
 class CustomPartsNameFilter(admin.SimpleListFilter):
@@ -41,7 +48,7 @@ class CustomPartsNameFilter(admin.SimpleListFilter):
             return queryset.filter(replace_name__icontains=self.value())
         return queryset
 
-@admin.register(DamageComment)
+admin.site.register(DamageComment) # 所見データ
 class DamageCommentAdmin(admin.ModelAdmin):
     list_display = ('span_number', 'parts_name', 'parts_number', 'damage_name', 'number')
     list_filter = (CustomPartsNameFilter,)
@@ -60,4 +67,4 @@ class DamageCommentAdmin(admin.ModelAdmin):
             )
         ).order_by('span_number', 'replace_name', 'parts_number', 'number')
                   #   1(径間)          主桁　　　　　　　01　　　　　1(腐食)
-""""""
+""" 管理サイトの並び替え表示に必要な動作（ここまで） """

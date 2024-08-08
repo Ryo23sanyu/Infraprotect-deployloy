@@ -33,7 +33,7 @@ from django.views.decorators.csrf import csrf_protect
 
 from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentEditForm, DamageCommentJadgementEditForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentCauseEditForm, DamageCommentEditForm, DamageCommentJadgementEditForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 
 
 class ListInfraView(LoginRequiredMixin, ListView):
@@ -974,8 +974,27 @@ def observations_list(request, article_pk, pk):
         
     # span_numberの順かつ、replace_nameの順かつ、parts_numberの順かつ、numberの順に並び替え 
     sorted_data = DamageComment.objects.filter(infra=pk).order_by('span_number', 'replace_name', 'parts_number', 'number')
-                                                                  #   1(径間)  ,      1(主桁)  ,        01     ,    6(ひびわれ)
-    return render(request, 'observer_list.html', {'data': sorted_data, 'article_pk': article_pk, 'pk': pk})
+    """ここまで"""
+    
+    if "search_title_text" in request.GET:
+        search_title_text = request.GET["search_title_text"]
+
+    else:
+        search_title_text = "1径間"
+    
+    span_create_number = search_title_text.replace("径間", "")
+    print(span_create_number)
+    filtered_bridges = DamageComment.objects.filter(infra=pk, span_number=span_create_number).order_by('span_number', 'replace_name', 'parts_number', 'number')
+    print(f"bridges:{filtered_bridges}")
+    buttons_count = int(table.infra.径間数) # 数値として扱う
+    buttons = list(range(1, buttons_count + 1)) # For loopのためのリストを作成
+    # range(一連の整数を作成):range(1からスタート, ストップ引数3 = 2 + 1) → [1, 2](ストップ引数は含まれない)
+    print(buttons)
+    
+    print(f"所見ボタン:{DamageComment.objects.filter(infra=pk)}")# ボタン:<QuerySet [<Table: Table object (15)>]>
+    print(f"所見ボタン:{DamageComment.objects.filter(infra=pk).first()}")# ボタン:Table object (18)(QuerySetのままだとうまく動作しない)
+    #   1(径間)  ,      1(主桁)  ,        01     ,    6(ひびわれ)
+    return render(request, 'observer_list.html', {'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 所見コメントの登録 >>
 def damage_comment_edit(request, pk):
@@ -1030,6 +1049,23 @@ def damage_comment_jadgement_edit(request, pk):
 
         return redirect("observations-list", damage_comment.infra.article.id, damage_comment.infra.id )
 
+# << 損傷原因のボタンを保存 >>
+def damage_comment_cause_edit(request, pk):
+    if request.method == "POST":
+        #TODO: 編集を受け付ける。
+        # DamageComment の idを受け取る。
+        print("DamageCommentCauseEditForm 発動。")
+        damage_comment_cause = DamageComment.objects.get(id=pk)
+        form = DamageCommentCauseEditForm(request.POST, instance=damage_comment_cause)
+        
+        if form.is_valid():
+            form.save()
+            print("編集保存完了")
+        else:
+            print(form.errors)
+
+        return redirect("observations-list", damage_comment_cause.infra.article.id, damage_comment_cause.infra.id )
+    
 # TODO:所見コメント用（写真の中央揃えの確認）
 def observer_comment(request):
     # 主桁（損傷箇所）、 剥離・鉄筋露出（損傷種類）、d（損傷種類）、 対策区分、 損傷原因
@@ -1094,17 +1130,12 @@ def names_list(request, article_pk):
 
 # << 登録した名前を削除 >>
 def delete_name_entry(request, entry_id):
-    if request.method == 'POST':
-        entry = get_object_or_404(NameEntry, pk=entry_id)
-        article_pk = entry.article.pk  # 事前に記事のPKを取得
+    entry = get_object_or_404(NameEntry, pk=entry_id)
+    article_pk = entry.article.pk  # 事前に記事のPKを取得
+    if request.method == 'POST':    
         entry.delete()
-        
-        # ここでname_entries を作る
-        # 削除後にエントリを再度取得しない
-        name_entries = NameEntry.objects.filter(article=article_pk)
-        return render(request, 'names_list.html', {"form": NameEntryForm()})
-    else:
-        return render(request, 'names_list.html', {'article_pk': entry.article.pk, "form": NameEntryForm(), 'name_entries': name_entries})
+    name_entries = NameEntry.objects.filter(article=article_pk)
+    return render(request, 'names_list.html', {'article_pk': article_pk, "form": NameEntryForm(), 'name_entries': name_entries})
 
 # << 番号登録 >>
 def number_list(request, article_pk, pk):
@@ -1185,8 +1216,20 @@ def number_list(request, article_pk, pk):
                 print(form.errors)
         
     parts_names = PartsName.objects.all()
-    # materials = Material.objects.all()
-    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names})
+    create_number_list = PartsNumber.objects.filter(infra=pk)
+    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, 'create_number_list': create_number_list})
+  # return render(request, 'names_list.html'  , {'article_pk': article_pk,           "form": NameEntryForm(),   'name_entries': name_entries})
+
+# << 登録した番号を削除 >>
+def delete_number_entry(request, article_entry_id, entry_id):
+    entry = get_object_or_404(PartsNumber, article_pk=article_entry_id, pk=entry_id) # pkに対応するPartsNameオブジェクトをデータベースから取得
+    print(entry)
+    article_pk = entry.article.pk # entryのarticleのpkを取得（削除前に行う）
+    # pk = entry.pk
+    if request.method == 'POST':
+        entry.delete() # データベースから削除
+    parts_names = PartsNumber.objects.filter(article=article_pk)
+    return render(request, 'number_entry.html', {'article_pk': article_pk, "form": PartsNumberForm(), "parts_names":parts_names})
 
 # 部材名と記号を紐付けるAjaxリクエスト
 def get_symbol(request):

@@ -7,7 +7,7 @@
 <style>
 body {
     font-family: Arial, sans-serif;
-    margin: 20px;
+    margin: 0;
 }
 .form-section {
     margin-bottom: 20px;
@@ -130,7 +130,7 @@ input[type="checkbox"]:checked + label {
                 <label><input type="checkbox" name="main" value="{{ main.id }}">{{ main.主要部材 }}</label>
             {% endfor %}
             <input type="checkbox" id="main_frame" name="main_frame">
-            <label for="main_frame">主要部材</label>
+            <label for="main_frame">主要部材{{ article.id }}{{ infra.id }}</label>
         </div>
 
 
@@ -158,6 +158,39 @@ input[type="checkbox"]:checked + label {
         <input type="submit" value="登録">
 
     </form>
+
+    
+    </br>
+    <h2>現在の登録一覧</h2>
+    <div class="accordion" id="accordionExample">
+        {% for parts_name in create_number_list %}
+            <div class="card">
+                <div class="card-header" id="heading{{ forloop.counter }}">
+                    <h2 class="mb-0">
+                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}" aria-expanded="true" aria-controls="collapse{{ forloop.counter }}">
+                            {{ parts_name.parts_name.部材名 }} ({{ parts_name.symbol }}) {{ parts_name.get_material_list }} ({{ parts_name.span_number }}径間)
+                        </button>
+                        
+                        <!-- Delete Button -->
+                        <form action="{% url 'delete_number_entry' parts_name.id %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                        </form>
+                    </h2>
+                </div>
+    
+                <div id="collapse{{ forloop.counter }}" class="collapse" aria-labelledby="heading{{ forloop.counter }}" data-parent="#accordionExample">
+                    <div class="card-body">
+                        {{ parts_name.number }}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p>登録されている番号がありません。</p>
+        {% endfor %}
+    </div>
+    {% comment %} 
+    {% endcomment %}
 
 <script>
     // ボタンの送信機能

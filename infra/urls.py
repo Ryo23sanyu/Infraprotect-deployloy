@@ -31,16 +31,15 @@ urlpatterns = [
     path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table'),# 損傷写真帳
     # << 名前の登録 >>
     path('article/<int:article_pk>/names/', views.names_list, name='names-list'),# 名前とアルファベットの紐付け
-    path('delete_name_entry/<int:entry_id>/', views.delete_name_entry, name='delete_name_entry'),# 登録した紐付けを削除
+    path('delete_name_entry/<int:entry_id>/', views.delete_name_entry, name='delete_name_entry'),# 登録した名前を削除
     # << 要素番号の登録 >>
     path('article/<int:article_pk>/infra/<int:pk>/number/', views.number_list, name='number-list'),# 要素番号登録
+    path('delete_number_entry/<int:entry_id>/', views.delete_number_entry, name='delete_number_entry'),# 登録した番号を削除
     # << 所見一覧 >>
     path('article/<int:article_pk>/infra/<int:pk>/observations/', views.observations_list, name='observations-list'),# 所見一覧
-    # << 管理サイトへの保存 >>
-    path('damage_comment_edit/<int:pk>/', views.damage_comment_edit , name="damage_comment_edit"), # 所見コメントの保存
-    path('damage_comment_jadgement_edit/<int:pk>/', views.damage_comment_jadgement_edit , name="damage_comment_jadgement_edit"), # 対策区分ボタンの保存
-    #path('damage_comment_cause_edit/<int:pk>/', views.damage_comment_cause_edit , name="damage_comment_cause_edit"), # 損傷原因ボタンの保存
-
+    path('damage_comment_edit/<int:pk>/', views.damage_comment_edit , name="damage_comment_edit"), # 所見コメントを管理サイトに保存
+    path('damage_comment_jadgement_edit/<int:pk>/', views.damage_comment_jadgement_edit , name="damage_comment_jadgement_edit"), # 対策区分を管理サイトに保存
+    path('damage_comment_cause_edit/<int:pk>/', views.damage_comment_cause_edit , name="damage_comment_cause_edit"), # 損傷原因を管理サイトに保存
     # << Ajax >>
     path('ajax-file-send/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更
     path('ajax-get-symbol/', views.get_symbol, name='ajax_get_symbol'),# 部材名と部材記号の紐付け

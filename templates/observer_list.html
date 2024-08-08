@@ -22,11 +22,11 @@
   }
 
   .col-1 { width: 1%; } /* ● */
-  .col-2 { width: 7%; } /* 主桁 01 */
+  .col-2 { width: 10%; } /* 主桁 01 */
   .col-3 { width: 15%; } /* 腐食(b,e) */
-  .col-4 { width: 20%; } /* 写真 */
+  .col-4 { width: 10%; } /* 写真 */
   .col-5 { width: 10%; } /* ボタン(B~E1) */ /*13%が限界*/
-  .col-6 { width: 45%; } /* ボタン(原因) */
+  .col-6 { width: 44%; } /* ボタン(原因) */
   .col-7 { width: 10%; } /* 所見 */
   
   .judge-container {
@@ -85,7 +85,7 @@
     display: flex; /* 高さを揃えて横並び */
     overflow-x: auto; /* 水平方向のスクロールバーを表示 */
     white-space: nowrap; /* 折り返さず1行で表示 */
-    max-width: 500px; /* 必要に応じて幅を設定 */
+    max-width: 450px; /* 必要に応じて幅を設定 */
     /* border: 2px solid #ccc; 枠線の色と太さを指定 */
     gap: 10px; /* 画像間のスペースを設定 */
     /* background-color: #f0f0f0;  背景色を設定 */
@@ -102,15 +102,15 @@
   }
 </style>
 
-{% comment %}
+
 {# ここで径間ボタンを生成 #}
-<form action="{% url 'observations-list' object.infra.article.pk object.infra.pk %}">
+<form action="{% url 'observations-list' article_pk pk %}">
   {% for button in buttons %}
   <button name="search_title_text" value="{{ forloop.counter }}径間">{{ forloop.counter }}径間</button>
   {% endfor %}
 </form>
 {# HTMLのtableタグのルールとして、table系のタグ以外(formタグなど)が使われた時、中の要素だけ外に追い出される。 #}
-{% endcomment %}
+
 <table id="observer-list" class="bordered-table">
   <thead>
     <tr>
@@ -159,27 +159,27 @@
         </td>
         <td>
           <div class="button-container">
-            <button id="btn{{ forloop.counter }}-1" class="btn">疲労</button>
-            <button id="btn{{ forloop.counter }}-2" class="btn">塩害</button>
-            <button id="btn{{ forloop.counter }}-3" class="btn">凍害</button>
-            <button id="btn{{ forloop.counter }}-4" class="btn">アルカリ骨材反応</button>
-            <button id="btn{{ forloop.counter }}-5" class="btn">中性化</button>
-            <button id="btn{{ forloop.counter }}-6" class="btn">材料劣化</button>
-            <button id="btn{{ forloop.counter }}-7" class="btn">想定外の荷重</button>
-            <button id="btn{{ forloop.counter }}-8" class="btn">衝突</button>
-            <button id="btn{{ forloop.counter }}-9" class="btn">偏土圧・圧密沈下</button>
-            <button id="btn{{ forloop.counter }}-10" class="btn">洗掘・浸食</button>
-            <button id="btn{{ forloop.counter }}-11" class="btn">地震</button>
-            <button id="btn{{ forloop.counter }}-12" class="btn">乾燥収縮・温度応力</button>
-            <button id="btn{{ forloop.counter }}-13" class="btn">科学的腐食</button>
-            <button id="btn{{ forloop.counter }}-14" class="btn">品質の経年変化</button>
-            <button id="btn{{ forloop.counter }}-15" class="btn">製作・施工不良</button>
-            <button id="btn{{ forloop.counter }}-16" class="btn">防水・排水工不良</button>
-            <button id="btn{{ forloop.counter }}-17" class="btn">構造形式・形状不良</button>
-            <button id="btn{{ forloop.counter }}-18" class="btn">人為的</button>
-            <button id="btn{{ forloop.counter }}-19" class="btn">鳥害</button>
-            <button id="btn{{ forloop.counter }}-20" class="btn">経年</button>
-            <button id="btn{{ forloop.counter }}-21" class="btn">自由記述</button>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-1" data-judge="疲労" name="cause" value="疲労" class="btn {% if item.cause == '疲労' %}selected{% endif %}">疲労</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-2" data-judge="塩害" name="cause" value="塩害" class="btn {% if item.cause == '塩害' %}selected{% endif %}">塩害</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-3" data-judge="凍害" name="cause" value="凍害" class="btn {% if item.cause == '凍害' %}selected{% endif %}">凍害</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-4" data-judge="アルカリ骨材反応" name="cause" value="アルカリ骨材反応" class="btn {% if item.cause == 'アルカリ骨材反応' %}selected{% endif %}">アルカリ骨材反応</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-5" data-judge="中性化" name="cause" value="中性化" class="btn {% if item.cause == '中性化' %}selected{% endif %}">中性化</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-6" data-judge="材料劣化" name="cause" value="材料劣化" class="btn {% if item.cause == '材料劣化' %}selected{% endif %}">材料劣化</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-7" data-judge="想定外の荷重" name="cause" value="想定外の荷重" class="btn {% if item.cause == '想定外の荷重' %}selected{% endif %}">想定外の荷重</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-8" data-judge="衝突" name="cause" value="衝突" class="btn {% if item.cause == '衝突' %}selected{% endif %}">衝突</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-9" data-judge="偏土圧・圧密沈下" name="cause" value="偏土圧・圧密沈下" class="btn {% if item.cause == '偏土圧・圧密沈下' %}selected{% endif %}">偏土圧・圧密沈下</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-10" data-judge="洗掘・浸食" name="cause" value="洗掘・浸食" class="btn {% if item.cause == '洗掘・浸食' %}selected{% endif %}">洗掘・浸食</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-11" data-judge="地震" name="cause" value="地震" class="btn {% if item.cause == '地震' %}selected{% endif %}">地震</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-12" data-judge="乾燥収縮・温度応力" name="cause" value="乾燥収縮・温度応力" class="btn {% if item.cause == '乾燥収縮・温度応力' %}selected{% endif %}">乾燥収縮・温度応力</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-13" data-judge="科学的腐食" name="cause" value="科学的腐食" class="btn {% if item.cause == '科学的腐食' %}selected{% endif %}">科学的腐食</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-14" data-judge="品質の経年変化" name="cause" value="品質の経年変化" class="btn {% if item.cause == '品質の経年変化' %}selected{% endif %}">品質の経年変化</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-15" data-judge="製作・施工不良" name="cause" value="製作・施工不良" class="btn {% if item.cause == '製作・施工不良' %}selected{% endif %}">製作・施工不良</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-16" data-judge="防水・排水工不良" name="cause" value="防水・排水工不良" class="btn {% if item.cause == '防水・排水工不良' %}selected{% endif %}">防水・排水工不良</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-17" data-judge="構造形式・形状不良" name="cause" value="構造形式・形状不良" class="btn {% if item.cause == '構造形式・形状不良' %}selected{% endif %}">構造形式・形状不良</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-18" data-judge="人為的" name="cause" value="人為的" class="btn {% if item.cause == '人為的' %}selected{% endif %}">人為的</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-19" data-judge="鳥害" name="cause" value="鳥害" class="btn {% if item.cause == '鳥害' %}selected{% endif %}">鳥害</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-20" data-judge="経年" name="cause" value="経年" class="btn {% if item.cause == '経年' %}selected{% endif %}">経年</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-21" data-judge="自由記述" name="cause" value="自由記述" class="btn {% if item.cause == '自由記述' %}selected{% endif %}">自由記述</button></form>
           </div>
         </td>
         <td>
@@ -267,10 +267,14 @@
     // 特定のボタンを表示するヘルパー関数
     function showButtons(buttonIds) {
       buttonIds.forEach(id => {
-          const button = document.getElementById(id);
-          if (button) {
-              button.style.display = 'block';
+        const button = document.getElementById(id);
+        if (button) {
+          button.style.display = 'block';
+          const parentForm = button.closest('form');// formタグも削除
+          if (parentForm) {
+            parentForm.style.display = 'block';
           }
+        }
       });
     }
 
@@ -280,9 +284,13 @@
 
       // 全てのボタンを非表示にする
       buttons.forEach(button => {
+        const parentForm = button.closest('form');
+        if (parentForm) {
+          parentForm.style.display = 'none';
+        }
         button.style.display = 'none';
       });
-
+      
       // damageNameの値によって表示するボタンを指定
       let buttonIds = [];
       if (damageName.includes('その他')) { // 17

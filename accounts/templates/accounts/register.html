@@ -4,6 +4,28 @@
 {% block h1 %}アカウント作成{% endblock %}
 
 {% block content %}
+  <style>
+    .account-form-group {
+      margin-bottom: 20px;
+    }
+    .account-form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .account-form-group input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .account-form-group button {
+      width: auto;
+      padding: 10px 20px;
+    }
+    .account-form .btn {
+      display: block;
+      margin: auto;
+    }
+  </style>
   <form method="post" class="p-4 m-4 bg-light border border-success rounded account-form-group">
     {% csrf_token %}
     <div class="account-form-group">
