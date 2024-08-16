@@ -51,6 +51,7 @@ class Article(models.Model):
     担当者名 = models.CharField(max_length=100)# 担当者名 namager
     その他 = models.CharField(max_length=100)# その他 other
     カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
+    ファイルパス = models.CharField(max_length=255)# 写真ファイルパス
   
     def __str__(self):
         return self.案件名
@@ -100,7 +101,7 @@ class UnderCondition(models.Model):
     路下条件 = models.CharField(max_length=50, choices=路下条件_CHOICES)
     def __str__(self):
         return self.路下条件
-
+    
 class Infra(models.Model):
     title = models.CharField(max_length=100)# 橋名
     径間数 = models.IntegerField()# 径間数
@@ -151,8 +152,9 @@ class NameEntry(models.Model):
         return f"{self.article} {self.name} ({self.alphabet})" # 例：佐藤(S)
 
 #<< 要素番号の登録 >>
+材料_CHOICES = (('鋼', '鋼'),('コンクリート', 'コンクリート'),('ゴム', 'ゴム'),('アスファルト', 'アスファルト'),('塩ビ', '塩ビ'),('その他', 'その他'))
 class Material(models.Model):
-    材料 = models.CharField(max_length=100)
+    材料 = models.CharField(max_length=100, choices=材料_CHOICES)
     def __str__(self):
         return self.材料
     

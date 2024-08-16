@@ -185,3 +185,11 @@ input[type="radio"].input_chk:checked + label.surround_label{
     height: 20px;
     background-color: #4caf50;
 }
+
+.my-table {
+  width: 100%;
+}
+/* 追加したスタイル */
+.full-width-table {
+  width: 100%; 
+}

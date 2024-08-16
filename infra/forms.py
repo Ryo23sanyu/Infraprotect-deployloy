@@ -4,22 +4,15 @@ import datetime
 from django import forms
 from django.core.files.storage import default_storage
 
-from .models import DamageComment, FullReportData, Image, Infra, Regulation, UploadedFile
+from .models import Article, DamageComment, FullReportData, Image, Infra, Regulation, UploadedFile
 from .models import Photo, Table, NameEntry, PartsNumber
-
 from django.core.exceptions import ValidationError
+
 # ファイルアップロード
 class FileUploadForm(forms.ModelForm):
     class Meta:
         model = UploadedFile
         fields = ['file']
-
-# 会社別に表示
-# class UserCreationForm(forms.ModelForm):
-#     company = forms.ModelChoiceField(queryset=Company.objects.all())
-#     class Meta:
-#         model = CustomUser
-#         fields = ['username', 'password', 'company']
 
 # << Infra毎にdxfファイルを登録 >>
 class TableForm(forms.ModelForm):
@@ -165,3 +158,16 @@ class DamageCommentCauseEditForm(forms.ModelForm):
     class Meta:
         model = DamageComment
         fields = ["cause"]
+        
+# << 損傷写真帳の変更内容を保存 >>
+class EditReportDataForm(forms.ModelForm):
+    class Meta:
+        model = FullReportData
+        fields = ['parts_name', 'damage_name']
+        
+# << ファイルパスを選択し保存 >>
+class ArticleForm(forms.ModelForm):
+    class Meta:
+        model = Article
+        fields = ['案件名', '土木事務所', '対象数', '担当者名', 'その他', 'カテゴリー']
+

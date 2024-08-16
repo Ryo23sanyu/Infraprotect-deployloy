@@ -219,7 +219,7 @@
         });
       }); {% endcomment %}
 
-      $(function () {
+      {% comment %} $(function () {
           // "変更"ボタンのクリックイベントに対する処理
           $('body').on('click', '[id^=fileSelect-]', function () {
             // body要素内で、id属性がfileSelect-で始まる全ての要素に対して、clickイベントが発生した時の処理を紐付け
@@ -274,7 +274,7 @@
                   reader.readAsDataURL(file); // 選択されたファイルをDataURLとして読み込み
               }
           });
-      });
+      }); {% endcomment %}
       
 
       function getCookie(name) {

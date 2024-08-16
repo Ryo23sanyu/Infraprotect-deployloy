@@ -33,8 +33,9 @@ from django.views.decorators.csrf import csrf_protect
 
 from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentCauseEditForm, DamageCommentEditForm, DamageCommentJadgementEditForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
-
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentCauseEditForm, DamageCommentEditForm, DamageCommentJadgementEditForm, EditReportDataForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
+from .forms import ArticleForm
+from .models import Article
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -196,12 +197,48 @@ class DetailArticleView(LoginRequiredMixin, DetailView):
     template_name = 'infra/article_detail.html'
     model = Article
     
+# この関数はファイルツリーを生成する
 class CreateArticleView(LoginRequiredMixin, CreateView):
     template_name = 'infra/article_create.html'
     model = Article
-    fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
+    fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他', 'ファイルパス')
     success_url = reverse_lazy('list-article')
-  
+
+    def get_initial(self):
+        initial = super().get_initial()
+        selected_file = self.request.COOKIES.get('selected_file')
+        if selected_file:
+            initial['ファイルパス'] = selected_file
+            # Cookieを削除しておく（必要に応じて）
+            self.request.COOKIES['selected_file'] = ''
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        root_dir = os.path.expanduser('~')
+        context['root_dir'] = root_dir
+        return context
+
+def get_subdirectories(request):
+    path = request.GET.get('path')
+    if not path:
+        return JsonResponse({'directories': [], 'files': []})
+
+    subdirectories = []
+    files = []
+
+    try:
+        with os.scandir(path) as it:
+            for entry in it:
+                if entry.is_dir():
+                    subdirectories.append(entry.path)
+                elif entry.is_file():
+                    files.append(entry.path)
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
+
+    return JsonResponse({'directories': subdirectories, 'files': files})
+    
 class DeleteArticleView(LoginRequiredMixin, DeleteView):
     template_name = 'infra/article_delete.html'
     model = Article
@@ -210,7 +247,7 @@ class DeleteArticleView(LoginRequiredMixin, DeleteView):
 class UpdateArticleView(LoginRequiredMixin, UpdateView):
     template_name = 'infra/article_update.html'
     model = Article
-    fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他')
+    fields = ('案件名', '土木事務所', '対象数', '担当者名', 'その他', 'ファイルパス')
     success_url = reverse_lazy('list-article')
 
 # << ファイルのアップロード・各infraに紐付け >>
@@ -721,18 +758,27 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     # テンプレートをレンダリング
     #return render(request, 'infra/bridge_table.html', context)
     
-def ajax_file_send(request):
+def ajax_file_send(request, pk):
     if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ
-        if 'upload-file' in request.FILES: # アップロードされたファイルがrequest.FILESに入っている場合
+        if 'upload-file' in request.FILES and 'bridge_id' in request.POST: # アップロードされたファイルがrequest.FILESに入っている場合
             myfile = request.FILES['upload-file'] # 受け取ったファイルをmyfileという変数に代入
+            bridge_id = request.POST['bridge_id']
+            
+            # FileSystemStorageを使ってファイルを保存
             fs = FileSystemStorage() # FileSystemStorageのインスタンスを生成(システム上にファイルを保存する準備)
             filename = fs.save(myfile.name, myfile) # myfileを指定した名前で保存し、保存したファイルの名前をfilename変数に格納
             uploaded_file_url = fs.url(filename) # 保存したファイルにアクセスするためのURLを生成
+            
+            # データベースを更新する
+            try:
+                bridge = FullReportData.objects.filter(infra=pk)
+                bridge.this_time_picture = uploaded_file_url  # データベースのモデルのフィールドを更新
+                bridge.save()
+            except FullReportData.DoesNotExist:
+                return HttpResponseBadRequest('指定されたブリッジが見つかりませんでした。')
+
             # success時のレスポンスはJSON形式で返すならこちらを使う
             return JsonResponse({'upload_file_url': uploaded_file_url})
-            # HTMLページを返す場合はこちらを使う
-            # context = {'damage_table': sorted_text_list}
-            # return render(request, 'table.html', context)
         else:
             # ファイルがPOSTされていない場合はエラーレスポンスを返す
             return HttpResponseBadRequest('添付ファイルが見つかりませんでした。') # File is not attached
@@ -1154,7 +1200,8 @@ def number_list(request, article_pk, pk):
     
     # 単一の番号、連続の番号 を部材名と紐付けて保存
     for new_serial_number in new_serial_numbers:
-        if "~" in new_serial_number and new_serial_number.isdigit():
+        print(new_serial_number)
+        if "~" in new_serial_number:
             # new_serial_number = "0101~0205"
             one = new_serial_number.find("~")
 
@@ -1217,7 +1264,13 @@ def number_list(request, article_pk, pk):
         
     parts_names = PartsName.objects.all()
     create_number_list = PartsNumber.objects.filter(infra=pk)
-    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, 'create_number_list': create_number_list})
+    
+    grouped_parts = defaultdict(list)
+    for accordion_list in create_number_list:
+        title = f"{accordion_list.parts_name.部材名} {accordion_list.symbol} {accordion_list.get_material_list()} {accordion_list.span_number}"
+        grouped_parts[title].append(accordion_list.number)
+
+    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items()})
   # return render(request, 'names_list.html'  , {'article_pk': article_pk,           "form": NameEntryForm(),   'name_entries': name_entries})
 
 # << 登録した番号を削除 >>
@@ -1859,161 +1912,161 @@ def dxf_output(request, article_pk, pk):
 def sorted_items_and_number_arrange(request):
     return render("index.html") # エラー回避でindex指定
 
-# << dxfから要素を抽出・整列してsorted_itemsに渡す >>
-def create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text):
+def entity_extension(mtext, neighbor):
+    # MTextの挿入点
+    mtext_insertion = mtext.dxf.insert
+    # 特定のプロパティ(Defpoints)で描かれた文字の挿入点
+    neighbor_insertion = neighbor.dxf.insert
+    #テキストの行数を求める
+    text = mtext.plain_text()
+    text_lines = text.split("\n") if len(text) > 0 else []
+    # 改行で区切ったリスト数→行数
+    text_lines_count = len(text_lines)
     
-    def find_square_around_text(dxf_filename, target_text, second_target_text):
-        doc = ezdxf.readfile(dxf_filename)
-        msp = doc.modelspace()
-        
-        text_positions = [] # 見つかったテキストの位置を格納するためのリストを作成
-        
-        extracted_text = []
+    # Defpointsを範囲内とするX座標範囲
+    x_start = mtext_insertion[0]  # X開始位置
+    x_end  = mtext_insertion[0] + mtext.dxf.width # X終了位置= 開始位置＋幅
+    y_start = mtext_insertion[1] + mtext.dxf.char_height # Y開始位置
+    y_end  = mtext_insertion[1] - mtext.dxf.char_height * (text_lines_count + 1) # 文字の高さ×(行数+1)
+    
+    # MTextの下、もしくは右に特定のプロパティで描かれた文字が存在するかどうかを判定する(座標：右が大きく、上が大きい)
+    if (neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end):
+        #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
+        if (neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start):
+            return True
+    
+    return False
 
-        # MTEXTエンティティの各要素をtextという変数に代入してループ処理
+def find_square_around_text(dxf_filename, target_text, second_target_text):
+    doc = ezdxf.readfile(dxf_filename)
+    msp = doc.modelspace()
+    
+    text_positions = [] # 見つかったテキストの位置を格納するためのリストを作成
+    
+    extracted_text = []
+
+    # MTEXTエンティティの各要素をtextという変数に代入してループ処理
+    for mtext_insert_point in msp.query('MTEXT'): # モデルスペース内の「MTEXT」エンティティをすべて照会し、ループ処理
+        if mtext_insert_point.dxf.text == target_text: # エンティティのテキストが検索対象のテキストと一致した場合
+            text_insertion_point = mtext_insert_point.dxf.insert # テキストの挿入点(dxf.insert)を取得します。
+            text_positions.append(text_insertion_point[0]) # 挿入点のX座標をリストに保存
+            break
+
+    if not text_positions: # text_positionsリストが空の場合(見つけられなかった場合)
         for mtext_insert_point in msp.query('MTEXT'): # モデルスペース内の「MTEXT」エンティティをすべて照会し、ループ処理
-            if mtext_insert_point.dxf.text == target_text: # エンティティのテキストが検索対象のテキストと一致した場合
+            if mtext_insert_point.dxf.text == second_target_text: # エンティティのテキストが検索対象のテキストと一致した場合
                 text_insertion_point = mtext_insert_point.dxf.insert # テキストの挿入点(dxf.insert)を取得します。
                 text_positions.append(text_insertion_point[0]) # 挿入点のX座標をリストに保存
                 break
-
-        if not text_positions: # text_positionsリストが空の場合(見つけられなかった場合)
-            for mtext_insert_point in msp.query('MTEXT'): # モデルスペース内の「MTEXT」エンティティをすべて照会し、ループ処理
-                if mtext_insert_point.dxf.text == second_target_text: # エンティティのテキストが検索対象のテキストと一致した場合
-                    text_insertion_point = mtext_insert_point.dxf.insert # テキストの挿入点(dxf.insert)を取得します。
-                    text_positions.append(text_insertion_point[0]) # 挿入点のX座標をリストに保存
-                    break
-        
-        # Defpointsレイヤーで描かれた正方形枠の各要素をsquare変数に代入してループ処理
-        for defpoints_square in msp.query('LWPOLYLINE[layer=="Defpoints"]'): # 
-            if len(defpoints_square) == 4: # 正方形(=4辺)の場合
-                square_x_values = [four_points[0] for four_points in defpoints_square] # squareというリストをループして各点(point)からx座標(インデックス0の要素)を抽出
-                square_min_x = min(square_x_values) # 枠の最小X座標を取得
-                square_max_x = max(square_x_values) # 枠の最大X座標を取得
+    
+    # Defpointsレイヤーで描かれた正方形枠の各要素をsquare変数に代入してループ処理
+    for defpoints_square in msp.query('LWPOLYLINE[layer=="Defpoints"]'): # 
+        if len(defpoints_square) == 4: # 正方形(=4辺)の場合
+            square_x_values = [four_points[0] for four_points in defpoints_square] # squareというリストをループして各点(point)からx座標(インデックス0の要素)を抽出
+            square_min_x = min(square_x_values) # 枠の最小X座標を取得
+            square_max_x = max(square_x_values) # 枠の最大X座標を取得
+            
+        # 文字のX座標が枠の最小X座標と最大X座標の間にあるかチェック
+        # text_positionsの各要素をtext_x_positionという変数に代入してforループを処理
+        for text_x_position in text_positions:
+            
+            # 文字の座標がDefpoints枠のX座標内にある場合
+            if square_min_x <= text_x_position <= square_max_x:
                 
-            # 文字のX座標が枠の最小X座標と最大X座標の間にあるかチェック
-            # text_positionsの各要素をtext_x_positionという変数に代入してforループを処理
-            for text_x_position in text_positions:
+                # print(list(square)) 4点の座標を求める 
+                left_top_point = list(defpoints_square)[0][0] # 左上の座標
+                right_top_point = list(defpoints_square)[1][0] # 右上の座標
+                right_bottom_point = list(defpoints_square)[2][0] # 右下の座標
+                left_bottom_point = list(defpoints_square)[3][0] # 左下の座標
+
+                defpoints_max_x = max(left_top_point,right_top_point,left_bottom_point,right_bottom_point) # X座標の最大値
+                defpoints_min_x = min(left_top_point,right_top_point,left_bottom_point,right_bottom_point) # X座標の最小値
                 
-                # 文字の座標がDefpoints枠のX座標内にある場合
-                if square_min_x <= text_x_position <= square_max_x:
+    # 指定したX座標範囲内にあるテキストを探す
+    for circle_in_text in msp.query('MTEXT'):
+        if defpoints_min_x <= circle_in_text.dxf.insert.x <= defpoints_max_x and circle_in_text.dxf.layer != 'Defpoints':
+        # MTextのテキストを抽出する
+            text = circle_in_text.plain_text()
+            x, y, _ = circle_in_text.dxf.insert
+            if not text.startswith("※"):
+                cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
+                # if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
+                if len(cad_data) > 0 and not any(keyword in text for keyword in ["×", ".", "損傷図"]) and not text.endswith("径間"):
+            # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
+                    related_text = "" # 見つけたMTextと関連するDefpointsレイヤの文字列を代入する変数
+            # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す
+                    for neighbor in msp.query('MTEXT[layer=="Defpoints"]'): # DefpointsレイヤーのMTextを抽出
+                    # MTextの挿入位置と特定のプロパティで描かれた文字の位置を比較する
+                        if entity_extension(circle_in_text, neighbor):
+                        # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
+                            related_text = neighbor.plain_text()
+                            defx, defy, _ = neighbor.dxf.insert
+                        #extracted_text.append(neighbor_text)
+                            break # 文字列が見つかったらbreakによりforループを終了する
+
+                    if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
+                        cad_data.append(related_text[:]) # cad_dataに「部材名～使用写真」までを追加
+                        cad_data.append([str(x), str(y)]) # 続いてcad_dataに「MTEXT」のX,Y座標を追加
+                #最後にまとめてcad_dataをextracted_textに追加する
+                    extracted_text.append(cad_data[:] + [[str(defx), str(defy)]]) # extracted_textに「MTEXTとその座標」およびdefのX,Y座標を追加
                     
-                    # print(list(square)) 4点の座標を求める 
-                    left_top_point = list(defpoints_square)[0][0] # 左上の座標
-                    right_top_point = list(defpoints_square)[1][0] # 右上の座標
-                    right_bottom_point = list(defpoints_square)[2][0] # 右下の座標
-                    left_bottom_point = list(defpoints_square)[3][0] # 左下の座標
+# << ※特記なき損傷の抽出用 ↓ >>                            
+            else:
+                lines = text.split('\n')# 改行でテキストを分割してリスト化
+                sub_text = [[line] for line in lines]# 各行をサブリストとして持つ多重リストを構築
 
-                    defpoints_max_x = max(left_top_point,right_top_point,left_bottom_point,right_bottom_point) # X座標の最大値
-                    defpoints_min_x = min(left_top_point,right_top_point,left_bottom_point,right_bottom_point) # X座標の最小値
+                pattern = r"\s[\u2460-\u3256]"# 文字列のどこかにスペース丸数字の並びがあるかをチェックする正規表現パターン
+                pattern_start = r"^[\u2460-\u3256]"  # 文字列の開始が①～㉖であることをチェックする正規表現パターン
+                pattern_anywhere = r"[\u2460-\u3256]"  # 文字列のどこかに①～㉖があるかをチェックする正規表現パターン
+                last_found_circle_number = None  # 最後に見つかった丸数字を保持する変数
+
+                # リストを逆順でループし、条件に応じて処理
+                for i in range(len(sub_text)-1, -1, -1):  # 後ろから前にループ
+                    item = sub_text[i][0]  # textリストの各サブリストの最初の要素（[0]）をitem変数に代入（地覆 ㉓-c）
+                    if item.startswith("※"):
+                        sub_text.remove(sub_text[i]) # 配列から除外する
+                    elif re.search(pattern, item):  # itemが正規表現patternと一致している場合（スペース丸数字の並びがある）
+                        last_found = item  # last_found変数にitem要素を代入（地覆 ㉓-c）
+                        # print(last_found) 丸数字が付いている要素のみ出力
+                    elif 'last_found' in locals():  # last_foundが定義されている（要素が代入されている）場合のみ
+                        space = last_found.replace("　", " ")
+                        # 大文字スペースがあれば小文字に変換
+                        second = space.find(" ", space.find(" ") + 1)#10
+                        # 2つ目のスペース位置まで抽出
+                        sub_text[i][0] = item + last_found[second:]
+                        # item:スペース丸数字の並びがない文字列
+                        # last_found:スペース丸数字の並びがある文字列
+                        # last_found[second:]:スペースを含めた文字列
+                    elif re.match(pattern_start, item): # 文字列が①～㉖で開始するかチェック
+                        last_found_circle_number = item # 丸数字の入っている要素を保持
+                        sub_text.remove(sub_text[i])
+                    else:
+                        if last_found_circle_number is not None and not re.search(pattern_anywhere, item):
+                            # 要素に丸数字が含まれておらず、直前に丸数字が見つかっている場合
+                            sub_text[i][0] += " " + last_found_circle_number  # 要素の末尾に丸数字を追加
+
+                for sub_list in sub_text:
+                    # サブリストの最初の要素を取得してスペース区切りで分割
+                    split_items = sub_list[0].split()
                     
-        # 指定したX座標範囲内にあるテキストを探す
-        for circle_in_text in msp.query('MTEXT'):
-            if defpoints_min_x <= circle_in_text.dxf.insert.x <= defpoints_max_x and circle_in_text.dxf.layer != 'Defpoints':
-            # MTextのテキストを抽出する
-                text = circle_in_text.plain_text()
-                x, y, _ = circle_in_text.dxf.insert
-                if not text.startswith("※"):
-                    cad_data = text.split("\n") if len(text) > 0 else [] # .split():\nの箇所で配列に分配
-                    # if len(cad_data) > 0 and not text.startswith("※") and not any(keyword in text for keyword in ["×", ".", "損傷図"]):
-                    if len(cad_data) > 0 and not any(keyword in text for keyword in ["×", ".", "損傷図"]) and not text.endswith("径間"):
-                # 改行を含むかどうかをチェックする(and "\n" in cad):# 特定の文字列で始まるかどうかをチェックする: # 特定の文字を含むかどうかをチェックする
-                        related_text = "" # 見つけたMTextと関連するDefpointsレイヤの文字列を代入する変数
-                # MTextの下、もしくは右に特定のプロパティ(Defpoints)で描かれた文字を探す
-                        for neighbor in msp.query('MTEXT[layer=="Defpoints"]'): # DefpointsレイヤーのMTextを抽出
-                        # MTextの挿入位置と特定のプロパティで描かれた文字の位置を比較する
-                            if entity_extension(circle_in_text, neighbor):
-                            # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
-                                related_text = neighbor.plain_text()
-                                defx, defy, _ = neighbor.dxf.insert
-                            #extracted_text.append(neighbor_text)
-                                break # 文字列が見つかったらbreakによりforループを終了する
+                    # 分割した要素から必要なデータを取り出して新しいサブリストに格納
+                    header = split_items[0] + " " + split_items[1]  # 例：'主桁 Mg0101'
+                    status = split_items[2]  # 例：'①-d'
+                    # photo_number = '写真番号-00'
+                    # defpoints = 'defpoints'
+                    
+                    # 新しい形式のサブリストを作成してprocessed_listに追加
+                    # new_sub_list = [header, status, photo_number, defpoints]
+                    new_sub_list = [header, status]
+                    extracted_text.append(new_sub_list)
 
-                        if  len(related_text) > 0: #related_textに文字列がある＝Defpointsレイヤから見つかった場合
-                            cad_data.append(related_text[:]) # cad_dataに「部材名～使用写真」までを追加
-                            cad_data.append([str(x), str(y)]) # 続いてcad_dataに「MTEXT」のX,Y座標を追加
-                    #最後にまとめてcad_dataをextracted_textに追加する
-                        extracted_text.append(cad_data[:] + [[str(defx), str(defy)]]) # extracted_textに「MTEXTとその座標」およびdefのX,Y座標を追加
-                        
-    # << ※特記なき損傷の抽出用 ↓ >>                            
-                else:
-                    lines = text.split('\n')# 改行でテキストを分割してリスト化
-                    sub_text = [[line] for line in lines]# 各行をサブリストとして持つ多重リストを構築
+                    new_sub_list.append([str(x), str(y)])
+# << ※特記なき損傷の抽出用 ↑ >>
+    return extracted_text
 
-                    pattern = r"\s[\u2460-\u3256]"# 文字列のどこかにスペース丸数字の並びがあるかをチェックする正規表現パターン
-                    pattern_start = r"^[\u2460-\u3256]"  # 文字列の開始が①～㉖であることをチェックする正規表現パターン
-                    pattern_anywhere = r"[\u2460-\u3256]"  # 文字列のどこかに①～㉖があるかをチェックする正規表現パターン
-                    last_found_circle_number = None  # 最後に見つかった丸数字を保持する変数
-
-                    # リストを逆順でループし、条件に応じて処理
-                    for i in range(len(sub_text)-1, -1, -1):  # 後ろから前にループ
-                        item = sub_text[i][0]  # textリストの各サブリストの最初の要素（[0]）をitem変数に代入（地覆 ㉓-c）
-                        if item.startswith("※"):
-                            sub_text.remove(sub_text[i]) # 配列から除外する
-                        elif re.search(pattern, item):  # itemが正規表現patternと一致している場合（スペース丸数字の並びがある）
-                            last_found = item  # last_found変数にitem要素を代入（地覆 ㉓-c）
-                            # print(last_found) 丸数字が付いている要素のみ出力
-                        elif 'last_found' in locals():  # last_foundが定義されている（要素が代入されている）場合のみ
-                            space = last_found.replace("　", " ")
-                            # 大文字スペースがあれば小文字に変換
-                            second = space.find(" ", space.find(" ") + 1)#10
-                            # 2つ目のスペース位置まで抽出
-                            sub_text[i][0] = item + last_found[second:]
-                            # item:スペース丸数字の並びがない文字列
-                            # last_found:スペース丸数字の並びがある文字列
-                            # last_found[second:]:スペースを含めた文字列
-                        elif re.match(pattern_start, item): # 文字列が①～㉖で開始するかチェック
-                            last_found_circle_number = item # 丸数字の入っている要素を保持
-                            sub_text.remove(sub_text[i])
-                        else:
-                            if last_found_circle_number is not None and not re.search(pattern_anywhere, item):
-                                # 要素に丸数字が含まれておらず、直前に丸数字が見つかっている場合
-                                sub_text[i][0] += " " + last_found_circle_number  # 要素の末尾に丸数字を追加
-
-                    for sub_list in sub_text:
-                        # サブリストの最初の要素を取得してスペース区切りで分割
-                        split_items = sub_list[0].split()
-                        
-                        # 分割した要素から必要なデータを取り出して新しいサブリストに格納
-                        header = split_items[0] + " " + split_items[1]  # 例：'主桁 Mg0101'
-                        status = split_items[2]  # 例：'①-d'
-                        # photo_number = '写真番号-00'
-                        # defpoints = 'defpoints'
-                        
-                        # 新しい形式のサブリストを作成してprocessed_listに追加
-                        # new_sub_list = [header, status, photo_number, defpoints]
-                        new_sub_list = [header, status]
-                        extracted_text.append(new_sub_list)
-
-                        new_sub_list.append([str(x), str(y)])
-    # << ※特記なき損傷の抽出用 ↑ >>
-        return extracted_text
-
-    def entity_extension(mtext, neighbor):
-        # MTextの挿入点
-        mtext_insertion = mtext.dxf.insert
-        # 特定のプロパティ(Defpoints)で描かれた文字の挿入点
-        neighbor_insertion = neighbor.dxf.insert
-        #テキストの行数を求める
-        text = mtext.plain_text()
-        text_lines = text.split("\n") if len(text) > 0 else []
-        # 改行で区切ったリスト数→行数
-        text_lines_count = len(text_lines)
-        
-        # Defpointsを範囲内とするX座標範囲
-        x_start = mtext_insertion[0]  # X開始位置
-        x_end  = mtext_insertion[0] + mtext.dxf.width # X終了位置= 開始位置＋幅
-        y_start = mtext_insertion[1] + mtext.dxf.char_height # Y開始位置
-        y_end  = mtext_insertion[1] - mtext.dxf.char_height * (text_lines_count + 1) # 文字の高さ×(行数+1)
-        
-        # MTextの下、もしくは右に特定のプロパティで描かれた文字が存在するかどうかを判定する(座標：右が大きく、上が大きい)
-        if (neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end):
-            #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
-            if (neighbor_insertion[1] >= y_end and neighbor_insertion[1] <= y_start):
-                return True
-        
-        return False
-
+# << dxfから要素を抽出・整列してsorted_itemsに渡す >>
+def create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text):
+    
     extracted_text = find_square_around_text(dxf_filename, search_title_text, second_search_title_text) # 関数の定義
     # リストを処理して、スペースを追加する関数を定義
     def add_spaces(text):
@@ -2309,6 +2362,7 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
                     time_result.append(''.join([current_date, '　', time_item]))
 
             sub_dis_items = ['infra/static/infra/img/' + item + ".jpg" for item in time_result]
+            # C:\work\django\myproject\program\Infraproject\infra\static\infra\img\9月7日　佐藤　地上
             # dis_itemsの要素の数だけ、分割した各文字の先頭に「infra/static/infra/img/」各文字の後ろに「.jpg」を追加
             # ['infra/static/infra/img/9月8日 S*/*117.jpg', 'infra/static/infra/img/9月8日 S*/*253.jpg']
             # print(f"このデータは：{sub_dis_items}")
@@ -2727,3 +2781,57 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
         sorted_items = sorted(damage_table, key=sort_key_function)
         
     return sorted_items
+
+"""
+def edit_report_data(request, pk):
+    report_data = get_object_or_404(FullReportData, pk=pk)
+    if request.method == "POST":
+        coords = request.POST.get("coords").split(",")
+        new_text = request.POST.get("new_text")
+        
+        coords = [
+            (543427.3505810621, 229268.8593029478), # 修正する座標を指定
+        ]
+
+        # 座標の一致を確認するための許容誤差
+        epsilon = 0.001
+
+        # 座標に一致するTEXTまたはMTEXTを探索
+        for entity in msp: # モデルスペースの中のentityをループ処理
+            if entity.dxftype() in {'TEXT', 'MTEXT', 'Defpoints'}: # entityが['TEXT', 'MTEXT', 'Defpoints']の場合
+                # エンティティの位置を取得
+                x, y, _ = entity.dxf.insert
+                
+                # 指定された座標と一致するかどうか確認
+                for cx, cy in coords:
+                    if abs(x - cx) < epsilon and abs(y - cy) < epsilon:
+                        
+                        # 更新するテキスト(固定値)
+                        new_text = "主桁0000" # 更新するテキスト
+                        entity.dxf.text = new_text # 古いテキストを新しいテキストに置き換え
+                        
+                        # デスクトップのパスを取得（Windowsの例）
+                        desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+                        # デスクトップのパスを取得（MacOS/Linuxの例）
+                        # desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
+                        
+                        # 更新されたDXFファイルをデスクトップに保存
+                        doc.saveas(os.path.join(desktop_path, "さいど更新.dxf"))
+
+                        break  # 終了
+
+        form = EditReportDataForm(request.POST, instance=report_data)
+        if form.is_valid():
+            form.save()
+            return redirect('bridge-table', article_pk, pk)
+    else:
+        form = EditReportDataForm(instance=report_data)
+    return render(request, 'infra/bridge_table.html', {'form': form})
+
+def delete_report_data(request, pk):
+    report_data = get_object_or_404(FullReportData, pk=pk)
+    if request.method == "POST":
+        report_data.delete()
+        return redirect('bridge-table', article_pk, pk)
+    return render(request, 'infra/bridge_table.html', {'object': report_data})
+"""

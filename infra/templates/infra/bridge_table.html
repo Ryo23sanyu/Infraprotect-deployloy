@@ -7,7 +7,6 @@
 {% block h1 %}損傷一覧{% endblock %}
 
 {% block content %}
-
 {# ここで径間ボタンを生成 #}
 <form action="{% url 'bridge-table' object.infra.article.pk object.infra.pk %}">
     {% for button in buttons %}
@@ -15,7 +14,6 @@
     {% endfor %}
 </form>
 {# HTMLのtableタグのルールとして、table系のタグ以外(formタグなど)が使われた時、中の要素だけ外に追い出される。 #}
-
 <table class="my-table" border="1">
     <thead>
         <tr>
@@ -32,14 +30,14 @@
                 <!--ajaxの設定：methodはpostにする、mulitpart/form-dataとする、CSRF対策を行う-->
                 {% csrf_token %}
                 <td>
-                    <div style="border: 1px solid black; padding: 5px; margin-bottom: 10px; width: 410px;">
+                    <div style="border: 1px solid black; padding: 5px; margin-bottom: 10px; width: 450px;">
                         {% for bridge_list in group %}
                             <span style="background-color: Pink;">{{ bridge_list.parts_name }}</span> <!-- first項目に色付け -->
                             <br>
                             {{ bridge_list.damage_name }}
                             {% if "NON-a" not in bridge_list.damage_name %} <!-- NON-aを含まない場合 -->
                                 <br>
-                                <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)" style="width: 100px;">
+                                <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)">
                                     <option value=""></option>
                                     <option value="width">幅</option>
                                     <option value="area">面積</option>
@@ -47,18 +45,25 @@
                                     <option value="level">段差量</option>
                                     <!-- 必要に応じて他のオプションを追加 -->
                                 </select>
-                                <input type="text" name="input3_{{ forloop.counter }}" placeholder="数量" style="width: 100px;" />
+                                <input type="text" name="input3_{{ forloop.counter }}" placeholder="数量" style="width: 130px;" />
                                 <input type="text" name="input2_{{ forloop.counter }}" placeholder="単位" style="width: 60px;" id="input_{{ forloop.counter }}" />
                                 <input type="text" name="input4_{{ forloop.counter }}" placeholder="分類" style="width: 60px;" />
-                                <input type="text" name="input5_{{ forloop.counter }}" placeholder="パターン" style="width: 60px;" />
+                                <input type="text" name="input5_{{ forloop.counter }}" placeholder="パターン" style="width: 100px;" />
                                 <br>
                             {% else %}
                             <br>
                             {% endif %}
                         {% endfor %}
                         <br>
-                        <button>変更</button>
-                        <button>削除</button>
+                        {% comment %} <form method="POST" action="{% url 'edit_report_data' bridge.id %}" class="edit-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="parts_name" value="{{ bridge.parts_name }}">
+                            <input type="hidden" name="damage_name" value="{{ bridge.damage_name }}">
+                            <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
+                            <input type="hidden" name="new_text">
+                            <button type="button" onclick="editData(this)">変更</button>
+                            <button type="button" onclick="deleteData(this)">削除</button>
+                        </form> {% endcomment %}
                     </div>
                 </td>
                 {% if forloop.first %}
@@ -122,4 +127,58 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+    // フォームを動的に送信
+    function editData(button) {
+        let form = button.closest('.edit-form');
+        let newText = prompt("新しいテキストを入力してください:");
+        if (newText) {
+            form.querySelector('input[name="new_text"]').value = newText;
+            form.submit();
+        }
+    }
+    
+    function deleteData(button) {
+        let form = button.closest('.edit-form');
+        if (confirm("本当に削除しますか？")) {
+            form.action = form.action.replace('edit_report_data', 'delete_report_data');
+            form.submit();
+        }
+    }
+    
+    // 写真を変更する際にサーバーに送信
+    {% comment %} document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('button[id^="fileSelect-"]').forEach((button, index) => {
+            button.addEventListener('click', function() {
+                document.getElementById(`upload-file-${index + 1}`).click();
+            });
+    
+            let uploadInput = document.getElementById(`upload-file-${index + 1}`);
+            uploadInput.addEventListener('change', function() {
+                let formData = new FormData();
+                formData.append('upload-file', uploadInput.files[0]);
+                formData.append('bridge_id', button.value);  // バリューとしてBridgeのIDを送信します。
+    
+                fetch("{% url 'ajax_file_send' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.upload_file_url) {
+                        document.getElementById(`uploaded-image-${index + 1}`).src = data.upload_file_url;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+    }); {% endcomment %}
+</script>
+
 {% endblock content %}
