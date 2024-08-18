@@ -50,7 +50,6 @@ class Article(models.Model):
     対象数 = models.IntegerField()# 対象数 number
     担当者名 = models.CharField(max_length=100)# 担当者名 namager
     その他 = models.CharField(max_length=100)# その他 other
-    カテゴリー = models.CharField(max_length=100, choices = CATEGORY)# カテゴリー
     ファイルパス = models.CharField(max_length=255)# 写真ファイルパス
   
     def __str__(self):
@@ -333,6 +332,8 @@ class DamageComment(models.Model):
             name_lank = "剥離"
         elif self.damage_name == "剥離・鉄筋露出" and self.damage_max_lank == "d":
             name_lank = "鉄筋露出"
+        elif self.damage_name == "剥離・鉄筋露出" and self.damage_max_lank == "e":
+            name_lank = "鉄筋の減肉を伴う鉄筋露出"
         elif self.damage_name.startswith("その他"):
             # 正規表現で「:」と「)」の間の文字を抽出
             match = re.search(r':(.*?)\)', self.damage_name)

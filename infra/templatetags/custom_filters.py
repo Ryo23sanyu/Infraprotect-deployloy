@@ -1,3 +1,4 @@
+import re
 from django import template
 
 register = template.Library()
@@ -8,3 +9,12 @@ def split_comma(value):
     if not value:
         return []
     return value.split(",")
+
+@register.filter(name='store')
+def store(value, storage):
+    if 'value' not in storage:
+        storage['value'] = value
+        return None
+    previous = storage['value']
+    storage['value'] = value
+    return previous

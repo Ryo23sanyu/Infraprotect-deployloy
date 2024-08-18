@@ -23,8 +23,8 @@
     </div>
     <div>
       <label for="id_file_path">ファイルパス:</label>
-      <input id="id_file_path" name="ファイルパス" type="text" value="{{ form.initial.ファイルパス }}" readonly />
-      <button type="button" onclick="toggleFileTree()">Select File</button>
+      <input id="id_file_path" name="ファイルパス" type="text" value="{{ form.initial.ファイルパス }}">
+      <button type="button" onclick="toggleFileTree()">ファイル選択</button>
     </div>
     <div>
       <input type='submit' value='作成'>
@@ -32,7 +32,7 @@
 
     <div id="file-tree-container" style="display: none;">
       <tbody id="file-tree">
-          <button type="button" class="toggle-btn" onclick="toggleDirectory(this, '{{ root_dir }}')">+</button> Home Directory
+          <button type="button" class="toggle-btn" onclick="toggleDirectory(this, '{{ root_dir|urlencode }}')">+</button> ホームディレクトリ
       </tbody>
     </div>
 
@@ -42,51 +42,73 @@
   function toggleFileTree() {
     const container = document.getElementById('file-tree-container');
     container.style.display = container.style.display === 'none' ? 'block' : 'none';
-}
+  }
+  
+  function toggleDirectory(button, path) {
+    const parentLi = button.parentElement;
+    const nextElement = parentLi.querySelector('ul');
 
-function toggleDirectory(element, path) {
-    const nextElement = element.parentNode.querySelector('ul');
     if (nextElement) {
-        // Already expanded, so collapse it
         if (nextElement.style.display === 'none') {
             nextElement.style.display = 'block';
-            element.innerHTML = '-';
+            button.innerText = '-';
         } else {
             nextElement.style.display = 'none';
-            element.innerHTML = '+';
+            button.innerText = '+';
         }
     } else {
-        // Not expanded, so expand it
         fetch("{% url 'get-subdirectories' %}?path=" + encodeURIComponent(path))
             .then(response => response.json())
             .then(data => {
                 const ul = document.createElement('ul');
                 data.directories.forEach(subDir => {
+                    const fullPath = path + '/' + subDir;
                     const li = document.createElement('li');
-                    li.innerHTML = `<button class="toggle-btn" onclick="toggleDirectory(this, '${subDir}')">+</button> ${subDir}`;
+                    li.innerHTML = `
+                      <button type="button" class="toggle-btn" onclick="toggleDirectory(this, '${fullPath.replace(/'/g, "\\'")}')">+</button> 
+                      ${subDir} 
+                      <button type="button" style="background-color: orange; color: white;" onclick="selectDirectory('${fullPath.replace(/'/g, "\\'")}')">選択</button>`;
                     ul.appendChild(li);
                 });
                 data.files.forEach(file => {
                     const li = document.createElement('li');
-                    li.innerHTML = file;
-                    li.onclick = function () { selectFile(file); };
+                    const filePath = path + '/' + file;
+                    li.textContent = file;
+                    li.onclick = function () { selectFile(filePath); };
                     ul.appendChild(li);
                 });
-                element.innerHTML = '-';
-                element.parentNode.appendChild(ul);
+                button.innerText = '-';
+                parentLi.appendChild(ul);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('サブディレクトリの取得中にエラーが発生しました');
             });
     }
-}
+  }
 
-function selectFile(filePath) {
+  function selectFile(filePath) {
     document.getElementById('id_file_path').value = filePath;
-    document.cookie = "selected_file=" + filePath + "; path=/";
-    alert('Selected file: ' + filePath); // 選択したファイルパスを表示
-}
+    document.cookie = "selected_file=" + encodeURIComponent(filePath) + "; path=/";
+    {% comment %} alert('選択したファイルパス: ' + filePath); {% endcomment %}
+  }
 
-function submitSelection() {
-    window.location.href = "{% url 'create-article' %}";
-}
+  function selectDirectory(dirPath) {
+    document.getElementById('id_file_path').value = dirPath;
+    document.cookie = "selected_file=" + encodeURIComponent(dirPath) + "; path=/";
+    {% comment %} alert('選択したディレクトリパス: ' + dirPath); {% endcomment %}
+  }
 </script>
+
+<style>
+  #file-tree-container {
+      max-height: 500px; /* 必要に応じて高さを調整 */
+      max-width: 600px; /* 必要に応じて高さを調整 */
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 10px;
+  }
+</style>
 
 {% endblock content %}

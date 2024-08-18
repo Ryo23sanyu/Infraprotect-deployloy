@@ -35,7 +35,7 @@ from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
 from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentCauseEditForm, DamageCommentEditForm, DamageCommentJadgementEditForm, EditReportDataForm, FileUploadForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 from .forms import ArticleForm
-from .models import Article
+from urllib.parse import unquote
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -209,20 +209,32 @@ class CreateArticleView(LoginRequiredMixin, CreateView):
         selected_file = self.request.COOKIES.get('selected_file')
         if selected_file:
             initial['ファイルパス'] = selected_file
-            # Cookieを削除しておく（必要に応じて）
-            self.request.COOKIES['selected_file'] = ''
         return initial
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        root_dir = os.path.expanduser('~')
+        # root_dir = os.path.expanduser('~') # Cドライブのユーザーディレクトリ
+        user_home_dir = os.path.expanduser('~')
+        root_dir = os.path.join(user_home_dir, 'Desktop') # デスクトップディレクトリ
         context['root_dir'] = root_dir
         return context
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        response.delete_cookie('selected_file')
+        return response
+    
+    def form_valid(self, form):
+        print("Form data:", form.cleaned_data)  # ここでフォームのデータを出力
+        response = super().form_valid(form)
+        response.delete_cookie('selected_file')
+        return response
+
 def get_subdirectories(request):
-    path = request.GET.get('path')
+    # | をバックスラッシュに戻します
+    path = unquote(request.GET.get('path', ''))
     if not path:
-        return JsonResponse({'directories': [], 'files': []})
+        return JsonResponse({'directories': [], 'files': []}, status=400)
 
     subdirectories = []
     files = []
@@ -231,11 +243,11 @@ def get_subdirectories(request):
         with os.scandir(path) as it:
             for entry in it:
                 if entry.is_dir():
-                    subdirectories.append(entry.path)
+                    subdirectories.append(entry.name)
                 elif entry.is_file():
-                    files.append(entry.path)
+                    files.append(entry.name)
     except Exception as e:
-        return JsonResponse({'error': str(e)})
+        return JsonResponse({'error': str(e)}, status=400)
 
     return JsonResponse({'directories': subdirectories, 'files': files})
     
@@ -2789,36 +2801,39 @@ def edit_report_data(request, pk):
         coords = request.POST.get("coords").split(",")
         new_text = request.POST.get("new_text")
         
-        coords = [
-            (543427.3505810621, 229268.8593029478), # 修正する座標を指定
-        ]
+        def find_square_around_text(dxf_filename, target_text, second_target_text):
+            doc = ezdxf.readfile(dxf_filename)
+            msp = doc.modelspace()
+            coords = [
+                (543427.3505810621, 229268.8593029478), # 修正する座標を指定
+            ]
 
-        # 座標の一致を確認するための許容誤差
-        epsilon = 0.001
+            # 座標の一致を確認するための許容誤差
+            epsilon = 0.001
 
-        # 座標に一致するTEXTまたはMTEXTを探索
-        for entity in msp: # モデルスペースの中のentityをループ処理
-            if entity.dxftype() in {'TEXT', 'MTEXT', 'Defpoints'}: # entityが['TEXT', 'MTEXT', 'Defpoints']の場合
-                # エンティティの位置を取得
-                x, y, _ = entity.dxf.insert
-                
-                # 指定された座標と一致するかどうか確認
-                for cx, cy in coords:
-                    if abs(x - cx) < epsilon and abs(y - cy) < epsilon:
-                        
-                        # 更新するテキスト(固定値)
-                        new_text = "主桁0000" # 更新するテキスト
-                        entity.dxf.text = new_text # 古いテキストを新しいテキストに置き換え
-                        
-                        # デスクトップのパスを取得（Windowsの例）
-                        desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-                        # デスクトップのパスを取得（MacOS/Linuxの例）
-                        # desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
-                        
-                        # 更新されたDXFファイルをデスクトップに保存
-                        doc.saveas(os.path.join(desktop_path, "さいど更新.dxf"))
+            # 座標に一致するTEXTまたはMTEXTを探索
+            for entity in msp: # モデルスペースの中のentityをループ処理
+                if entity.dxftype() in {'TEXT', 'MTEXT', 'Defpoints'}: # entityが['TEXT', 'MTEXT', 'Defpoints']の場合
+                    # エンティティの位置を取得
+                    x, y, _ = entity.dxf.insert
+                    
+                    # 指定された座標と一致するかどうか確認
+                    for cx, cy in coords:
+                        if abs(x - cx) < epsilon and abs(y - cy) < epsilon:
+                            
+                            # 更新するテキスト(固定値)
+                            new_text = "主桁0000" # 更新するテキスト
+                            entity.dxf.text = new_text # 古いテキストを新しいテキストに置き換え
+                            
+                            # デスクトップのパスを取得（Windowsの例）
+                            desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+                            # デスクトップのパスを取得（MacOS/Linuxの例）
+                            # desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
+                            
+                            # 更新されたDXFファイルをデスクトップに保存
+                            doc.saveas(os.path.join(desktop_path, "さいど更新.dxf"))
 
-                        break  # 終了
+                            break  # 終了
 
         form = EditReportDataForm(request.POST, instance=report_data)
         if form.is_valid():

@@ -1,21 +1,10 @@
-# << 材料の置換 >>
+import re
 
-# 置換マッピング
-replace_dict = {
-    '鋼': 'S',
-    'コンクリート': 'C',
-    'その他': 'X'
-}
+bridge = "横桁 Cr0304　⑦剥離・鉄筋露出-e：1径間　(横桁 Cr04/⑦剥離・鉄筋露出-e/1径間)"
 
-text = "鋼,コンクリート"
+def initial_segment(value):
+    """スペースまでの文字列を抽出"""
+    match = re.match(r'^[^　]+', value)
+    return match.group(0) if match else ''
 
-# テキストをカンマで分割します。
-elements = text.split(',')
-
-# それぞれの要素を置換辞書に基づいて変換します。
-replaced_elements = [replace_dict.get(element, element) for element in elements]
-
-# 変換された要素を再びカンマで結合します。
-replaced_text = ','.join(replaced_elements)
-
-print(replaced_text)
+print(initial_segment(bridge))

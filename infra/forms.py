@@ -169,5 +169,5 @@ class EditReportDataForm(forms.ModelForm):
 class ArticleForm(forms.ModelForm):
     class Meta:
         model = Article
-        fields = ['案件名', '土木事務所', '対象数', '担当者名', 'その他', 'カテゴリー']
+        fields = ['案件名', '土木事務所', '対象数', '担当者名', 'その他', 'ファイルパス']
 
