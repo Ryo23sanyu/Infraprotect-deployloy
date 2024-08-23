@@ -18,3 +18,10 @@ def store(value, storage):
     previous = storage['value']
     storage['value'] = value
     return previous
+
+@register.filter(name='remove_prefix')
+def remove_prefix(value, arg):
+    """指定されたプレフィックスを削除するフィルター"""
+    if value.startswith(arg):
+        return value[len(arg):]
+    return value

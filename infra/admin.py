@@ -16,20 +16,38 @@ admin.site.register(Approach) # 近接方法
 admin.site.register(Thirdparty) # 第三者点検の有無
 admin.site.register(UnderCondition) # 路下条件
 admin.site.register(Table) # 損傷写真帳
-admin.site.register(PartsName) # 番号登録
+admin.site.register(Material) # 番号登録(材料)
+admin.site.register(FullReportData) # 損傷写真帳の全データ
+
+class DamageListAdmin(admin.ModelAdmin): # 損傷一覧
+    list_display = ('parts_name', 'number', 'damage_name', 'damage_lank', 'span_number', 'infra')
+    ordering = ('-span_number', '-infra')
+admin.site.register(DamageList, DamageListAdmin)
+
+
+
+
+
+
+
+class PartsNameAdmin(admin.ModelAdmin): # 番号登録
+    list_display = ('部材名', '記号', 'get_materials', '主要部材', 'display_order') # 表示するフィールド
+    list_editable = ('display_order',) # 管理画面でdisplay_orderフィールドを直接編集
+    ordering = ('display_order',) # 順序フィールドで並べ替え
+    def get_materials(self, obj): # 多対多フィールドの内容をカスタムメソッドで取得して文字列として返す
+        return ", ".join([material.材料 for material in obj.material.all()])
+    get_materials.short_description = '材料' # 管理画面での表示名を設定
+admin.site.register(PartsName, PartsNameAdmin)
 
 class PartsNumberAdmin(admin.ModelAdmin): # 番号登録
     list_display = ('infra', 'parts_name', 'symbol', 'number', 'get_material_list', 'main_frame', 'span_number')
 admin.site.register(PartsNumber, PartsNumberAdmin)
 
-admin.site.register(Material) # 番号登録(材料)
-admin.site.register(FullReportData) # 損傷写真帳の全データ
-
 class NameEntryAdmin(admin.ModelAdmin): # 名前とアルファベットの紐付け
     list_display = ('article', 'name', 'alphabet')
 admin.site.register(NameEntry, NameEntryAdmin)
 
-admin.site.register(DamageList) # 損傷一覧
+
 """ 管理サイトの並び替え表示に必要な動作 """
 class CustomPartsNameFilter(admin.SimpleListFilter):
     title = 'Parts Name'

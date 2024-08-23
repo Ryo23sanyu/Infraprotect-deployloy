@@ -1,3 +1,4 @@
+import os
 import re
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -41,7 +42,8 @@ class Image(models.Model):
 class DamageReport(models.Model):
     first = models.CharField(max_length=100)
     second = models.TextField()
-    
+
+# << ディレクトリの動的変更 >>
 # << 案件作成のモデル >>
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
 class Article(models.Model):
@@ -51,7 +53,6 @@ class Article(models.Model):
     担当者名 = models.CharField(max_length=100)# 担当者名 namager
     その他 = models.CharField(max_length=100)# その他 other
     ファイルパス = models.CharField(max_length=255)# 写真ファイルパス
-  
     def __str__(self):
         return self.案件名
 
@@ -162,6 +163,10 @@ class PartsName(models.Model):
     記号 = models.CharField(max_length=50)
     主要部材 = models.BooleanField()
     material = models.ManyToManyField(Material) # 多対多のリレーションに必要
+    display_order = models.PositiveIntegerField(default=0) # 順番設定用
+    class Meta:
+        ordering = ['display_order']
+        
     def __str__(self):
         return self.部材名
 

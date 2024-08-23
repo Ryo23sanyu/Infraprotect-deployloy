@@ -5,24 +5,28 @@
 {% block content %}
   <form method='POST' novalidate>
     {% csrf_token %}
-    <div>
-      <label for="{{ form.案件名.id_for_label }}">案件名:</label>
+    <div class="form-group">
+      <label for="{{ form.案件名.id_for_label }}">案件名</label>
       {{ form.案件名 }}
     </div>
-    <div>
-      <label for="{{ form.対象数.id_for_label }}">対象数:</label>
+    <div class="form-group">
+      <label for="{{ form.土木事務所.id_for_label }}">土木事務所</label>
+      {{ form.土木事務所 }}
+    </div>
+    <div class="form-group">
+      <label for="{{ form.対象数.id_for_label }}">対象数</label>
       {{ form.対象数 }}
     </div>
-    <div>
-      <label for="{{ form.担当者名.id_for_label }}">担当者名:</label>
+    <div class="form-group">
+      <label for="{{ form.担当者名.id_for_label }}">担当者名</label>
       {{ form.担当者名 }}
     </div>
-    <div>
-      <label for="{{ form.その他.id_for_label }}">その他:</label>
+    <div class="form-group">
+      <label for="{{ form.その他.id_for_label }}">その他</label>
       {{ form.その他 }}
     </div>
-    <div>
-      <label for="id_file_path">ファイルパス:</label>
+    <div class="form-group">
+      <label for="id_file_path">ファイルパス</label>
       <input id="id_file_path" name="ファイルパス" type="text" value="{{ form.initial.ファイルパス }}">
       <button type="button" onclick="toggleFileTree()">ファイル選択</button>
     </div>
@@ -103,12 +107,28 @@
 <style>
   #file-tree-container {
       max-height: 500px; /* 必要に応じて高さを調整 */
-      max-width: 600px; /* 必要に応じて高さを調整 */
+      max-width: 725px; /* 必要に応じて高さを調整 */
       overflow-y: auto;
       border: 1px solid #ccc;
       padding: 10px;
       margin-top: 10px;
   }
-</style>
+  .form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
 
+  .form-group label {
+    width: 125px; /* ラベルの固定幅 */
+    padding-right: 10px; 
+    text-align: left; /* ラベルを左揃え */
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 40%; /* 入力欄の幅を画面の半分にする */
+  }
+</style>
 {% endblock content %}

@@ -1,6 +1,6 @@
 from django.urls import path
 from .import views
-from .views import file_upload, file_upload_success, get_subdirectories, get_symbol
+from .views import file_upload, file_upload_success, get_subdirectories, get_symbol, serve_image
 from .views import photo_list, photo_upload, selected_photos, panorama_list
 from django.conf import settings
 from django.conf.urls.static import static
@@ -30,14 +30,15 @@ urlpatterns = [
     path('article/<int:article_pk>/infra/<int:pk>/dxf_output/', views.dxf_output, name='dxf-output'),# DXFファイル出力
     # << 損傷写真帳 >>
     path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table'),# 損傷写真帳
-    # path('bridge_table_edit/<int:pk>/', views.bridge_table_edit, name='bridge_table_edit'), # 旗揚げ内容の変更
-    # path('bridge_table_delete/<int:pk>/', views.bridge_table_delete, name='bridge_table_delete'), # 旗揚げ内容の削除
+    path('serve-image/<str:file_path>/', serve_image, name='serve_image'), # 写真をアップロードせずに表示
+    path('bridge_table_edit/<int:pk>/', views.edit_report_data, name='edit_report_data'), # 旗揚げ内容の変更
+    # path('bridge_table_delete/<int:pk>/', views.delete_report_data, name='delete_report_data'), # 旗揚げ内容の削除
     # << 名前の登録 >>
     path('article/<int:article_pk>/names/', views.names_list, name='names-list'),# 名前とアルファベットの紐付け
     path('delete_name_entry/<int:entry_id>/', views.delete_name_entry, name='delete_name_entry'),# 登録した名前を削除
     # << 要素番号の登録 >>
     path('article/<int:article_pk>/infra/<int:pk>/number/', views.number_list, name='number-list'),# 要素番号登録
-    path('delete_number_entry/<int:entry_id>/', views.delete_number_entry, name='delete_number_entry'),# 登録した番号を削除
+    path('delete_number_entry/<int:article_pk>/<int:entry_id>/', views.delete_number_entry, name='delete_number_entry'),# 登録した番号を削除
     # << 所見一覧 >>
     path('article/<int:article_pk>/infra/<int:pk>/observations/', views.observations_list, name='observations-list'),# 所見一覧
     path('damage_comment_edit/<int:pk>/', views.damage_comment_edit , name="damage_comment_edit"), # 所見コメントを管理サイトに保存
@@ -47,6 +48,7 @@ urlpatterns = [
     path('ajax-file-send/<int:pk>/', views.ajax_file_send, name='ajax_file_send'),# 損傷写真帳の写真変更
     path('ajax-get-symbol/', views.get_symbol, name='ajax_get_symbol'),# 部材名と部材記号の紐付け
     path('save_comment/<int:pk>/', views.save_comment, name='save_comment'), # 所見コメントのリアルタイム保存
+    path('update_full_report_data/<int:pk>/', views.update_full_report_data, name='update_full_report_data'), # 損傷写真帳のリアルタイム保存
     
     # << 未完成 >>
     path('photos/', views.photo_list, name='photo_list'),
