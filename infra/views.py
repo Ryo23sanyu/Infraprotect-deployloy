@@ -273,12 +273,13 @@ def file_upload(request, article_pk, pk):
         if Table.objects.filter(infra=pk).first():
             obj = Table.objects.get(infra=pk)
             form = TableForm(copied, request.FILES, instance=obj)
-            
+
         if form.is_valid():
             form.save()
             return redirect('file_upload_success')
     else:
         form = TableForm()
+    
     return render(request, 'infra/file_upload.html', {'form': form, 'article_pk': article_pk, 'pk': pk})
 
 def file_upload_success(request):
@@ -759,16 +760,15 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     # range(一連の整数を作成):range(1からスタート, ストップ引数3 = 2 + 1) → [1, 2](ストップ引数は含まれない)
     print(buttons)
     
-    print(f"ボタン:{Table.objects.filter(infra=pk)}")# ボタン:<QuerySet [<Table: Table object (15)>]>
-    print(f"ボタン:{Table.objects.filter(infra=pk).first()}")# ボタン:Table object (18)(QuerySetのままだとうまく動作しない)
-    
-    context = {'object': Table.objects.filter(infra=pk).first(), 'grouped_data': grouped_data, 'photo_grouped_data': photo_grouped_data, 'buttons': buttons}
+    print(f"ボタン:{Table.objects.filter(infra=pk)}")# ボタン:<QuerySet [<Table: Table object (1)>]>
+    table_object = Table.objects.filter(infra=pk).first()
+    print(f"橋梁番号:{table_object}")# ボタン:Table object (1)
+    article_pk = table_object.infra.article.pk
+    print(f"案件番号:{article_pk}") # 案件番号:1
+    context = {'object': table_object, 'article_pk': article_pk, 'grouped_data': grouped_data, 'photo_grouped_data': photo_grouped_data, 'buttons': buttons}
     # 渡すデータ：　損傷データ　↑　　　       　   joinと損傷座標毎にグループ化したデータ　↑　　　　　　 写真毎にグループ化したデータ　↑ 　　       径間ボタン　↑
     # テンプレートをレンダリング
     return render(request, 'infra/bridge_table.html', context)
-    #context = {'bridge_table': FullReportData.objects.filter(infra=pk), 'grouped_data': grouped_data}
-    # テンプレートをレンダリング
-    #return render(request, 'infra/bridge_table.html', context)
     
 def ajax_file_send(request, pk):
     if request.method == 'POST': # HTTPリクエストがPOSTメソッドかつ
@@ -851,13 +851,7 @@ def observations_list(request, article_pk, pk):
     sorted_items = create_picturelist(request, table, dxf_filename, search_title_text, second_search_title_text)
     """"""
     # 全パーツデータを取得
-    print(f"Received article_pk: {article_pk}, id: {pk}")
-    context = {
-        "object": table,
-        "article_pk": article_pk,
-        "pk": pk,
-        "buttons": table.infra.径間数 * " "
-    }
+
     infra_name = table.infra.title
     print(f"infra_name:{infra_name}")
     parts_data = PartsNumber.objects.filter(infra=pk)
@@ -1074,12 +1068,12 @@ def observations_list(request, article_pk, pk):
     print(f"所見ボタン:{DamageComment.objects.filter(infra=pk)}")# ボタン:<QuerySet [<Table: Table object (15)>]>
     print(f"所見ボタン:{DamageComment.objects.filter(infra=pk).first()}")# ボタン:Table object (18)(QuerySetのままだとうまく動作しない)
     #   1(径間)  ,      1(主桁)  ,        01     ,    6(ひびわれ)
-    context.update({
-        'data': filtered_bridges,
-        'buttons': buttons,
-    })
-    print("Context:", context)
-    return render(request, 'observer_list.html', {'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
+
+    observer_object = Table.objects.filter(id=pk).first()
+    print(f"橋梁番号:{observer_object}") # 橋梁番号:Table object (1)
+    article_pk = observer_object.article.pk
+    print(f"案件番号:{article_pk}") # 案件番号:1
+    return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 所見コメントの登録 >>
 def damage_comment_edit(request, pk):
@@ -1199,10 +1193,7 @@ def delete_name_entry(request, entry_id):
 
 # << 番号登録 >>
 def number_list(request, article_pk, pk):
-    context = {
-        'article_pk': article_pk,
-        'pk': pk,
-    }
+
     # 同じname属性の値をすべて取り出す
     serial_numbers = request.POST.getlist("serial_number") # ['0101', '0103', '0201', '0203']
     single_numbers = request.POST.getlist("single_number") # ['0101', '0201', '0301', '0401']
@@ -1236,7 +1227,7 @@ def number_list(request, article_pk, pk):
             for prefix in range(int(start_prefix), int(end_prefix)+1):
                 for suffix in range(int(start_suffix), int(end_suffix)+1):
                     number_items = "{:02d}{:02d}".format(prefix, suffix)
-                    dic = {}
+                    dic = {} # forms.pyにも入れないと自動登録ができない
                     dic["number"] = number_items
                     dic["parts_name"] = request.POST.get("parts_name")
                     dic["symbol"] = request.POST.get("symbol")
@@ -1244,6 +1235,7 @@ def number_list(request, article_pk, pk):
                     dic["span_number"] = request.POST.get("span_number")
                     dic["main_frame"] = request.POST.get("main_frame") == 'on'
                     dic["infra"] = pk # infraとの紐付け
+                    dic["article"] = article_pk
                     print(f"new_serial_number:{number_items}")
                     
                     # 1個ずつバリデーションして保存する
@@ -1266,6 +1258,7 @@ def number_list(request, article_pk, pk):
             dic["span_number"] = request.POST.get("span_number")
             dic["main_frame"] = request.POST.get("main_frame") == 'on'
             dic["infra"] = pk # infraとの紐付け
+            dic["article"] = article_pk 
             print(single_number)
 
             # 1個ずつバリデーションして保存する
@@ -1285,9 +1278,13 @@ def number_list(request, article_pk, pk):
     for accordion_list in create_number_list:
         title = f"{accordion_list.parts_name.部材名}（{accordion_list.symbol}）{accordion_list.get_material_list()} {accordion_list.span_number}径間"
         grouped_parts[title].append(accordion_list.number)
-    print(f"context:{context}")
-    return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items()})
-  # return render(request, 'names_list.html'  , {'article_pk': article_pk,           "form": NameEntryForm(),   'name_entries': name_entries})
+
+    create_number_list = PartsNumber.objects.filter(infra=pk).first()
+    print(f"橋梁番号:{create_number_list}") # 橋梁番号:Table object (1)
+    article_pk = create_number_list.article.pk
+    print(f"案件番号:{article_pk}") # 案件番号:1
+    return render(request, 'number_entry.html', {'object': create_number_list, 'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items()})
+    # return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 登録した番号を削除 >>
 def delete_number_entry(request, article_entry_id, entry_id):

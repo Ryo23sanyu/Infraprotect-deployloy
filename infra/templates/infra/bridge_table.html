@@ -88,7 +88,8 @@
                         {{ bridge.damage_name }}
                         {% if "NON-a" not in bridge.damage_name %} <!-- NON-aを含まない場合 -->
                             <br>
-                            <select name="input1_{{ forloop.counter }}" onChange="updatePlaceholder(this)" style="height:30px; resize: none;">
+                            <div style="display: flex; gap: 5px; align-items: center;">
+                            <select id="measurement-{{ bridge.id }}" name="measurement" placeholder="名称" onChange="updatePlaceholder(this)" style="height:30px; resize: none;">{{ bridge.damage_size|default:"" }}<>
                                 <option value=""></option>
                                 <option value="width">幅</option>
                                 <option value="area">面積</option>
@@ -99,25 +100,22 @@
                             <textarea type="text" id="unit-{{ bridge.id }}"           name="unit"           placeholder="単位" style="height:30px; width: 60px; resize: none;">{{ bridge.unit|default:"" }}</textarea>
                             <textarea type="text" id="classification-{{ bridge.id }}" name="classification" placeholder="分類" style="height:30px; width: 60px; resize: none;">{{ bridge.classification|default:"" }}</textarea>
                             <textarea type="text" id="pattern-{{ bridge.id }}"        name="pattern"        placeholder="パターン" style="height:30px; width: 100px; resize: none;">{{ bridge.pattern|default:"" }}</textarea>
-                            <br>
+                            </div>
                         {% else %}
                         <br>
                         {% endif %}
                         {% endfor %}
-                        {% comment %} {% endfor %} {% endcomment %}
                         <br>
+                        <input type="hidden" name="parts_name" value="{{ bridge.parts_name }}">
+                        <input type="hidden" name="damage_name" value="{{ bridge.damage_name }}">
+                        <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
+                        <input type="hidden" name="new_text">
+                        <input type="hidden" name="join" value="{{ bridge.join }}">
                         <button type="button" onclick="editData(this)">変更</button>
                         <button type="button" onclick="deleteData(this)">削除</button>
 
                         {% comment %} <form method="POST" action="{% url 'edit_report_data' bridge.id %}" class="edit-form">
                             {% csrf_token %}
-                            <input type="hidden" name="parts_name" value="{{ bridge.parts_name }}">
-                            <input type="hidden" name="damage_name" value="{{ bridge.damage_name }}">
-                            <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
-                            <input type="hidden" name="new_text">
-                            <input type="hidden" name="join" value="{{ bridge.join }}">
-                            <button type="button" onclick="editData(this)">変更</button>
-                            <button type="button" onclick="deleteData(this)">削除</button>
                         </form> {% endcomment %}
                     </div>
                 </td>
@@ -186,50 +184,53 @@
 </table>
 
 <!-- カスタムモーダル -->
-{% comment %} <div id="myModal" class="modal">
+<div id="myModal" class="modal">
     <div class="modal-content">
-      <span class="close">&times;</span>
-      <div>
-        <div class="readonly-field" style="pointer-events: none;">
-          <label for="readonly_join">読み取り専用:</label>
-          <input type="text" id="readonly_join" readonly style="width: 100%;">
+        <span class="close">&times;</span>
+        <div>
+            <div class="readonly-field" style="pointer-events: none;">
+                <label for="readonly_join">読み取り専用:</label>
+                <input type="text" id="readonly_join" readonly style="width: 100%;">
+            </div>
+            <div class="editable-field">
+                <label for="editable_join">編集可能:</label>
+                <textarea id="editable_join" style="width: 100%;"></textarea>
+            </div>
+            <button id="saveChangesButton">保存</button>
         </div>
-        <div class="editable-field">
-          <label for="editable_join">編集可能:</label>
-          <textarea id="editable_join" style="width: 100%;"></textarea>
-        </div>
-        <button id="saveChangesButton">保存</button>
-      </div>
     </div>
-</div> {% endcomment %}
-
+</div>
 <script>
 //保存ボタンを押さなくてもデータを保存する(リアルタイム保存)
-$(document).ready(function(){ // ドキュメントが完全に読み込まれた後に関数を実行する
-    $('textarea[name="damage_size"]').on('input', function() { // 範囲指定：指定されたテキストエリアの名前属性を持つすべてのテキストエリア
-        let comment = $(this).val(); // テキストエリアに入力された値を取得してcomment変数に格納
-        let itemId = $(this).attr('id').split('-')[1]; // idからitemIdを取得 
-        // AJAXリクエストを設定して送信
+$(document).ready(function(){
+    // AJAXリクエストを送信する関数
+    function saveField(fieldName, fieldValue, itemId) {
         $.ajax({
-            type: 'POST', // リクエストのタイプをPOSTに設定
-            url: "/update_full_report_data/" + itemId + "/",  // リクエストを送信するURLを動的に設定
-            // リクエストにデータを含める。コメントとCSRFトークンを送信
+            type: 'POST',
+            url: "/update_full_report_data/" + itemId + "/",
             data: {
-                'damage_size': comment,
+                [fieldName]: fieldValue,  // フィールド名をキーとして使用
                 'csrfmiddlewaretoken': '{{ csrf_token }}'
             },
-            // リクエスト成功時のコールバック関数
             success: function(response) {
-                if (response.status === 'success') { // サーバーからのレスポンスのステータスが'success'の場合
-                    console.log("所見コメントを保存しました。");
+                if (response.status === 'success') {
+                    console.log(fieldName + "を保存しました。");
                 } else {
-                    console.log("保存時にエラーが発生しました。");
+                    console.log(fieldName + "の保存時にエラーが発生しました。");
                 }
             },
             error: function(xhr, status, error){
-                console.error("保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
+                console.error(fieldName + "の保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
             }
         });
+    }
+
+    // 各フィールドにイベントリスナーを追加
+    $('textarea[name="damage_size"], textarea[name="measurement"], textarea[name="classification"], textarea[name="pattern"]').on('input', function() {
+        let fieldValue = $(this).val(); // フィールドの入力値を取得
+        let fieldName = $(this).attr('name');  // フィールド名を取得（damage_size、measurementなど）
+        let itemId = $(this).attr('id').split('-')[1];  // IDの形式が `fieldname-itemId` であると仮定
+        saveField(fieldName, fieldValue, itemId);
     });
 });
 // カスタムモーダル
@@ -238,39 +239,39 @@ document.addEventListener('DOMContentLoaded', function() {
     var span = document.getElementsByClassName("close")[0];
     var saveButton = document.getElementById("saveChangesButton");
 
-    //閉じるアイコンがクリックされた場合の閉じる処理
+    // モーダル閉じるためのイベントリスナー
     span.onclick = function() {
         modal.style.display = "none";
     }
 
-    //モーダル領域外がクリックされた場合の閉じる処理
     window.onclick = function(event) {
         if (event.target == modal) {
             modal.style.display = "none";
         }
     }
 
-    //保存ボタンのクリックイベントハンドラ
     saveButton.onclick = function() {
         var editableJoin = document.getElementById("editable_join").value;
-        var currentForm = document.getElementById("currentForm");
-        currentForm.querySelector('input[name="new_text"]').value = editableJoin;
+        var currentDiv = document.getElementById("currentDiv");
+        currentDiv.querySelector('input[name="new_text"]').value = editableJoin;
         modal.style.display = "none";
-        currentForm.submit();
+        currentDiv.querySelector('form').submit();
     }
+
+    modal.style.display = "none";
 });
 
-//モーダルを表示させる関数
+// モーダルを表示させる関数
 function editData(button) {
-    var form = button.closest('form');
-    form.id = "currentForm";
+    var div = button.closest('div');
+    div.id = "currentDiv"; // 一時的にこのdivにidを付与
 
-    var joinValue = form.querySelector('input[name="join"]').value;
+    var joinValue = div.querySelector('input[name="join"]').value;
     document.getElementById("readonly_join").value = joinValue;
     document.getElementById("editable_join").value = joinValue;
 
     var modal = document.getElementById("myModal");
-    modal.style.display = "block"; 
+    modal.style.display = "block";
 }
 
 function deleteData(button) {

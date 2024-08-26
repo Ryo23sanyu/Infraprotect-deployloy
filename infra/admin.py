@@ -41,6 +41,7 @@ admin.site.register(PartsName, PartsNameAdmin)
 
 class PartsNumberAdmin(admin.ModelAdmin): # 番号登録
     list_display = ('infra', 'parts_name', 'symbol', 'number', 'get_material_list', 'main_frame', 'span_number')
+    ordering = ('infra', 'span_number', 'parts_name', 'number')
 admin.site.register(PartsNumber, PartsNumberAdmin)
 
 class NameEntryAdmin(admin.ModelAdmin): # 名前とアルファベットの紐付け

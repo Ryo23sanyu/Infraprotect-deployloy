@@ -139,6 +139,7 @@ class UploadedFile(models.Model):
 class Table(models.Model):
     infra = models.ForeignKey(Infra, verbose_name="橋梁名", on_delete=models.CASCADE) # ForeignKeyフィールドによってInfraとのリレーションシップを定義
     dxf = models.FileField(verbose_name="dxfファイル", upload_to="infra/table/dxf/") # infraを作成するときに登録するdxfファイル用
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, null=True, blank=True)
 
 #<< 名前とアルファベットの登録 >>
 class NameEntry(models.Model):
@@ -184,7 +185,12 @@ class PartsNumber(models.Model):
     #Infraと1対多のリレーションを組む。
     span_number = models.CharField(max_length=50)
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE)
-    
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, null=True, blank=True)
+    class Meta:
+        # ユニークの設定(fieldsの組み合わせを一意とする。nullが許可されているとデータが重複する可能性があるため、notnullの要素を扱う)
+        constraints = [
+            models.UniqueConstraint(fields=['parts_name', 'number', 'span_number', 'infra'], name='unique_parts_number')
+        ]
     def __str__(self):
         materials_list = ", ".join([str(material) for material in self.material.all()])
         return f"{self.infra}{self.parts_name}({self.symbol}{self.number}):{materials_list}/{self.main_frame}:{self.span_number}径間"
