@@ -106,14 +106,17 @@
                         {% endif %}
                         {% endfor %}
                         <br>
-                        <input type="hidden" name="parts_name" value="{{ bridge.parts_name }}">
-                        <input type="hidden" name="damage_name" value="{{ bridge.damage_name }}">
-                        <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
-                        <input type="hidden" name="new_text">
-                        <input type="hidden" name="join" value="{{ bridge.join }}">
-                        <button type="button" onclick="editData(this)">変更</button>
-                        <button type="button" onclick="deleteData(this)">削除</button>
-
+                        {% for bridge in group %}
+                        {% if forloop.first %}
+                            <input type="hidden" name="parts_name" value="{{ bridge.parts_name }}">
+                            <input type="hidden" name="damage_name" value="{{ bridge.damage_name }}">
+                            <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
+                            <input type="hidden" name="new_text">
+                            <input type="hidden" name="join" value="{{ bridge.join }}">
+                            <button type="button" class="edit-button" data-join="{{ bridge.join }}" data-id="{{ bridge.id }}">変更</button>
+                            <button type="button" onclick="deleteData(this)">削除</button>
+                        {% endif %}
+                        {% endfor %}
                         {% comment %} <form method="POST" action="{% url 'edit_report_data' bridge.id %}" class="edit-form">
                             {% csrf_token %}
                         </form> {% endcomment %}
@@ -200,6 +203,7 @@
         </div>
     </div>
 </div>
+
 <script>
 //保存ボタンを押さなくてもデータを保存する(リアルタイム保存)
 $(document).ready(function(){
@@ -238,6 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var modal = document.getElementById("myModal");
     var span = document.getElementsByClassName("close")[0];
     var saveButton = document.getElementById("saveChangesButton");
+    var currentId = null;
 
     // モーダル閉じるためのイベントリスナー
     span.onclick = function() {
@@ -250,29 +255,44 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 変更ボタンにイベントリスナーを追加
+    document.querySelectorAll('.edit-button').forEach(function(button) {
+        button.addEventListener('click', function() {
+            currentId = button.getAttribute('data-id');
+            var joinValue = button.getAttribute('data-join');
+            document.getElementById("readonly_join").value = joinValue;
+            document.getElementById("editable_join").value = joinValue;
+
+            modal.style.display = "block";
+        });
+    });
+
     saveButton.onclick = function() {
         var editableJoin = document.getElementById("editable_join").value;
-        var currentDiv = document.getElementById("currentDiv");
-        currentDiv.querySelector('input[name="new_text"]').value = editableJoin;
         modal.style.display = "none";
-        currentDiv.querySelector('form').submit();
+        
+        // ここでAJAXリクエストを送信してデータを保存する
+        $.ajax({
+            type: 'POST',
+            url: "/update_full_report_data/" + currentId + "/",
+            data: {
+                'join': editableJoin,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    console.log("joinを保存しました。");
+                } else {
+                    console.log("joinの保存時にエラーが発生しました。");
+                }
+            },
+            error: function(xhr, status, error){
+                console.error("joinの保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
+            }
+        });
     }
-
     modal.style.display = "none";
 });
-
-// モーダルを表示させる関数
-function editData(button) {
-    var div = button.closest('div');
-    div.id = "currentDiv"; // 一時的にこのdivにidを付与
-
-    var joinValue = div.querySelector('input[name="join"]').value;
-    document.getElementById("readonly_join").value = joinValue;
-    document.getElementById("editable_join").value = joinValue;
-
-    var modal = document.getElementById("myModal");
-    modal.style.display = "block";
-}
 
 function deleteData(button) {
     if (confirm("本当に削除しますか？")) {
