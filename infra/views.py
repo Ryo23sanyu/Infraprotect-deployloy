@@ -2460,24 +2460,6 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
 
 # << 旗揚げの修正 >>
 def edit_report_data(request, pk):
-    report = FullReportData.objects.get(pk=pk)
-
-    if request.method == 'POST':
-        form = EditReportDataForm(request.POST, instance=report)
-        if form.is_valid():
-            editable_join = request.POST.get('new_text')
-            report.join = editable_join
-            report.save()
-            return redirect('bridge-table', report.infra.article.pk, report.infra.pk)
-    else:
-        form = EditReportDataForm(instance=report)
-
-    return render(request, 'edit_report_data.html', {
-        'form': form,
-        'report': report
-    })
-"""
-def edit_report_data(request, pk):
     report_data = get_object_or_404(FullReportData, pk=pk)
     if request.method == "POST":
         coords = request.POST.get("coords").split(",")
@@ -2521,4 +2503,3 @@ def edit_report_data(request, pk):
     else:
         form = EditReportDataForm(instance=report_data)
     return render(request, 'infra/bridge_table.html', {'form': form})
-"""
