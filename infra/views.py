@@ -4,6 +4,7 @@ import datetime
 from functools import reduce
 from io import BytesIO
 from itertools import groupby, zip_longest
+import logging
 import math
 from operator import attrgetter
 import re
@@ -1111,17 +1112,24 @@ def save_comment(request, pk):
     return JsonResponse({"status": "error", "message": "Invalid request method."})
 
 # << Ajaxを使用した損傷写真帳のリアルタイム保存 >>
+logger = logging.getLogger(__name__)
 @csrf_protect  # CSRF保護を有効にする
 def update_full_report_data(request, pk):
     if request.method == 'POST':
+        logger.debug(f"POST data received: {request.POST}")
         full_report_data = get_object_or_404(FullReportData, id=pk)
         form = FullReportDataEditForm(request.POST, instance=full_report_data)
+        
         if form.is_valid():
             form.save()
+            logger.debug(f"Data saved for item ID {pk}")
             return JsonResponse({'status': 'success'})
         else:
+            logger.error(f"Form errors: {form.errors}")
             return JsonResponse({'status': 'error', 'errors': form.errors})
-    return JsonResponse({'status': 'invalid request'})
+    
+    logger.error("Invalid request method")
+    return JsonResponse({'status': 'invalid request method'})
 
 # << 対策区分のボタンを保存 >>
 def damage_comment_jadgement_edit(request, pk):
@@ -1461,42 +1469,133 @@ def infraunderConditions_view(request):
     }
     return render(request, 'infra_update.html', context)
 
-infra_order = ['主桁', '横桁', '床版']
-def get_infra_order_index(infra):
-    """
-    部分一致に基づいて順序を見つけます。
-    完全に一致するものがない場合は、最後の順序を与えます。
-    """
-    for index, order_item in enumerate(infra_order):
-        if order_item in infra:
-            return index
-    return float('inf') # リストにない場合は最後に
+parts_name_priority_list = ['主桁', '横桁', '床版']
+
+# カスタムソートキー関数
+def custom_sort_key(record):
+    # parts_nameリストの優先度を求めるためのインデックス
+    parts_name_priority = next((i for i, part in enumerate(parts_name_priority_list) if part in record.parts_name), len(parts_name_priority_list))
+    return (int(record.span_number), parts_name_priority)
 
 # << 指定したInfra(pk)に紐づくTableのエクセルの出力 >>
 def excel_output(request, article_pk, pk):
-
+    
     # 元のファイルのパス（例: `base.xlsm`）
     original_file_path = 'base.xlsm'
     # エクセルファイルを読み込む
     wb = openpyxl.load_workbook(original_file_path, keep_vba=True)
-    # << （その７、８） >>
-    # << （その１０） >>
-    # << Django管理サイトからデータを取得（その１１、１２用） >>
-    no1112_records = DamageList.objects.filter(infra=pk)
-    # 並び替え                                                    文字列数字を数字に変換
-    sorted_records = sorted(no1112_records, key=lambda record: (int(record.span_number), get_infra_order_index(record.infra)))
+    
+    # << Django管理サイトからデータを取得（その１用） >>
+    no01_records = Infra.objects.filter(id=pk)
+    ws = wb['その１']
+    for record in no01_records:
+        print(record.title)
+        ws[f'F6'] = record.title # 〇〇橋
+        ws[f'O10'] = record.橋長
+        ws[f'BC5'] = record.橋梁コード
+        ws[f'BF11'] = record.交通量
+        ws[f'BF13'] = record.大型車混入率
+        # 活荷重を処理
+        load_weights = ', '.join([str(weight) for weight in record.活荷重.all()])
+        ws['X10'] = load_weights
+        # 等級を処理
+        load_grades = ', '.join([str(grade) for grade in record.等級.all()])
+        ws['AD10'] = load_grades
+        # 適用示方書を処理
+        rulebooks = ', '.join([str(rulebook) for rulebook in record.適用示方書.all()])
+        ws['AK10'] = rulebooks
+
+    # << Django管理サイトからデータを取得（その７、８用） >>
+    no0708_records = DamageComment.objects.filter(infra=pk)
+    # 並び替えて出力
+    sorted_records = sorted(no0708_records, key=custom_sort_key)
     # カウンタ変数をシートごとに用意
     span = 1
+    i07, i08 = 0, 0
+    initial_row07, initial_row08= 13, 13 # 1つ目の入力位置
+    
+    for record in sorted_records:
+        print(f"出力レコード:{record}")
+        print(f"　径間:{span}")
+        if int(record.span_number) == span + 1:
+            span = int(record.span_number)
+            initial_row07 = initial_row07 + 8 * math.ceil(i07 / 8) # 13+8×(ページ数)
+            initial_row08 = initial_row08 + 8 * math.ceil(i08 / 8) # 13,21,29(+8)
+            i07, i08 = 0, 0
+        if int(record.span_number) == span:
+            if record.main_parts == "〇":
+                ws = wb['その７']
+                row = initial_row07 + i07 # 行は13から
+                i07 += 1
+            else:
+                ws = wb['その８']
+                row = initial_row08 + i08 # 行は13から
+                i08 += 1
+            print(f"　エクセル出力:{record.comment_parts_name}{record.parts_number}{record.damage_name}{record.jadgement}")
+            ws[f'F{row}'] = record.comment_parts_name # 主桁
+            ws[f'J{row}'] = record.parts_number # 01
+            ws[f'D{row}'] = record.material # S,C
+            ws[f'L{row}'] = record.damage_max_lank # e
+            ws[f'N{row}'] = record.damage_min_lank # b
+            ws[f'BO{row}'] = record.span_number # 径間番号
+            
+            if record.damage_name != "NON":
+                if record.jadgement == "C1":
+                    jadgement_position = f'S{row}'
+                elif record.jadgement == "C2":
+                    jadgement_position = f'V{row}'
+                elif record.jadgement == "M":
+                    jadgement_position = f'Z{row}'
+                elif record.jadgement == "E1":
+                    jadgement_position = f'AD{row}'
+                elif record.jadgement == "E2":
+                    jadgement_position = f'AH{row}'
+                elif record.jadgement == "S1":
+                    jadgement_position = f'AK{row}'
+                elif record.jadgement == "S2":
+                    jadgement_position = f'AN{row}'
+                else:
+                    jadgement_position = f'P{row}'
+            
+                ws[jadgement_position] = record.damage_name # 腐食
+                ws[f'AU{row}'] = record.cause # 損傷原因「経年変化」  
+            
+                if record.comment != "":
+                    choice_comment = record.comment
+                else:
+                    choice_comment = record.auto_comment
+                
+                ws[f'BC{row}'] = choice_comment # 〇〇が見られる。
+            else:
+                ws[f'BC{row}'] = "健全である。"
+            
+    # << （その１０） >>
+    # << その10入力欄 >>(+14)
+    # I9 ,AI9 ,BI9 ,23,37 # 写真番号           /None
+    # R9 ,AR9 ,BR9 ,23,37 # 径間番号           /span_number
+    # I10,AI10,BI10,24,38 # 部材名(主桁)       /parts_name
+    # I11,AI11,BI11,25,39 # 損傷の種類(ひびわれ)/damage_name
+    # R10,AR10,BR10,24,38 # 要素番号(0101)     /parts_name
+    # R11,AR11,BR11,25,39 # 損傷程度(e)        /damage_name
+    # E13,AE13,BE13,27,41 # 写真               /this_time_picture
+    # T15,AT15,BT15,29,43 # 前回損傷程度       /None
+    # T17,AT17,BT17,31,45 # メモ               /textarea_content
+    
+    # << Django管理サイトからデータを取得（その１１、１２用） >>
+    no1112_records = DamageList.objects.filter(infra=pk)
+    # 並び替え
+    sorted_records = sorted(no1112_records, key=custom_sort_key)
+    span = 1
     i11, i12 = 0, 0
-    initial_row11, initial_row12 = 10, 10  # 初期行位置
+    initial_row11, initial_row12 = 10, 10 # 1つ目の入力位置
 
     for record in sorted_records:
         print(f"出力レコード:{record}")
         print(f"　径間:{span}")
         if int(record.span_number) == span + 1:
             span = int(record.span_number)
-            initial_row11 = initial_row11 + 18 * math.ceil(i11 / 18)
-            initial_row12 = initial_row12 + 18 * math.ceil(i12 / 18)
+            initial_row11 = initial_row11 + 18 * math.ceil(i11 / 18) # 10+18×(ページ数)
+            initial_row12 = initial_row12 + 18 * math.ceil(i12 / 18) # 10,28,46(+18)
             i11, i12 = 0, 0
         if int(record.span_number) == span:
             if record.main_parts == "〇":
@@ -1517,17 +1616,6 @@ def excel_output(request, article_pk, pk):
             ws[f'AO{row}'] = record.pattern # パターン「6」
             ws[f'BL{row}'] = record.span_number # 径間番号
     
-    # << その10入力欄 >>(+14)
-    # I9 ,AI9 ,BI9 ,23,37 # 写真番号           /None
-    # R9 ,AR9 ,BR9 ,23,37 # 径間番号           /span_number
-    # I10,AI10,BI10,24,38 # 部材名(主桁)       /parts_name
-    # I11,AI11,BI11,25,39 # 損傷の種類(ひびわれ)/damage_name
-    # R10,AR10,BR10,24,38 # 要素番号(0101)     /parts_name
-    # R11,AR11,BR11,25,39 # 損傷程度(e)        /damage_name
-    # E13,AE13,BE13,27,41 # 写真               /this_time_picture
-    # T15,AT15,BT15,29,43 # 前回損傷程度       /None
-    # T17,AT17,BT17,31,45 # メモ               /textarea_content
-
     # 現在の日時を取得してファイル名に追加
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     # 新しいファイル名の生成
@@ -2467,39 +2555,32 @@ def edit_report_data(request, pk):
         
         # DXFファイルの更新処理
         def find_square_around_text(dxf_filename, target_text, second_target_text):
+            import ezdxf
+            import os
             doc = ezdxf.readfile(dxf_filename)
             msp = doc.modelspace()
-            coords = [(float(coords[0]), float(coords[1]))]
 
-            # 座標の一致を確認するための許容誤差
-            epsilon = 0.001
-
-            # 座標に一致するTEXTまたはMTEXTを探索
-            for entity in msp:
-                if entity.dxftype() in {'TEXT', 'MTEXT'}:
-                    x, y, _ = entity.dxf.insert
-                    
-                    # 指定された座標と一致するかどうか確認
-                    for cx, cy in coords:
-                        if abs(x - cx) < epsilon and abs(y - cy) < epsilon:
-                            entity.dxf.text = new_text
-                            desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-                            doc.saveas(os.path.join(desktop_path, "さいど更新.dxf"))
-                            break
-
-        # ここで必要なDXFファイルのパスを指定
+            epsilon = 0.001 # 座標の一致を確認するための許容誤差
+            
+            for entity in msp.query('TEXT MTEXT'):
+                x, y, _ = entity.dxf.insert
+                if ((abs(x - float(coords[0])) < epsilon) and 
+                    (abs(y - float(coords[1])) < epsilon)):
+                    entity.dxf.text = new_text
+                    desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+                    doc.saveas(os.path.join(desktop_path, "さいど更新.dxf"))
+                    break
+        
         table = Table.objects.filter(infra=pk).first()
-        print(f"table.infra.title:{table}")
-        print(f"table.infra.title:{table.dxf.url}")
         decoded_url = urllib.parse.unquote(table.dxf.url)
         dxf_filename = decoded_url
         find_square_around_text(dxf_filename, coords[0], coords[1])
 
-        # フォームの保存
         form = EditReportDataForm(request.POST, instance=report_data)
         if form.is_valid():
             form.save()
-            return redirect('bridge-table', report_data.infra.id, report_data.id)
+            return redirect('bridge-table', report_data.infra.article.pk, report_data.infra.pk)
     else:
         form = EditReportDataForm(instance=report_data)
+    
     return render(request, 'infra/bridge_table.html', {'form': form})

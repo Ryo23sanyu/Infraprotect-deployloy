@@ -56,6 +56,10 @@
         max-height: 300px;
         overflow-y: auto;
     }
+
+    .readonly-field {
+        height: 150px; /* 読み取り専用入力欄の高さを設定 */
+    }
 </style>
 
 {# ここで径間ボタンを生成 #}
@@ -108,12 +112,8 @@
                         <br>
                         {% for bridge in group %}
                         {% if forloop.first %}
-                            <input type="hidden" name="parts_name" value="{{ bridge.parts_name }}">
-                            <input type="hidden" name="damage_name" value="{{ bridge.damage_name }}">
-                            <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
-                            <input type="hidden" name="new_text">
-                            <input type="hidden" name="join" value="{{ bridge.join }}">
-                            <button type="button" class="edit-button" data-join="{{ bridge.join }}" data-id="{{ bridge.id }}">変更</button>
+                            <input type="hidden" id="coords-{{ bridge.id }}" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
+                            <button type="button" onclick="openEditModal('{{ bridge.id }}', '{{ bridge.damage_name }}', '{{ bridge.damage_coordinate_x }}', '{{ bridge.damage_coordinate_y }}')">変更</button>
                             <button type="button" onclick="deleteData(this)">削除</button>
                         {% endif %}
                         {% endfor %}
@@ -138,8 +138,8 @@
                                         </div>{% comment %} src="{{ picture|remove_prefix:'/infra/static' }}" {% url 'serve_image' picture %} strip:先頭と末尾から空白を取り除く {% endcomment %}
                                     
                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
-                                            <input id="upload-file-{{ forloop.parentloop.counter }}" name="upload-file" type="file" style="display: none">
-                                            <button id="fileSelect-{{ forloop.parentloop.counter }}" type="button" style="margin-bottom: 10px;" value="{% static this_time_picture_item %}">変更</button><!--bottom(下方向)に10pxの間隔を空ける-->
+                                            <input type="file" style="display: none" onchange="uploadPicture(this, {{ bridge.id }})" accept="image/*">
+                                            <button type="button" onclick="selectPicture(this)" style="margin-bottom: 10px;">変更</button>
                                             <button style="margin-bottom: 10px;">追加</button>
                                             <button>削除</button> <!--縦文字に変更-->
                                         </div>
@@ -186,34 +186,52 @@
     </tbody>
 </table>
 
+<!-- データを送信するための隠し要素 -->
+<form id="editForm" method="POST" action="{% url 'edit_report_data' object.infra.pk %}" style="display: none;">
+    {% csrf_token %}
+    <input type="hidden" id="editCoords" name="coords">
+    <input type="hidden" id="newText" name="new_text">
+</form>
+
 <!-- カスタムモーダル -->
-<div id="myModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <div>
-            <div class="readonly-field" style="pointer-events: none;">
-                <label for="readonly_join">読み取り専用:</label>
-                <input type="text" id="readonly_join" readonly style="width: 100%;">
-            </div>
-            <div class="editable-field">
-                <label for="editable_join">編集可能:</label>
-                <textarea id="editable_join" style="width: 100%;"></textarea>
-            </div>
-            <button id="saveChangesButton">保存</button>
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editModalLabel">テキストを編集</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="readonlyText">現在のテキスト (読み取り専用)</label>
+            <input type="text" class="form-control" id="readonlyText" readonly>
+          </div>
+          <div class="form-group">
+            <label for="editableText">新しいテキスト</label>
+            <input type="text" class="form-control" id="editableText">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">閉じる</button>
+          <button type="button" class="btn btn-primary" id="saveButton" onclick="saveChanges()">保存</button>
+        </div>
+      </div>
     </div>
 </div>
 
 <script>
 //保存ボタンを押さなくてもデータを保存する(リアルタイム保存)
-$(document).ready(function(){
+$(document).ready(function() {
     // AJAXリクエストを送信する関数
     function saveField(fieldName, fieldValue, itemId) {
         $.ajax({
             type: 'POST',
             url: "/update_full_report_data/" + itemId + "/",
             data: {
-                [fieldName]: fieldValue,  // フィールド名をキーとして使用
+                field_name: fieldName,
+                field_value: fieldValue,
                 'csrfmiddlewaretoken': '{{ csrf_token }}'
             },
             success: function(response) {
@@ -221,84 +239,90 @@ $(document).ready(function(){
                     console.log(fieldName + "を保存しました。");
                 } else {
                     console.log(fieldName + "の保存時にエラーが発生しました。");
+                    console.log(response.errors);
                 }
             },
-            error: function(xhr, status, error){
+            error: function(xhr, status, error) {
                 console.error(fieldName + "の保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
             }
         });
     }
 
     // 各フィールドにイベントリスナーを追加
-    $('textarea[name="damage_size"], textarea[name="measurement"], textarea[name="classification"], textarea[name="pattern"]').on('input', function() {
+    $('textarea[name="damage_size"], textarea[name="classification"], textarea[name="pattern"]').on('input', function() {
         let fieldValue = $(this).val(); // フィールドの入力値を取得
         let fieldName = $(this).attr('name');  // フィールド名を取得（damage_size、measurementなど）
         let itemId = $(this).attr('id').split('-')[1];  // IDの形式が `fieldname-itemId` であると仮定
+        console.log(`Sending data: fieldName=${fieldName}, fieldValue=${fieldValue}, itemId=${itemId}`);
+        saveField(fieldName, fieldValue, itemId);
+    });
+
+    // select 要素にもイベントリスナーを追加
+    $('select[name="measurement"]').on('change', function() {
+        let fieldValue = $(this).val(); // 選択された値を取得
+        let fieldName = $(this).attr('name');  // フィールド名を取得（measurement）
+        let itemId = $(this).attr('id').split('-')[1];  // IDの形式が `fieldname-itemId` であると仮定
+        console.log(`Sending data: fieldName=${fieldName}, fieldValue=${fieldValue}, itemId=${itemId}`);
         saveField(fieldName, fieldValue, itemId);
     });
 });
-// カスタムモーダル
-document.addEventListener('DOMContentLoaded', function() {
-    var modal = document.getElementById("myModal");
-    var span = document.getElementsByClassName("close")[0];
-    var saveButton = document.getElementById("saveChangesButton");
-    var currentId = null;
+// 写真の変更
+function selectPicture(button) {
+    var fileInput = button.previousElementSibling;
+    fileInput.click();
+}
 
-    // モーダル閉じるためのイベントリスナー
-    span.onclick = function() {
-        modal.style.display = "none";
-    }
+function uploadPicture(input, pk) {
+    var file = input.files[0];
+    if (!file) return;
 
-    window.onclick = function(event) {
-        if (event.target == modal) {
-            modal.style.display = "none";
+    var formData = new FormData();
+    formData.append('this_time_picture', file);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch(`/update_picture/${pk}/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();  // 更新が成功したらページをリロード
+        } else {
+            alert('写真のアップロードに失敗しました');
         }
-    }
-
-    // 変更ボタンにイベントリスナーを追加
-    document.querySelectorAll('.edit-button').forEach(function(button) {
-        button.addEventListener('click', function() {
-            currentId = button.getAttribute('data-id');
-            var joinValue = button.getAttribute('data-join');
-            document.getElementById("readonly_join").value = joinValue;
-            document.getElementById("editable_join").value = joinValue;
-
-            modal.style.display = "block";
-        });
+    })
+    .catch((error) => {
+        console.error('Error:', error);
     });
+}
+// カスタムモーダル
+function openEditModal(id, damageName, damageCoordinateX, damageCoordinateY) {
+    // 現在のテキストをreadonlyフィールドにセット
+    document.getElementById('readonlyText').value = damageName;
+    // 編集可能なフィールドに現在のテキストを初期値としてセット
+    document.getElementById('editableText').value = damageName;
+    
+    // 保存ボタンにデータを格納
+    let saveButton = document.getElementById('saveButton');
+    saveButton.dataset.id = id;
+    saveButton.dataset.coords = damageCoordinateX + ',' + damageCoordinateY;
+    
+    // モーダルを表示
+    $('#editModal').modal('show');
+}
 
-    saveButton.onclick = function() {
-        var editableJoin = document.getElementById("editable_join").value;
-        modal.style.display = "none";
-        
-        // ここでAJAXリクエストを送信してデータを保存する
-        $.ajax({
-            type: 'POST',
-            url: "/update_full_report_data/" + currentId + "/",
-            data: {
-                'join': editableJoin,
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.status === 'success') {
-                    console.log("joinを保存しました。");
-                } else {
-                    console.log("joinの保存時にエラーが発生しました。");
-                }
-            },
-            error: function(xhr, status, error){
-                console.error("joinの保存時にエラーが発生しました。サーバ側のエラーなどを確認してください。");
-            }
-        });
-    }
-    modal.style.display = "none";
-});
-
-function deleteData(button) {
-    if (confirm("本当に削除しますか？")) {
-        var form = button.closest('form');
-        form.submit();
-    }
+function saveChanges() {
+    let saveButton = document.getElementById('saveButton');
+    let coords = saveButton.dataset.coords;
+    let newText = document.getElementById('editableText').value;
+    
+    // フォームにデータを設定
+    document.getElementById('editCoords').value = coords;
+    document.getElementById('newText').value = newText;
+    
+    // フォームを送信
+    document.getElementById('editForm').submit();
 }
 // 写真を変更する際にサーバーに送信
 {% comment %} document.addEventListener("DOMContentLoaded", function() {

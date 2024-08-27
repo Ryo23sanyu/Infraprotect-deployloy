@@ -19,13 +19,14 @@
     <link href="https://cdn.datatables.net/2.0.3/css/dataTables.dataTables.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/fixedcolumns/5.0.0/css/fixedColumns.dataTables.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/rowreorder/1.5.0/css/rowReorder.dataTables.css" rel="stylesheet">
-    <link  href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="{% static 'infra/css/style.css' %}">
     
     <!-- JavaScript リソース -->
     <script src="https://code.jquery.com/jquery-3.7.1.js" defer></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.min.js" defer></script>
     <script src="https://cdn.datatables.net/fixedcolumns/5.0.0/js/dataTables.fixedColumns.js" defer></script>
     <script src="https://cdn.datatables.net/rowreorder/1.5.0/js/dataTables.rowReorder.js" defer></script>
@@ -101,7 +102,7 @@
         <li><a href="{% url 'list-infra' object.article.pk %}">橋梁一覧</a></li>{# 橋梁一覧 #}
         <li><a href="{% url 'detail-infra' object.article.pk object.pk %}">橋梁緒言</a></li>{# その1 #}
         <li>✕全景写真</a></li>{# その3 #}
-        <li><a href="{% url 'number-list' object.article.pk object.pk %}">番号図</a></li>{# その4 #}
+        <li><a href="{% url 'number-list' object.article.pk object.pk %}">番号登録</a></li>{# その4 #}
         <li>✕所見まとめ</a></li>{# その6 #}
         <li><a href="{% url 'observations-list' object.article.pk object.pk %}">所見一覧</a></li>{# その7・8 #}
         <li>✕損傷図</a></li>{# その9 #}
@@ -116,7 +117,7 @@
         <li>橋梁一覧</a></li>{# 橋梁一覧 #}
         <li>橋梁緒言</a></li>{# その1 #}
         <li>✕全景写真</a></li>{# その3 #}
-        <li>番号図</a></li>{# その4 #}
+        <li>番号登録</a></li>{# その4 #}
         <li>✕所見まとめ</a></li>{# その6 #}
         <li>所見一覧</a></li>{# その7・8 #}
         <li>✕損傷図</a></li>{# その9 #}
