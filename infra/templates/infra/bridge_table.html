@@ -8,59 +8,6 @@
 
 {% block content %}
 
-<style>
-    /* モーダルのスタイル */
-    .modal {
-        display: none; 
-        position: fixed; 
-        z-index: 1; 
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto; 
-        background-color: rgba(0, 0, 0, 0.4); 
-        display: flex; /* 中央寄せのための追加 */
-        justify-content: center; /* 横方向の中央寄せ */
-        align-items: center; /* 縦方向の中央寄せ */
-    }
-    
-    .modal-content {
-        position: relative;
-        background-color: #fefefe;
-        padding: 20px;
-        border: 1px solid #888;
-        width: 60%; /* 横幅を変更 */
-        max-width: 800px; /* 最大横幅を変更 */
-        height: 60%; /* 縦幅を変更 */
-        max-height: 600px; /* 最大縦幅を変更 */
-        overflow-y: auto; /* 内部の縦スクロールを有効にする */
-    }
-    
-    .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
-    }
-    
-    .close:hover,
-    .close:focus {
-        color: black;
-        text-decoration: none;
-        cursor: pointer;
-    }
-
-    /* 読み取り専用と編集可能の入力欄のスタイル */
-    .readonly-field, .editable-field {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-
-    .readonly-field {
-        height: 150px; /* 読み取り専用入力欄の高さを設定 */
-    }
-</style>
 
 {# ここで径間ボタンを生成 #}
 <form action="{% url 'bridge-table' object.infra.article.pk object.infra.pk %}">
@@ -112,8 +59,12 @@
                         <br>
                         {% for bridge in group %}
                         {% if forloop.first %}
-                            <input type="hidden" id="coords-{{ bridge.id }}" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
-                            <button type="button" onclick="openEditModal('{{ bridge.id }}', '{{ bridge.damage_name }}', '{{ bridge.damage_coordinate_x }}', '{{ bridge.damage_coordinate_y }}')">変更</button>
+                            <input type="hidden" name="parts_name" value="{{ bridge.parts_name }}">
+                            <input type="hidden" name="damage_name" value="{{ bridge.damage_name }}">
+                            <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
+                            <input type="hidden" name="new_text">
+                            <input type="hidden" name="join" value="{{ bridge.join }}">
+                            <button type="button" onclick="openModal()">変更</button>
                             <button type="button" onclick="deleteData(this)">削除</button>
                         {% endif %}
                         {% endfor %}
@@ -186,38 +137,14 @@
     </tbody>
 </table>
 
-<!-- データを送信するための隠し要素 -->
-<form id="editForm" method="POST" action="{% url 'edit_report_data' object.infra.pk %}" style="display: none;">
-    {% csrf_token %}
-    <input type="hidden" id="editCoords" name="coords">
-    <input type="hidden" id="newText" name="new_text">
-</form>
-
 <!-- カスタムモーダル -->
-<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="editModalLabel">テキストを編集</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="readonlyText">現在のテキスト (読み取り専用)</label>
-            <input type="text" class="form-control" id="readonlyText" readonly>
-          </div>
-          <div class="form-group">
-            <label for="editableText">新しいテキスト</label>
-            <input type="text" class="form-control" id="editableText">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">閉じる</button>
-          <button type="button" class="btn btn-primary" id="saveButton" onclick="saveChanges()">保存</button>
-        </div>
-      </div>
+<div id="customModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+    <div style="background-color:white; padding:20px; border-radius:5px;">
+        <h2>変更内容</h2>
+        <textarea id="beforeChange" placeholder="変更前" style="width:100%; height:100px;"></textarea>
+        <textarea id="afterChange" placeholder="変更後" style="width:100%; height:100px;"></textarea>
+        <button type="button" onclick="closeModal()">閉じる</button>
+        <button type="button">保存</button>
     </div>
 </div>
 
@@ -230,8 +157,7 @@ $(document).ready(function() {
             type: 'POST',
             url: "/update_full_report_data/" + itemId + "/",
             data: {
-                field_name: fieldName,
-                field_value: fieldValue,
+                [fieldName]: fieldValue, // フィールド名をキーとして使用
                 'csrfmiddlewaretoken': '{{ csrf_token }}'
             },
             success: function(response) {
@@ -249,7 +175,7 @@ $(document).ready(function() {
     }
 
     // 各フィールドにイベントリスナーを追加
-    $('textarea[name="damage_size"], textarea[name="classification"], textarea[name="pattern"]').on('input', function() {
+    $('textarea[name="damage_size"], textarea[name="measurement"], textarea[name="classification"], textarea[name="pattern"]').on('input', function() {
         let fieldValue = $(this).val(); // フィールドの入力値を取得
         let fieldName = $(this).attr('name');  // フィールド名を取得（damage_size、measurementなど）
         let itemId = $(this).attr('id').split('-')[1];  // IDの形式が `fieldname-itemId` であると仮定
@@ -297,33 +223,31 @@ function uploadPicture(input, pk) {
     });
 }
 // カスタムモーダル
-function openEditModal(id, damageName, damageCoordinateX, damageCoordinateY) {
-    // 現在のテキストをreadonlyフィールドにセット
-    document.getElementById('readonlyText').value = damageName;
-    // 編集可能なフィールドに現在のテキストを初期値としてセット
-    document.getElementById('editableText').value = damageName;
-    
-    // 保存ボタンにデータを格納
-    let saveButton = document.getElementById('saveButton');
-    saveButton.dataset.id = id;
-    saveButton.dataset.coords = damageCoordinateX + ',' + damageCoordinateY;
-    
-    // モーダルを表示
-    $('#editModal').modal('show');
+function openModal() {
+    document.getElementById('customModal').style.display = 'flex';
 }
 
-function saveChanges() {
-    let saveButton = document.getElementById('saveButton');
-    let coords = saveButton.dataset.coords;
-    let newText = document.getElementById('editableText').value;
-    
-    // フォームにデータを設定
-    document.getElementById('editCoords').value = coords;
-    document.getElementById('newText').value = newText;
-    
-    // フォームを送信
-    document.getElementById('editForm').submit();
+function closeModal() {
+    document.getElementById('customModal').style.display = 'none';
 }
+
+// 背景クリックを検知してモーダルを閉じるロジック
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('customModal');
+    
+    // モーダルをクリックした場合は閉じない
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    // 変更ボタンにモーダル表示を追加
+    const buttons = document.querySelectorAll('button[onclick="openModal()"]');
+    buttons.forEach(button => {
+        button.onclick = openModal;
+    });
+});
 // 写真を変更する際にサーバーに送信
 {% comment %} document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll('button[id^="fileSelect-"]').forEach((button, index) => {

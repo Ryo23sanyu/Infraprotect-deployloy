@@ -22,7 +22,7 @@ for entity in msp: # モデルスペースの中のentityをループ処理
         # 指定された座標と一致するかどうか確認
         for cx, cy in coords:
             if abs(x - cx) < epsilon and abs(y - cy) < epsilon:
-                
+                print(entity.dxf.text)
                 # 更新するテキスト(固定値)
                 new_text = "主桁0000" # 更新するテキスト
                 entity.dxf.text = new_text # 古いテキストを新しいテキストに置き換え

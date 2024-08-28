@@ -61,11 +61,11 @@
     <input id="undercondition_id_{{ undercondition.id }}" class="input_chk" type="checkbox" name="路下条件" value="{{ undercondition.id }}">
     <label class="surround_label" for="undercondition_id_{{ undercondition.id }}">{{ undercondition.路下条件 }}</label>
     {% endfor %}</p>
-    
+
     <p>{{ form.特記事項.label_tag }} {{ form.特記事項 }}</p>
     <p>{{ form.カテゴリー.label_tag }} {{ form.カテゴリー }}</p>
     <p>{{ form.article.label_tag }} {{ form.article }}</p>
-
+    
   <!-- Google Maps表示用のdiv -->
   <div id="map" style="height: 400px; width: 100%;"></div>
 
@@ -95,6 +95,12 @@
         draggable: true
       });
 
+      function updateFormFields(lat, lng, address) {
+        document.getElementById('latitudeField').value = lat;
+        document.getElementById('longitudeField').value = lng;
+        document.getElementById('result').innerHTML = '緯度: ' + lat + '<br>経度: ' + lng + '<br>住所: ' + address;
+      }
+      
       // マーカーのドラッグ終了時のイベントリスナー
       google.maps.event.addListener(marker, 'dragend', function(event) {
         var lat = event.latLng.lat();
@@ -191,6 +197,10 @@
     </script>
     <p>{{ form.交通量.label_tag }} {{ form.交通量 }}</p>
     <p>{{ form.大型車混入率.label_tag }} {{ form.大型車混入率 }}</p>
+
+    <p>{{ form.longitude.label_tag }} <input type="text" id="longitudeField" name="longitude" value="{{ form.longitude.value }}"></p>
+    <p>{{ form.latitude.label_tag }} <input type="text" id="latitudeField" name="latitude" value="{{ form.latitude.value }}"></p>
+
     <input type='submit' value='作成'>
   </form>
 {% endblock content %}

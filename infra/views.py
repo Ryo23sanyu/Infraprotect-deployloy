@@ -76,7 +76,9 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
     template_name = 'infra/infra_create.html' # 対応するhtmlの名前
     model = Infra # models.pyのどのモデルと紐付くか
     # form_class = BridgeCreateForm # forms.pyのどのクラスと紐付くか
-    fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
+    fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', 
+              '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', 
+              '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'latitude', 'longitude', 'article')
     success_url = reverse_lazy('detail-infra')
 
     def form_valid(self, form):
@@ -86,12 +88,12 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
         #ここでのobjectは登録対象のInfraモデル１件です。登録処理を行いPKが払い出された情報がobjectです
         #今回はarticle_id、つまりarticleオブジェクトが無いのでこれをobjectに設定します。
         #articleオブジェクトを検索しobjectに代入する事で登録できます。
-# article = Article.objects.get( id = self.kwargs["pk"] )
+        # article = Article.objects.get( id = self.kwargs["pk"] )
         # id = 1 のarticleを検索
-            # article = Article.objects.get(id = 1 )
+        # article = Article.objects.get(id = 1 )
         object.案件名 = self.kwargs["article_pk"]
         # titleの項目に「A」を設定
-            # article.title = "A"
+        # article.title = "A"
         #設定したのちsaveを実行し更新します。
         object.save()
         return super().form_valid(form)
@@ -121,12 +123,14 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
                 return redirect('bridge-table', article_pk, pk) # 「table」という名前のURLにリダイレクト
             else:
                 form = BridgeCreateForm() # 新しい空のフォームインスタンスを生成
-        return render(request, 'infra/infra_create.html', {'form': form, 'object': Table.objects.filter(id=pk).first()}) # 'infra_create.html'テンプレートをレンダリング
+        return render(request, 'infra/infra_create.html', {'form': form, 'object': Table.objects.filter(id=pk).first()})
+        # 'infra_create.html'テンプレートをレンダリング
     
     def damage_view(request, article_pk, pk): # damage_view関数を定義
         keikan_number = request.session.get('keikan_number', 1) # request.session.getメソッドを使い、セッションから"径間数"を取得、デフォルト値は1
         keikan_range = list(range(keikan_number)) # 1からkeikan_number（"径間数"）までの連続する整数列を生成
-        return render(request, 'bridge_table.html', {'keikan_range': keikan_range, 'object': Table.objects.filter(id=pk).first()}) # 'table.html'テンプレートをレンダリング
+        return render(request, 'bridge_table.html', {'keikan_range': keikan_range, 'object': Table.objects.filter(id=pk).first()})
+        # 'table.html'テンプレートをレンダリング
 
 class DeleteInfraView(LoginRequiredMixin, DeleteView):
     template_name = 'infra/infra_delete.html'
@@ -138,7 +142,9 @@ class DeleteInfraView(LoginRequiredMixin, DeleteView):
 class UpdateInfraView(LoginRequiredMixin, UpdateView):
     template_name = 'infra/infra_update.html'
     model = Infra
-    fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
+    fields = ('title', '径間数', '橋長', '全幅員', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', 
+              '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', 
+              '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'article')
     success_url = reverse_lazy('detail-infra')
     def get_success_url(self):
         return reverse_lazy('detail-infra', kwargs={'article_pk': self.kwargs["article_pk"], 'pk': self.kwargs["pk"]})
@@ -1112,24 +1118,25 @@ def save_comment(request, pk):
     return JsonResponse({"status": "error", "message": "Invalid request method."})
 
 # << Ajaxを使用した損傷写真帳のリアルタイム保存 >>
-logger = logging.getLogger(__name__)
 @csrf_protect  # CSRF保護を有効にする
 def update_full_report_data(request, pk):
     if request.method == 'POST':
-        logger.debug(f"POST data received: {request.POST}")
         full_report_data = get_object_or_404(FullReportData, id=pk)
-        form = FullReportDataEditForm(request.POST, instance=full_report_data)
         
-        if form.is_valid():
-            form.save()
-            logger.debug(f"Data saved for item ID {pk}")
+        fields_to_update = ['measurement', 'damage_size', 'classification', 'pattern']
+        data_updated = False
+        
+        for field in fields_to_update:
+            if field in request.POST:
+                setattr(full_report_data, field, request.POST[field])
+                data_updated = True
+
+        if data_updated:
+            full_report_data.save()
             return JsonResponse({'status': 'success'})
         else:
-            logger.error(f"Form errors: {form.errors}")
-            return JsonResponse({'status': 'error', 'errors': form.errors})
-    
-    logger.error("Invalid request method")
-    return JsonResponse({'status': 'invalid request method'})
+            return JsonResponse({'status': 'error', 'errors': 'No valid data to update'})
+    return JsonResponse({'status': 'invalid request'})
 
 # << 対策区分のボタンを保存 >>
 def damage_comment_jadgement_edit(request, pk):
@@ -2551,36 +2558,33 @@ def edit_report_data(request, pk):
     report_data = get_object_or_404(FullReportData, pk=pk)
     if request.method == "POST":
         coords = request.POST.get("coords").split(",")
-        new_text = request.POST.get("new_text")
+        new_text = request.POST.get("new_text", "")
         
         # DXFファイルの更新処理
         def find_square_around_text(dxf_filename, target_text, second_target_text):
-            import ezdxf
-            import os
             doc = ezdxf.readfile(dxf_filename)
             msp = doc.modelspace()
+            coords = [(float(coords[0]), float(coords[1]))]
 
-            epsilon = 0.001 # 座標の一致を確認するための許容誤差
-            
-            for entity in msp.query('TEXT MTEXT'):
-                x, y, _ = entity.dxf.insert
-                if ((abs(x - float(coords[0])) < epsilon) and 
-                    (abs(y - float(coords[1])) < epsilon)):
-                    entity.dxf.text = new_text
-                    desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-                    doc.saveas(os.path.join(desktop_path, "さいど更新.dxf"))
-                    break
-        
+            # 座標の一致を確認するための許容誤差
+            epsilon = 0.001
+
+            for entity in msp:
+                if entity.dxftype() in {'TEXT', 'MTEXT'}:
+                    print(f"変更前DXFテキスト:{entity.dxf.text}")
+                    x, y, _ = entity.dxf.insert
+                    for cx, cy in coords:
+                        if abs(x - cx) < epsilon and abs(y - cy) < epsilon:
+                            return entity.dxf.text
+
         table = Table.objects.filter(infra=pk).first()
         decoded_url = urllib.parse.unquote(table.dxf.url)
         dxf_filename = decoded_url
-        find_square_around_text(dxf_filename, coords[0], coords[1])
+        current_text = find_square_around_text(dxf_filename, coords[0], coords[1])
 
-        form = EditReportDataForm(request.POST, instance=report_data)
-        if form.is_valid():
-            form.save()
-            return redirect('bridge-table', report_data.infra.article.pk, report_data.infra.pk)
-    else:
-        form = EditReportDataForm(instance=report_data)
-    
-    return render(request, 'infra/bridge_table.html', {'form': form})
+        if request.is_ajax():
+            return JsonResponse({
+                'current_text': current_text,
+            })
+
+    return render(request, 'infra/bridge_table.html', {'report_data': report_data})
