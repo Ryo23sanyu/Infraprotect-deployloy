@@ -140,7 +140,9 @@ class Table(models.Model):
     infra = models.ForeignKey(Infra, verbose_name="橋梁名", on_delete=models.CASCADE) # ForeignKeyフィールドによってInfraとのリレーションシップを定義
     dxf = models.FileField(verbose_name="dxfファイル", upload_to="infra/table/dxf/") # infraを作成するときに登録するdxfファイル用
     article = models.ForeignKey(Article, on_delete=models.CASCADE, null=True, blank=True)
-
+    def __str__(self):
+        return f"{self.infra}：{self.article}（{self.dxf}）"
+    
 #<< 名前とアルファベットの登録 >>
 class NameEntry(models.Model):
     name = models.CharField(max_length=50)
@@ -221,10 +223,12 @@ class FullReportData(models.Model):
     classification = models.CharField(max_length=255, null=True, blank=True) # 分類「1」
     pattern = models.CharField(max_length=255, null=True, blank=True) # パターン「6」
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    table = models.ForeignKey(Table, on_delete=models.CASCADE)
     class Meta:
         # ユニークの設定(fieldsの組み合わせを一意とする。nullが許可されているとデータが重複する可能性があるため、notnullの要素を扱う)
         constraints = [
-            models.UniqueConstraint(fields=['parts_name', 'damage_name', 'parts_split', 'join', 
+            models.UniqueConstraint(fields=['parts_name', 'damage_name', 'parts_split', 'join', 'infra', 'article',
                                             'damage_coordinate_x', 'damage_coordinate_y', 'span_number', 'special_links'], name='unique_parts_damage')
         ]
     def __str__(self):

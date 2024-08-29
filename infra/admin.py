@@ -3,6 +3,7 @@ from django.db import models
 from .models import Approach, DamageComment, DamageList, FullReportData, Infra, Material, PartsName, Table, Article, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition, PartsNumber, NameEntry
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Case, When, Value, IntegerField
+from django.db.models import Q
 
 # models.pyのclass名とカッコの中を合わせる
 #admin.site.register(CustomUser, UserAdmin)
@@ -15,19 +16,33 @@ admin.site.register(Rulebook) # 適用示方書
 admin.site.register(Approach) # 近接方法
 admin.site.register(Thirdparty) # 第三者点検の有無
 admin.site.register(UnderCondition) # 路下条件
-admin.site.register(Table) # 損傷写真帳
 admin.site.register(Material) # 番号登録(材料)
-admin.site.register(FullReportData) # 損傷写真帳の全データ
+
+class TableAdmin(admin.ModelAdmin): # 損傷写真帳
+    list_display = ('infra', 'article', 'dxf')
+admin.site.register(Table, TableAdmin)
+
+
+
+class FullReportDataAdmin(admin.ModelAdmin): # 損傷写真帳の全データ
+    list_display = ('parts_name', 'damage_name', 'span_number', 'infra', 'article')
+    search_fields = ('parts_name', 'infra__title', 'article__案件名') # 検索対象：「infraのtitleフィールド」と指定
+    def get_search_results(self, request, queryset, search_term):
+        # デフォルトの動作
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        # infra__titleのみ完全一致
+        exact_match_query = Q(infra__title=search_term)
+        # 既存の部分一致と完全一致を組み合わせる
+        queryset = queryset.filter(exact_match_query | Q(parts_name__icontains=search_term) | Q(article__案件名__icontains=search_term))
+
+        return queryset, use_distinct
+admin.site.register(FullReportData, FullReportDataAdmin)
+
 
 class DamageListAdmin(admin.ModelAdmin): # 損傷一覧
     list_display = ('parts_name', 'number', 'damage_name', 'damage_lank', 'span_number', 'infra')
     ordering = ('-span_number', '-infra')
 admin.site.register(DamageList, DamageListAdmin)
-
-
-
-
-
 
 
 class PartsNameAdmin(admin.ModelAdmin): # 番号登録

@@ -30,8 +30,9 @@ urlpatterns = [
     path('article/<int:article_pk>/infra/<int:pk>/dxf_output/', views.dxf_output, name='dxf-output'),# DXFファイル出力
     # << 損傷写真帳 >>
     path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table'),# 損傷写真帳
+    path('bridge_table_edit/<int:damage_pk>/<int:pk>/<int:table_pk>/', views.edit_report_data, name='edit_report_data'), # 旗揚げ内容の受信
+    path('bridge_table_send/<int:damage_pk>/<int:pk>/<int:table_pk>/', views.edit_send_data, name='edit_send_data'), # 旗揚げ内容の修正を送信
     path('serve-image/<str:file_path>/', serve_image, name='serve_image'), # 写真をアップロードせずに表示
-    path('bridge_table_edit/<int:pk>/', views.edit_report_data, name='edit_report_data'), # 旗揚げ内容の変更
     # path('bridge_table_delete/<int:pk>/', views.delete_report_data, name='delete_report_data'), # 旗揚げ内容の削除
     # << 名前の登録 >>
     path('article/<int:article_pk>/names/', views.names_list, name='names-list'),# 名前とアルファベットの紐付け

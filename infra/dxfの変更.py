@@ -3,11 +3,12 @@ import ezdxf
 
 # DXFファイルを読み込む
 doc = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf')
+
 # モデルスペースを取得
 msp = doc.modelspace()
 
 coords = [
-    (543427.3505810621, 229268.8593029478), # 修正する座標を指定
+    (532240.3861927793,218366.5575399188) # 修正する座標を指定
 ]
 
 # 座標の一致を確認するための許容誤差

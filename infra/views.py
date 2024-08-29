@@ -4,6 +4,7 @@ import datetime
 from functools import reduce
 from io import BytesIO
 from itertools import groupby, zip_longest
+import json
 import logging
 import math
 from operator import attrgetter
@@ -26,12 +27,12 @@ from PIL import Image as PILImage
 # django内からインポート
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import FileSystemStorage
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 
 from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
@@ -79,27 +80,19 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
     fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', 
               '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', 
               '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'latitude', 'longitude', 'article')
-    success_url = reverse_lazy('detail-infra')
-
+    
     def form_valid(self, form):
-        #ここのobjectはデータベースに登録を行うmodelつまりInfraの１レコードです。
-        #formはModelFormと呼ばれるフォームの仕組みで、saveを実行すると関連付いているモデルとして登録を行う動きをします。
-        object = form.save(commit=False)
-        #ここでのobjectは登録対象のInfraモデル１件です。登録処理を行いPKが払い出された情報がobjectです
-        #今回はarticle_id、つまりarticleオブジェクトが無いのでこれをobjectに設定します。
-        #articleオブジェクトを検索しobjectに代入する事で登録できます。
-        # article = Article.objects.get( id = self.kwargs["pk"] )
-        # id = 1 のarticleを検索
-        # article = Article.objects.get(id = 1 )
-        object.案件名 = self.kwargs["article_pk"]
-        # titleの項目に「A」を設定
-        # article.title = "A"
-        #設定したのちsaveを実行し更新します。
-        object.save()
+        article_pk = self.kwargs['article_pk']
+        print(article_pk)
+        article = get_object_or_404(Article, pk=article_pk)
+        print(article)
+        form.instance.article = article
+        print(form.instance)
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('list-infra', kwargs={'article_pk': self.kwargs["article_pk"]})
+        # Define where you want to redirect after successful form submission
+        return reverse('article-detail', kwargs={'pk': self.object.article.pk})
 
     #新規作成時、交通規制の全データをコンテキストに含める。
     def get_context_data(self, **kwargs):
@@ -272,6 +265,7 @@ def file_upload(request, article_pk, pk):
 
         # ここで Infraのid(pk)を指定する。
         copied["infra"] = pk
+        copied["article"] = article_pk
         
         # バリデーション
         form = TableForm(copied, request.FILES)
@@ -547,7 +541,9 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         picture_coordinate_x = picture_coordinate[0] if picture_coordinate else None
         picture_coordinate_y = picture_coordinate[1] if picture_coordinate else None
         span_number = damage_data.get('search', '')
-        
+        print("----------------------------------")
+        print(f"damage_data:{damage_data}")
+        print(f"this_time_picture:{this_time_picture}")
         name_length = len(split_names)
         damage_length = len(damages)
         
@@ -593,7 +589,12 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
             result = parts_join + split_number  # 結果を組み立てる
             return result
             # 共通のフィールドを辞書に格納
-        
+        infra = Infra.objects.filter(id=pk).first()
+        print(f"Infra:{infra}({infra.id})") # 旗揚げチェック(4)
+        article = infra.article
+        print(f"article:{article}({article.id})") # お試し(2)
+        table = Table.objects.filter(infra=infra.id, article=article.id).first()
+        print(table) # 旗揚げチェック：お試し（infra/table/dxf/121_2径間番号違い.dxf）
         if not is_multi_list(split_names) and not is_multi_list(damages) and name_length == 1: # 部材名が1つの場合
             for single_damage in damages: 
                 parts_name = names[0]
@@ -616,7 +617,9 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                     'picture_coordinate_y': picture_coordinate_y,
                     'span_number': span_number,
                     'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
-                    'infra': Infra.objects.get(id=pk)
+                    'infra': infra,
+                    'article': article,
+                    'table': table
                 }
                 report_data_exists = FullReportData.objects.filter(**data_fields).exists()
                 if report_data_exists:
@@ -651,7 +654,9 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         'picture_coordinate_y': picture_coordinate_y,
                         'span_number': span_number,
                         'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
-                        'infra': Infra.objects.get(id=pk)
+                        'infra': infra,
+                        'article': article,
+                        'table': table
                     }
                     report_data_exists = FullReportData.objects.filter(**data_fields).exists()
                     if report_data_exists:
@@ -686,7 +691,9 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'picture_coordinate_y': picture_coordinate_y,
                             'span_number': span_number,
                             'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
-                            'infra': Infra.objects.get(id=pk)
+                            'infra': infra,
+                            'article': article,
+                            'table': table
                         }
                         report_data_exists = FullReportData.objects.filter(**data_fields).exists()
                         if report_data_exists:
@@ -722,7 +729,9 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'picture_coordinate_y': picture_coordinate_y,
                             'span_number': span_number,
                             'special_links': '/'.join([str(parts_split), str(damage_name), str(span_number)]),
-                            'infra': Infra.objects.get(id=pk)
+                            'infra': infra,
+                            'article': article,
+                            'table': table
                         }
                         report_data_exists = FullReportData.objects.filter(**data_fields).exists()
                         if report_data_exists:
@@ -1575,19 +1584,206 @@ def excel_output(request, article_pk, pk):
                 ws[f'BC{row}'] = choice_comment # 〇〇が見られる。
             else:
                 ws[f'BC{row}'] = "健全である。"
-            
+
     # << （その１０） >>
-    # << その10入力欄 >>(+14)
-    # I9 ,AI9 ,BI9 ,23,37 # 写真番号           /None
-    # R9 ,AR9 ,BR9 ,23,37 # 径間番号           /span_number
-    # I10,AI10,BI10,24,38 # 部材名(主桁)       /parts_name
-    # I11,AI11,BI11,25,39 # 損傷の種類(ひびわれ)/damage_name
-    # R10,AR10,BR10,24,38 # 要素番号(0101)     /parts_name
-    # R11,AR11,BR11,25,39 # 損傷程度(e)        /damage_name
-    # E13,AE13,BE13,27,41 # 写真               /this_time_picture
-    # T15,AT15,BT15,29,43 # 前回損傷程度       /None
-    # T17,AT17,BT17,31,45 # メモ               /textarea_content
+    no10_records = FullReportData.objects.filter(infra=pk)
+    ws = wb['その１０']
+    print(f"最大径間数：{span}")
+    print(f"最大径間数：{int(span)}")
+    # << セル位置を作成 >>
+    picture_and_spannumber_row = 9 # 部材名・要素番号
+    partsname_and_number_row = 10 # 部材名・要素番号
+    damagename_and_lank_row = 11 # 損傷の種類・損傷程度
+    picture_start_row = 13 # 損傷写真
+    lasttime_lank_row = 15 # 前回損傷程度
+    damage_memo_row = 17 # 損傷メモ
+    step = 14
+    output_data = len(no10_records)
+    num_positions = math.ceil(output_data/3) + int(span) * 2 # 横3列で割って何行になるか
     
+    # 関連する列を定義
+    picture_columns = ["E", "AE", "BE"] # 写真列
+    left_columns = ["I", "AI", "BI"] # 左列
+    right_columns = ["R", "AR", "BR"] # 右列
+    bottom_columns = ["T", "AT", "BT"] # 前回程度+メモ
+    # セル位置のリストを生成
+    join_spannumber_cell = [f"{col}{picture_and_spannumber_row + i * step}" for i in range(num_positions) for col in right_columns] # 径間番号
+    join_partsname_cell = [f"{col}{partsname_and_number_row + i * step}"    for i in range(num_positions) for col in left_columns] # 部材名
+    join_number_cell = [f"{col}{partsname_and_number_row + i * step}"       for i in range(num_positions) for col in right_columns] # 要素番号
+    join_damagename_cell = [f"{col}{damagename_and_lank_row + i * step}"    for i in range(num_positions) for col in left_columns] # 損傷の種類
+    join_lank_cell = [f"{col}{damagename_and_lank_row + i * step}"          for i in range(num_positions) for col in right_columns] # 損損傷程度
+    join_picture_cell = [f"{col}{picture_start_row + i * step}"             for i in range(num_positions) for col in picture_columns] # 損傷写真
+   #join_lasttime_lank_cell = [f"{col}{lasttime_lank_row + i * step}"       for i in range(num_positions) for col in bottom_columns] # 前回損傷程度
+    join_damage_memo_cell = [f"{col}{damage_memo_row + i * step}"           for i in range(num_positions) for col in bottom_columns] # 損傷メモ
+
+    span = 1
+    page_count = 1
+    i10 = 0
+    initial_row10 = 9 # 1つ目の入力位置
+    
+    def hide_sheet_copy_and_paste(wb, sheet_name):
+        """シートを再表示してコピーその後非表示に設定"""
+
+        hide_sheet = wb['ページ１０']
+        hide_sheet.sheet_state = 'visible'
+
+        # コピーする行の範囲を指定します
+        copy_start_row = 2
+        copy_end_row = 29
+
+        # コピーする行のデータとスタイルを保持するリストを作成します
+        rows_to_copy = []
+        merges_to_keep = []
+
+        for row_idx in range(copy_start_row, copy_end_row + 1):
+            row_data = []
+            for cell in hide_sheet[row_idx]:
+                cell_data = {
+                    'value': cell.value,
+                    'font': copy(cell.font),
+                    'border': copy(cell.border),
+                    'fill': copy(cell.fill),
+                    'number_format': cell.number_format,
+                    'protection': copy(cell.protection),
+                    'alignment': copy(cell.alignment)
+                }
+                row_data.append(cell_data)
+            row_data.append(hide_sheet.row_dimensions[row_idx].height)
+            rows_to_copy.append(row_data)
+
+        # 元のシートのセル結合情報を取得
+        for merge in hide_sheet.merged_cells.ranges:
+            if (copy_start_row <= merge.min_row <= copy_end_row) or \
+                (copy_start_row <= merge.max_row <= copy_end_row):
+                merges_to_keep.append(copy(merge))
+        
+        sheet = ws
+        
+        # コピー先の行を挿入します
+        # A列の一番下の行番号を取得
+        max_row = sheet.max_row
+        while sheet['A' + str(max_row)].value is None and max_row > 0:
+            max_row -= 1
+        insert_at_row = max_row
+        # print(f"max_row：{max_row}")
+        
+        # シフトする行の高さを保持するリストを作成します
+        heights = []
+        for row_idx in range(insert_at_row, sheet.max_row + 1):
+            heights.append(sheet.row_dimensions[row_idx].height)
+        
+        # 指定行から下の行をシフト
+        sheet.insert_rows(insert_at_row, amount=(copy_end_row - copy_start_row + 1))
+
+        # 行の高さを元に戻す
+        for i, height in enumerate(heights):
+            sheet.row_dimensions[insert_at_row + i + (copy_end_row - copy_start_row + 1)].height = height
+        
+        # コピーされた行を挿入
+        for i, row_data in enumerate(rows_to_copy):
+            new_row = insert_at_row + i
+            for j, cell_data in enumerate(row_data[:-1]):
+                cell = sheet.cell(row=new_row, column=j + 1)
+                cell.value = cell_data['value']
+                cell.font = cell_data['font']
+                cell.border = cell_data['border']
+                cell.fill = cell_data['fill']
+                cell.number_format = cell_data['number_format']
+                cell.protection = cell_data['protection']
+                cell.alignment = cell_data['alignment']
+            sheet.row_dimensions[new_row].height = row_data[-1]
+
+        # セル結合をコピー
+        for merged_range in merges_to_keep:
+            new_min_row = merged_range.min_row - copy_start_row + insert_at_row
+            new_max_row = merged_range.max_row - copy_start_row + insert_at_row
+            new_merge_range = "{}{}:{}{}".format(
+                openpyxl.utils.get_column_letter(merged_range.min_col),
+                new_min_row,
+                openpyxl.utils.get_column_letter(merged_range.max_col),
+                new_max_row
+            )
+            sheet.merge_cells(new_merge_range)
+            
+        # 最大行を取得
+        max_row = sheet.max_row
+        # 印刷範囲の設定を修正
+        start_col = "A"
+        end_col = 'CD'
+        print_area = f"{start_col}1:{end_col}{max_row}"
+        sheet.print_area = print_area    
+        
+        hide_sheet.sheet_state = 'hidden'
+
+    for record in no10_records:
+        span_number = record.span_number.replace('径間', '')
+        print(f"その10レコード数：{len(no10_records)}")
+        if int(span_number) == span + 1:
+            span = int(span_number)
+            initial_row10 = initial_row10 + 28 * math.ceil(i10 / 6) # 9+28×(ページ数)
+            ws[join_spannumber_cell[i10]] = span
+            
+        if int(span_number) == span and record.this_time_picture != "": # 同じ径間で写真データが含まれている場合
+            if i10 % 6 == 5 and i10 > 10:
+                hide_sheet_copy_and_paste(wb, ws) # プログラム4｜1ページ増やすマクロを実行
+
+            print(f"対象数:{i10}/{len(no10_records)}")
+            if record.parts_name in " ":
+                # 文字列を空白で分ける
+                split_parts = record.parts_name.split()
+                # 最初の部分「アクション-1」を取得
+                parts_name = split_parts[0]
+                # 2番目の部分から数値部分だけを取得
+                parts_number = re.search(r'\d+', split_parts[1]).group()
+            else:
+                parts_name = ""
+                parts_number = ""
+            if record.damage_name in "-":
+                # 置き換え用の辞書
+                number_change = {
+                    '①': '腐食',
+                    '②': '亀裂',
+                    '③': 'ゆるみ・脱落',
+                    '④': '破断',
+                    '⑤': '防食機能の劣化',
+                    '⑥': 'ひびわれ',
+                    '⑦': '剥離・鉄筋露出',
+                    '⑧': '漏水・遊離石灰',
+                    '⑨': '抜け落ち',
+                    '⑩': '補修・補強材の損傷',
+                    '⑪': '床版ひびわれ',
+                    '⑫': 'うき',
+                    '⑬': '遊間の異常',
+                    '⑭': '路面の凹凸',
+                    '⑮': '舗装の異常',
+                    '⑯': '支承部の機能障害',
+                    '⑰': 'その他',
+                    '⑱': '定着部の異常',
+                    '⑲': '変色・劣化',
+                    '⑳': '漏水・滞水',
+                    '㉑': '異常な音・振動',
+                    '㉒': '異常なたわみ',
+                    '㉓': '変形・欠損',
+                    '㉔': '土砂詰まり',
+                    '㉕': '沈下・移動・傾斜',
+                    '㉖': '洗掘',
+                }
+
+                first_char = record.damage_name[0] # 先頭の1文字を取得                
+                
+                damage_name = number_change.get(first_char, "") # 辞書で値を取得
+                damage_lank = record.damage_name[-1]
+            else:
+                damage_name = ""
+                damage_lank = ""
+            ws[join_partsname_cell[i10]] = parts_name # 部材名
+            ws[join_number_cell[i10]] = parts_number # 要素番号
+            ws[join_damagename_cell[i10]] = damage_name # 損傷の種類
+            ws[join_lank_cell[i10]] = damage_lank # 損傷の程度
+            ws[join_picture_cell[i10]] = record.this_time_picture # 損傷写真
+            ws[join_damage_memo_cell[i10]] = record.textarea_content # メモ
+            i10 += 1
+
     # << Django管理サイトからデータを取得（その１１、１２用） >>
     no1112_records = DamageList.objects.filter(infra=pk)
     # 並び替え
@@ -1662,15 +1858,12 @@ def dxf_output(request, article_pk, pk):
         file_name = infra_name.title
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         dxf_filename = file_name + "_" + timestamp + ".dxf"
+        
         #レスポンスをする
         return FileResponse(binary, filename = dxf_filename)
     #finally:
         #pythoncom.CoUninitialize()
 
-# << sorted_itemsを受け取り、番号登録と合わせ、所見用・一覧用に整える >>
-# TODO:関数の当てはめ用
-def sorted_items_and_number_arrange(request):
-    return render("index.html") # エラー回避でindex指定
 
 def entity_extension(mtext, neighbor):
     # MTextの挿入点
@@ -1688,7 +1881,13 @@ def entity_extension(mtext, neighbor):
     x_end  = mtext_insertion[0] + mtext.dxf.width # X終了位置= 開始位置＋幅
     y_start = mtext_insertion[1] + mtext.dxf.char_height # Y開始位置
     y_end  = mtext_insertion[1] - mtext.dxf.char_height * (text_lines_count + 1) # 文字の高さ×(行数+1)
-    
+    print("～～ DXF文字情報 ～～")
+    print(f"mtextテキスト:{mtext.dxf.text}\n　Dxfテキスト:{neighbor.dxf.text}")
+    print(f"mtext挿入点:{mtext_insertion}\n　Def挿入点:{neighbor_insertion}\n　行数:{text_lines_count}")
+    print(f"mtext文字幅:{mtext.dxf.width}\n　mtext1行当たりの文字高:{mtext.dxf.char_height}")
+    print(f"X座標の取得範囲:{x_start}～{x_end}\nY座標の取得範囲:{y_start}～{y_end}")
+    print("～～ DXF文字情報 ～～")
+        
     # MTextの下、もしくは右に特定のプロパティで描かれた文字が存在するかどうかを判定する(座標：右が大きく、上が大きい)
     if (neighbor_insertion[0] >= x_start and neighbor_insertion[0] <= x_end):
         #y_endの方が下部のため、y_end <= neighbor.y <= y_startとする
@@ -1701,10 +1900,13 @@ def find_square_around_text(dxf_filename, target_text, second_target_text):
     doc = ezdxf.readfile(dxf_filename)
     msp = doc.modelspace()
     
-    text_positions = [] # 見つかったテキストの位置を格納するためのリストを作成
+    desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+    output_filepath = os.path.join(desktop_path, "CAD変更一時保存.dxf")
+    doc.saveas(output_filepath)
     
+    text_positions = [] # 見つかったテキストの位置を格納するためのリストを作成
     extracted_text = []
-
+    
     # MTEXTエンティティの各要素をtextという変数に代入してループ処理
     for mtext_insert_point in msp.query('MTEXT'): # モデルスペース内の「MTEXT」エンティティをすべて照会し、ループ処理
         if mtext_insert_point.dxf.text == target_text: # エンティティのテキストが検索対象のテキストと一致した場合
@@ -1760,6 +1962,7 @@ def find_square_around_text(dxf_filename, target_text, second_target_text):
                         if entity_extension(circle_in_text, neighbor):
                         # 特定のプロパティ(Defpoints)で描かれた文字のテキストを抽出する
                             related_text = neighbor.plain_text()
+                            print(f"DXFテキストデータ:{related_text}")
                             defx, defy, _ = neighbor.dxf.insert
                         #extracted_text.append(neighbor_text)
                             break # 文字列が見つかったらbreakによりforループを終了する
@@ -2149,7 +2352,7 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
                 # photo_pathsの要素の数だけphoto_pathという変数に代入し、forループを実行
                 # photo_pathという1つの要素の'infra/static/'を空白''に置換し、中間文字なしで結合する。
                 # picture_urlsという新規配列に格納する。
-                print(f"photo_paths：{picture_urls}")
+                # print(f"photo_paths：{picture_urls}")
             else:# それ以外の場合
                 picture_urls = None
                 #picture_urlsの値は[None]とする。
@@ -2503,7 +2706,7 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
             items = {'parts_name': first_item[i], 'damage_name': second_items[i], 'join': first_and_second, 
                      'picture_number': third, 'this_time_picture': picture_urls, 'last_time_picture': None, 'textarea_content': combined_data, 
                      'damage_coordinate': damage_coordinate[i], 'picture_coordinate': picture_coordinate[i]}
-            # print(f"items：{items}")
+            print(f"items：{items}")
             damage_table.append(items)
 
         #優先順位の指定
@@ -2554,37 +2757,98 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
     return sorted_items
 
 # << 旗揚げの修正 >>
-def edit_report_data(request, pk):
-    report_data = get_object_or_404(FullReportData, pk=pk)
+def edit_report_data(request, damage_pk, pk, table_pk):
+    print(f"damage_pk={damage_pk} pk={pk} table_pk={table_pk}")
+    report_data = get_object_or_404(FullReportData, pk=damage_pk)
     if request.method == "POST":
-        coords = request.POST.get("coords").split(",")
-        new_text = request.POST.get("new_text", "")
+        points = request.POST.get("coords").split(",")
+        coords = [float(points[0]), float(points[1])]
+        print(f"変更前coords:{coords}")
         
         # DXFファイルの更新処理
         def find_square_around_text(dxf_filename, target_text, second_target_text):
             doc = ezdxf.readfile(dxf_filename)
             msp = doc.modelspace()
-            coords = [(float(coords[0]), float(coords[1]))]
-
+            print(f"DOC:{doc}")
+            print(f"MSP:{msp}")
+            print(f"dxf_filename:{dxf_filename}")
             # 座標の一致を確認するための許容誤差
             epsilon = 0.001
 
             for entity in msp:
                 if entity.dxftype() in {'TEXT', 'MTEXT'}:
-                    print(f"変更前DXFテキスト:{entity.dxf.text}")
                     x, y, _ = entity.dxf.insert
-                    for cx, cy in coords:
-                        if abs(x - cx) < epsilon and abs(y - cy) < epsilon:
-                            return entity.dxf.text
 
-        table = Table.objects.filter(infra=pk).first()
-        decoded_url = urllib.parse.unquote(table.dxf.url)
-        dxf_filename = decoded_url
+                    if abs(float(x) - float((points[0]))) < epsilon and abs(float(y) - float(points[1])) < epsilon:
+                        print(f"変更前ENTITY:{entity}")
+                        print(f"変更前DXFテキスト:{entity.dxf.text}")
+                        return entity.dxf.text
+        
+        infra_name = Infra.objects.filter(pk=pk).first()
+        article_name = infra_name.article
+        print(f"Infra:{infra_name}/Article:{article_name}")
+        table = Table.objects.get(infra=infra_name, article=article_name)
+        print(f"変更TABLE:{table}") # Table object (5)
+        table_number = table.id
+        print(f"TABLEのID:{table_number}")
+        table = Table.objects.filter(pk=table_pk).first()
+        print("～～～")
+        print(f"TABLE:{pk}")
+        print(f"変更TABLE:{table}") # Table object (5)
+        print(f"変更後coords:{coords}") # [525003.839727268, 214191.031706055]
+        if not table:
+            print(f"変更TABLE:データなし")
+        
+        encoded_url_path = table.dxf.url
+        decoded_url_path = urllib.parse.unquote(encoded_url_path) # URLデコード
+        dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
+        
         current_text = find_square_around_text(dxf_filename, coords[0], coords[1])
 
-        if request.is_ajax():
-            return JsonResponse({
-                'current_text': current_text,
-            })
+        return JsonResponse({"status": "success", 'current_text': current_text})
+
+    return render(request, 'infra/bridge_table.html', {'report_data': report_data})
+
+@csrf_exempt
+def edit_send_data(request, damage_pk, pk, table_pk):
+    print(f"修正対象：damage_pk={damage_pk} pk={pk} table_pk={table_pk}")
+    report_data = get_object_or_404(FullReportData, pk=damage_pk)
+    if request.method == "POST":
+        data = json.loads(request.body)
+        points = data.get('coords')
+        new_text = data.get('new_text')
+        print(f"変更points:{points}")
+        print(f"変更new_text:{new_text}")
+        def find_square_around_text(dxf_filename, new_text):
+            doc = ezdxf.readfile(dxf_filename)
+            msp = doc.modelspace()
+            epsilon = 0.001
+                
+            for entity in msp:
+                if entity.dxftype() in {'TEXT', 'MTEXT'}:
+                    insert_point = entity.dxf.insert
+                    x,y = insert_point.x, insert_point.y
+                    x_points, y_points = points.split(',')
+                    print(f"変更    座標:{entity.dxf.text}--{float(x)}/{float(x_points)}/{float(y)}/{float(y_points)}//{points}")
+                    if abs(float(x) - float(x_points)) < epsilon and abs(float(y) - float(y_points)) < epsilon: # 座標が一致した場合(誤差:epsilon)
+                        entity.dxf.text = new_text  # 新しいテキストに置き換え
+                        print(f"変更前文字:{new_text}")
+                        print(f"変更後文字:{entity.dxf.text}")
+                        
+            desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+            output_filepath = os.path.join(desktop_path, "CAD変更.dxf")
+            doc.saveas(output_filepath)
+            print(f"変更完了:{new_text}")
+            return new_text
+                              
+        table = Table.objects.filter(pk=table_pk).first()
+        
+        encoded_url_path = table.dxf.url
+        decoded_url_path = urllib.parse.unquote(encoded_url_path)  # URLデコード
+        dxf_filename = os.path.join(settings.BASE_DIR, decoded_url_path.lstrip('/'))
+
+        current_text = find_square_around_text(dxf_filename, new_text)
+
+        return JsonResponse({"status": "success", 'current_text': current_text})
 
     return render(request, 'infra/bridge_table.html', {'report_data': report_data})

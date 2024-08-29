@@ -64,8 +64,9 @@
                             <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
                             <input type="hidden" name="new_text">
                             <input type="hidden" name="join" value="{{ bridge.join }}">
-                            <button type="button" onclick="openModal()">変更</button>
-                            <button type="button" onclick="deleteData(this)">削除</button>
+                            <button type="button" onclick="openModal( '{{ bridge.id }}','{{ bridge.infra.id }}','{{ bridge.table.id }}','{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}' )">変更</button>
+                                                            <!-- openModal()のときに各変更ボタンの一意なidと座標をscriptに渡す-->
+                            <button type="button" onclick="deleteData(this)">削除</button><p>{{bridge.id}}/{{bridge.infra.id}}/{{bridge.table.id}}</p>
                         {% endif %}
                         {% endfor %}
                         {% comment %} <form method="POST" action="{% url 'edit_report_data' bridge.id %}" class="edit-form">
@@ -139,12 +140,14 @@
 
 <!-- カスタムモーダル -->
 <div id="customModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
-    <div style="background-color:white; padding:20px; border-radius:5px;">
+    <div style="background-color:white; padding:20px; border-radius:5px; max-width:600px; width:90%;">
         <h2>変更内容</h2>
+        <p style="margin: 0;">編集前</p>
         <textarea id="beforeChange" placeholder="変更前" style="width:100%; height:100px;"></textarea>
+        <p style="margin: 0;">編集後</p>
         <textarea id="afterChange" placeholder="変更後" style="width:100%; height:100px;"></textarea>
         <button type="button" onclick="closeModal()">閉じる</button>
-        <button type="button">保存</button>
+        <button type="button" id="saveButton">保存</button>
     </div>
 </div>
 
@@ -223,8 +226,130 @@ function uploadPicture(input, pk) {
     });
 }
 // カスタムモーダル
-function openModal() {
+function openModal(damage_pk, pk, table_pk, coords) {
+    console.log("おーぷん");
+    console.log(coords)
+
     document.getElementById('customModal').style.display = 'flex';
+
+    // ここで ビューに対して、`current_text`の値を手に入れる。
+    // 
+    const url = "/bridge_table_edit/" + damage_pk + "/" + pk + "/" + table_pk + "/";
+    console.log("Generated URL: ", url); // ここで出力
+    // 保存時にも使う変数を一時的に保管
+    sessionStorage.setItem('damage_pk', damage_pk);
+    sessionStorage.setItem('pk', pk);
+    sessionStorage.setItem('table_pk', table_pk);
+    sessionStorage.setItem('coords', coords);
+    // ↑のURLに対して、リクエストを送る
+    /*
+    Ajaxの種類
+    - jQueryのAjax :　jQueryの機能に含まれている
+    - XMLHttpRequest : 素のJavaScriptによるAjax(JavaScriptによるリクエストの送信)。エラーハンドリング(エラー対処)が難しい。コードが複雑になる。
+    - FetchAPI : ↑XMLHttpRequestの改良型。エラーハンドリングがわかりやすくなった。   
+    */
+   
+    // 1: Ajax専用のビューを用意する(current_textを返すビューを作る)。JsonResponseを返す
+    // 2: ↑のビューに対して、リクエストを送信する。
+
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    formData.append("coords", coords);
+
+    fetch(url, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Fetch data: ", data); // data の追加ログ
+        console.log("Fetch data: ", data.status);
+        if (data.status === 'success') {
+            // 特定のパターンを削除する関数
+            function removeSpecificPatterns(str) {
+                // \pt2750; や \ptz; のようなパターンを削除
+                return str.replace(/\\pt[\d\w]+;/g, '');
+            }
+
+            // 改行を \P に変換した後の文字列を取得
+            const replacedText = data.current_text.replace(/\\P/g, '\n');
+
+            // 特定のパターンを削除
+            const cleanedText = removeSpecificPatterns(replacedText);
+            // 帰ってきたcurrent_text を使って、モーダルの要素に、textを貼り付ける。
+            document.querySelector("#beforeChange").value = cleanedText;
+            document.querySelector("#afterChange").value = cleanedText;
+
+        } else {
+            console.error('Response was not successful:', data); // エラーログの追加
+            alert('失敗しました');
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
+function saveChanges() {
+    console.log("修正開始");
+    // 保存していた変数を取得
+    const damage_pk = sessionStorage.getItem('damage_pk');
+    const pk = sessionStorage.getItem('pk');
+    const pk = sessionStorage.getItem('table_pk');
+    const coords = sessionStorage.getItem('coords');
+
+    const afterChange = document.getElementById('afterChange').value;
+    const url = "/bridge_table_send/" + damage_pk + "/" + pk + "/" + table_pk + "/";
+    console.log("Generated URL: ", url); // ここで出力
+    console.log(coords)
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken') // DjangoでCSRFトークンをセットする関数
+        },
+        body: JSON.stringify({ 
+            new_text: afterChange,
+            coords: coords
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            // エラーレスポンスの場合
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if(data.status === 'success') {
+            alert('変更が保存されました。ファイルがデスクトップに保存されました。');
+            closeModal();
+        } else {
+            alert('エラーが発生しました。');
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('エラーが発生しました。');
+    });
+}
+
+document.getElementById('saveButton').addEventListener('click', saveChanges);
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 function closeModal() {
@@ -242,11 +367,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // 変更ボタンにモーダル表示を追加
-    const buttons = document.querySelectorAll('button[onclick="openModal()"]');
-    buttons.forEach(button => {
-        button.onclick = openModal;
-    });
 });
 // 写真を変更する際にサーバーに送信
 {% comment %} document.addEventListener("DOMContentLoaded", function() {

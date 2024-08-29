@@ -40,6 +40,50 @@ else:
     else:
         split_number = '00'
         
-print(split_number)
+# print(split_number)
 result = parts_join + split_number
-print(result)
+# print(result)
+
+text = "アクション-1 Acn1150"
+
+# 文字列を空白で分ける
+parts = text.split()
+
+# 最初の部分「アクション-1」を取得
+part1 = parts[0]
+
+# 2番目の部分から数値部分だけを取得
+part2 = re.search(r'\d+', parts[1]).group()
+
+print(part1)  # 出力: アクション-1
+print(part2)  # 出力: 1150
+
+
+# 文章
+text = "①大当たり"
+
+# 置き換え用の辞書
+dictionary = {
+    "①": "1等",
+    "②": "2等"
+}
+
+# 先頭の1文字を取得
+first_char = text[0]
+
+# 辞書で値を取得
+result = dictionary.get(first_char, "キーが見つかりません")
+
+print(result)  # 出力: 1等
+
+points = 546386.0254916904,168103.8976152274
+print(points[0])
+
+points = "546386.0254916904,168103.8976152274"
+print(points[0])
+# コンマで分割して、リストにする
+left, right = points.split(',')
+
+# 結果を表示
+print(f"左側: {left}")
+print(f"右側: {right}")
