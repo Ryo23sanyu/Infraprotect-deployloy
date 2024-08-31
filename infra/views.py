@@ -637,6 +637,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                     'article': article,
                     'table': table
                 }
+                print(f"径間番号:{span_number}")
                 if FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
                     continue
                 else:
@@ -655,7 +656,8 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         continue
                     else:
                         # 更新する対象を検索
-                        update_fields = FullReportData.objects.filter(span_number=span_number, table=table)
+                        update_fields = FullReportData.objects.filter(damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y, span_number=span_number, table=table)
+                        print(f"削除対象:{update_fields}")
                         deleted_count, _ = update_fields.delete()
                         print(f"{deleted_count}件の既存のフィールドを削除しました。")
                         damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
@@ -690,7 +692,8 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         'infra': infra,
                         'article': article,
                         'table': table
-                    }                            
+                    }           
+                    print(f"径間番号:{span_number}")                 
                     if FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
                         continue
                     else:
@@ -709,7 +712,8 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             continue
                         else:
                             # 更新処理
-                            update_fields = FullReportData.objects.filter(span_number=span_number, table=table)
+                            update_fields = FullReportData.objects.filter(damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y, span_number=span_number, table=table)
+                            print(f"削除対象:{update_fields}")
                             deleted_count, _ = update_fields.delete()
                             print(f"{deleted_count}件の既存のフィールドを削除しました。")
                             damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
@@ -745,6 +749,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'article': article,
                             'table': table
                         }
+                        print(f"径間番号:{span_number}")
                         if FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
                             continue
                         else:
@@ -763,7 +768,8 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                                 continue
                             else:
                                 # 更新処理
-                                update_fields = FullReportData.objects.filter(span_number=span_number, table=table)
+                                update_fields = FullReportData.objects.filter(damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y, span_number=span_number, table=table)
+                                print(f"削除対象:{update_fields}")
                                 deleted_count, _ = update_fields.delete()
                                 print(f"{deleted_count}件の既存のフィールドを削除しました。")
                                 damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
@@ -798,6 +804,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'article': article,
                             'table': table
                         }
+                        print(f"径間番号:{span_number}")
                         if FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
                             continue
                         else:
@@ -816,7 +823,8 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                                 continue
                             else:
                                 # 更新処理
-                                update_fields = FullReportData.objects.filter(span_number=span_number, table=table)
+                                update_fields = FullReportData.objects.filter(damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y, span_number=span_number, table=table)
+                                print(f"削除対象:{update_fields}")
                                 deleted_count, _ = update_fields.delete()
                                 print(f"{deleted_count}件の既存のフィールドを削除しました。")
                                 damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
