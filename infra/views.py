@@ -34,6 +34,7 @@ from django.core.files.storage import FileSystemStorage
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.db import transaction, IntegrityError
+from django.db.models import Q
 
 from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
@@ -495,7 +496,6 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         return matches
     
     for damage_data in database_sorted_items:
-        #print(f"damage_data：{damage_data}")
         # 元の辞書から 'picture_number' の値を取得
         #             　辞書型 ↓           ↓ キーの名前      ↓ 存在しない場合、デフォルト値として空白を返す
         picture_number = damage_data.get('picture_number', '')
@@ -509,7 +509,12 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
             numbers_only = None
 
         damage_coordinate = damage_data.get('damage_coordinate', [None, None])
+        damage_coordinate_x = damage_coordinate[0] if damage_coordinate else None
+        damage_coordinate_y = damage_coordinate[1] if damage_coordinate else None
+
         picture_coordinate = damage_data.get('picture_coordinate', [None, None])
+        picture_coordinate_x = picture_coordinate[0] if picture_coordinate else None
+        picture_coordinate_y = picture_coordinate[1] if picture_coordinate else None
 
         #parts_list = flatten(damage_data.get('parts_name', ''))
         #damage_list = flatten(damage_data.get('damage_name', ''))
@@ -540,9 +545,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                     for prefix in range(int(start_prefix), int(end_prefix)+1):
                         for suffix in range(int(start_suffix), int(end_suffix)+1):
                             number_items = "{:02d}{:02d}".format(prefix, suffix)
-                            join_item = part_name + number_items
-                            split_items.append(join_item)
-                    
+                            split_items.append(part_name + number_items)
                 else:
                     split_items.append(split)
             split_names.append(split_items)
@@ -551,13 +554,10 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         this_time_picture = simple_flatten(damage_data.get('this_time_picture', ''))
         last_time_picture = simple_flatten(damage_data.get('last_time_picture', ''))
         textarea_content = damage_data.get('textarea_content', '')
-        damage_coordinate_x = damage_coordinate[0] if damage_coordinate else None
-        damage_coordinate_y = damage_coordinate[1] if damage_coordinate else None
-        picture_coordinate_x = picture_coordinate[0] if picture_coordinate else None
-        picture_coordinate_y = picture_coordinate[1] if picture_coordinate else None
         span_number = damage_data.get('search', '')
         print("----------------------------------")
         print(f"damage_data:{damage_data}")
+        print(f"join:{join}")
         print(f"this_time_picture:{this_time_picture}")
         name_length = len(split_names)
         damage_length = len(damages)
@@ -610,18 +610,15 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         print(f"article:{article}({article.id})") # お試し(2)
         table = Table.objects.filter(infra=infra.id, article=article.id).first()
         print(table) # 旗揚げチェック：お試し（infra/table/dxf/121_2径間番号違い.dxf）
-        
-        # 更新対象のフィールド名
-        fields_to_update = ['parts_name', 'damage_name', 'parts_split', 'join', 'this_time_picture', 'span_number', 'special_links']
-
+          
         if not is_multi_list(split_names) and not is_multi_list(damages) and name_length == 1: # 部材名が1つの場合
             for single_damage in damages: 
                 parts_name = names[0]
                 damage_name = flatten(single_damage)
-                #print(f"parts_name1:{parts_name}")
-                #print(f"damage_name1:{damage_name}")
+                print(f"parts_name1:{parts_name}")
+                print(f"damage_name1:{damage_name}")
                 parts_split = process_names(flatten(parts_name))
-                data_fields = {
+                update_or_create_fields = {
                     'parts_name': parts_name,
                     'damage_name': damage_name,
                     'parts_split': parts_split,
@@ -640,50 +637,42 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                     'article': article,
                     'table': table
                 }
-                with transaction.atomic():
-                    try:
-                        # damage_coordinateのX,Y座標が一致しているか確認
-                        existing_record = FullReportData.objects.filter(
-                            damage_coordinate_x=data_fields['damage_coordinate_x'],
-                            damage_coordinate_y=data_fields['damage_coordinate_y']
-                        ).first()
-                        print(f"座標が一致するか確認:{existing_record}")
-
-                        if existing_record:
-                            # 一致した場合、特定フィールドを更新
-                            for field in fields_to_update:
-                                setattr(existing_record, field, data_fields[field])
-                            existing_record.save()
-                            print("既存のデータが更新されました。")
-                        else:
-                            # 新しい座標の場合、新しいデータを登録
-                            new_record = FullReportData.objects.create(**data_fields)
-                            new_record.save()
-                            print("新しいデータが作成されました。")
-                        
-                    except IntegrityError as e:
-                        print(f"ユニーク制約に違反しましたが、既存のデータは更新されませんでした: {e}")
-                        
-                report_data_exists = FullReportData.objects.filter(**data_fields).exists() # 同じ値を持つレコードが存在するか確認
-                if report_data_exists:
-                    print("データが存在しています。")
-                    
+                if FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                    continue
                 else:
                     try:
-                        damage_obj, created = FullReportData.objects.update_or_create(**data_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                        damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
                         damage_obj.save() # オブジェクトを保存
+                        print("保存しました。")
                     except IntegrityError:
                         print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
-
+                        
+                check_coordinate = FullReportData.objects.filter(damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y)
+                if check_coordinate.exists():
+                    check_fields = FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table)
+                    if check_fields.exists():
+                        print("座標は一致してるし、書いてる内容も同じ")
+                        continue
+                    else:
+                        # 更新する対象を検索
+                        update_fields = FullReportData.objects.filter(span_number=span_number, table=table)
+                        deleted_count, _ = update_fields.delete()
+                        print(f"{deleted_count}件の既存のフィールドを削除しました。")
+                        damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                        damage_obj.save() # オブジェクトを保存
+                        print("保存しました。")
+                #else:
+                    #pass
+                    
         elif not is_multi_list(split_names) and not is_multi_list(damages) and name_length >= 2: # 部材名が2つ以上の場合
             if damage_length == 1: # かつ損傷名が1つの場合
                 for single_name in split_names:
                     parts_name = single_name
                     damage_name = flatten(damages[0])
-                    #print(f"parts_name2:{parts_name}")
-                    #print(f"damage_name2:{damage_name}")
+                    print(f"parts_name2:{parts_name}")
+                    print(f"damage_name2:{damage_name}")
                     parts_split = process_names(flatten(parts_name))
-                    data_fields = {
+                    update_or_create_fields = {
                         'parts_name': parts_name,
                         'damage_name': damage_name,
                         'parts_split': parts_split,
@@ -701,58 +690,43 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         'infra': infra,
                         'article': article,
                         'table': table
-                    }
-                    
-                    with transaction.atomic():
-                        try:
-                            # damage_coordinateのX,Y座標が一致しているか確認
-                            existing_record = FullReportData.objects.filter(
-                                damage_coordinate_x=data_fields['damage_coordinate_x'],
-                                damage_coordinate_y=data_fields['damage_coordinate_y']
-                            ).first()
-                            print(f"座標が一致するか確認:{existing_record}")
-
-                            if existing_record:
-                                # 一致した場合、特定フィールドを更新
-                                for field in fields_to_update:
-                                    setattr(existing_record, field, data_fields[field])
-                                existing_record.save()
-                                print("既存のデータが更新されました。")
-                            else:
-                                # 合致する古いデータを削除
-                                FullReportData.objects.filter(
-                                    parts_name=parts_name,
-                                    damage_name=damage_name
-                                ).delete()
-                                print("古いデータが削除されました。")
-
-                                # 新しいデータを登録
-                                new_record = FullReportData.objects.create(**data_fields)
-                                new_record.save()
-                                print("新しいデータが作成されました。")
-                        except IntegrityError as e:
-                            print(f"ユニーク制約に違反しましたが、既存のデータは更新されませんでした: {e}")
-                            
-                    report_data_exists = FullReportData.objects.filter(**data_fields).exists() # 同じ値を持つレコードが存在するか確認
-                    if report_data_exists:
-                        print("データが存在しています。")
-                        
+                    }                            
+                    if FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                        continue
                     else:
                         try:
-                            damage_obj, created = FullReportData.objects.update_or_create(**data_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                            damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
                             damage_obj.save() # オブジェクトを保存
+                            print("保存しました。")
                         except IntegrityError:
                             print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
-
+                            
+                    check_coordinate = FullReportData.objects.filter(damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y)
+                    if check_coordinate.exists():
+                        check_fields = FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table)
+                        if check_fields.exists():
+                            print("座標は一致してるし、書いてる内容も同じ")
+                            continue
+                        else:
+                            # 更新処理
+                            update_fields = FullReportData.objects.filter(span_number=span_number, table=table)
+                            deleted_count, _ = update_fields.delete()
+                            print(f"{deleted_count}件の既存のフィールドを削除しました。")
+                            damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                            damage_obj.save() # オブジェクトを保存
+                            print("保存しました。")
+                    #else:
+                        #pass
+                        
             elif not is_multi_list(split_names) and not is_multi_list(damages) and damage_length >= 2: # かつ損傷名が2つ以上の場合
                 for name in split_names:
                     for damage in damages:
                         parts_name = name
                         damage_name = flatten(damage)
-                        #print(f"parts_name3:{parts_name}")
-                        #print(f"damage_name3:{damage_name}")
+                        print(f"parts_name3:{parts_name}")
+                        print(f"damage_name3:{damage_name}")
                         parts_split = process_names(flatten(parts_name))
-                        data_fields = {
+                        update_or_create_fields = {
                             'parts_name': parts_name,
                             'damage_name': damage_name,
                             'parts_split': parts_split,
@@ -771,58 +745,41 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'article': article,
                             'table': table
                         }
-
-                        with transaction.atomic():
-                            try:
-                                # damage_coordinateのX,Y座標が一致しているか確認
-                                existing_record = FullReportData.objects.filter(
-                                    damage_coordinate_x=data_fields['damage_coordinate_x'],
-                                    damage_coordinate_y=data_fields['damage_coordinate_y']
-                                ).first()
-                                print(f"座標が一致するか確認:{existing_record}")
-
-                                if existing_record:
-                                    # 一致した場合、特定フィールドを更新
-                                    for field in fields_to_update:
-                                        setattr(existing_record, field, data_fields[field])
-                                    existing_record.save()
-                                    print("既存のデータが更新されました。")
-                                else:
-                                    # 合致する古いデータを削除
-                                    FullReportData.objects.filter(
-                                        parts_name=parts_name,
-                                        damage_name=damage_name
-                                    ).delete()
-                                    print("古いデータが削除されました。")
-
-                                    # 新しいデータを登録
-                                    new_record = FullReportData.objects.create(**data_fields)
-                                    new_record.save()
-                                    print("新しいデータが作成されました。")
-                            except IntegrityError as e:
-                                print(f"ユニーク制約に違反しましたが、既存のデータは更新されませんでした: {e}")
-                                
-                        report_data_exists = FullReportData.objects.filter(**data_fields).exists() # 同じ値を持つレコードが存在するか確認
-                        if report_data_exists:
-                            print("データが存在しています。")
-                            
+                        if FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                            continue
                         else:
                             try:
-                                damage_obj, created = FullReportData.objects.update_or_create(**data_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                                damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
                                 damage_obj.save() # オブジェクトを保存
+                                print("保存しました。")
                             except IntegrityError:
                                 print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
                                 
+                        check_coordinate = FullReportData.objects.filter(damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y)
+                        if check_coordinate.exists():
+                            check_fields = FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table)
+                            if check_fields.exists():
+                                print("座標は一致してるし、書いてる内容も同じ")
+                                continue
+                            else:
+                                # 更新処理
+                                update_fields = FullReportData.objects.filter(span_number=span_number, table=table)
+                                deleted_count, _ = update_fields.delete()
+                                print(f"{deleted_count}件の既存のフィールドを削除しました。")
+                                damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                                damage_obj.save() # オブジェクトを保存
+                                print("保存しました。")
+                                 
         else: # 多重リストの場合
             for i in range(name_length):
                 for name in split_names[i]:
                     for damage in damages[i]:
                         parts_name = name
                         damage_name = flatten(damage)
-                        #print(f"parts_name4:{parts_name}")
-                        #print(f"damage_name4:{damage_name}")
+                        print(f"parts_name4:{parts_name}")
+                        print(f"damage_name4:{damage_name}")
                         parts_split = process_names(flatten(parts_name))
-                        data_fields = {
+                        update_or_create_fields = {
                             'parts_name': parts_name,
                             'damage_name': damage_name,
                             'parts_split': parts_split,
@@ -841,48 +798,31 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'article': article,
                             'table': table
                         }
-                        
-                        with transaction.atomic():
-                            try:
-                                # damage_coordinateのX,Y座標が一致しているか確認
-                                existing_record = FullReportData.objects.filter(
-                                    damage_coordinate_x=data_fields['damage_coordinate_x'],
-                                    damage_coordinate_y=data_fields['damage_coordinate_y']
-                                ).first()
-                                print(f"座標が一致するか確認:{existing_record}")
-
-                                if existing_record:
-                                    # 一致した場合、特定フィールドを更新
-                                    for field in fields_to_update:
-                                        setattr(existing_record, field, data_fields[field])
-                                    existing_record.save()
-                                    print("既存のデータが更新されました。")
-                                else:
-                                    # 合致する古いデータを削除
-                                    FullReportData.objects.filter(
-                                        parts_name=parts_name,
-                                        damage_name=damage_name
-                                    ).delete()
-                                    print("古いデータが削除されました。")
-
-                                    # 新しいデータを登録
-                                    new_record = FullReportData.objects.create(**data_fields)
-                                    new_record.save()
-                                    print("新しいデータが作成されました。")
-                            except IntegrityError as e:
-                                print(f"ユニーク制約に違反しましたが、既存のデータは更新されませんでした: {e}")
-                                
-                        report_data_exists = FullReportData.objects.filter(**data_fields).exists() # 同じ値を持つレコードが存在するか確認
-                        if report_data_exists:
-                            print("データが存在しています。")
-                            
+                        if FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                            continue
                         else:
                             try:
-                                damage_obj, created = FullReportData.objects.update_or_create(**data_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                                damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
                                 damage_obj.save() # オブジェクトを保存
+                                print("保存しました。")
                             except IntegrityError:
                                 print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
-
+                                
+                        check_coordinate = FullReportData.objects.filter(damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y)
+                        if check_coordinate.exists():
+                            check_fields = FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table)
+                            if check_fields.exists():
+                                print("座標は一致してるし、書いてる内容も同じ")
+                                continue
+                            else:
+                                # 更新処理
+                                update_fields = FullReportData.objects.filter(span_number=span_number, table=table)
+                                deleted_count, _ = update_fields.delete()
+                                print(f"{deleted_count}件の既存のフィールドを削除しました。")
+                                damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                                damage_obj.save() # オブジェクトを保存
+                                print("保存しました。")
+                                
     """辞書型の多重リストをデータベースに登録(ここまで)"""
     # path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table')
 
