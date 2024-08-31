@@ -10,7 +10,7 @@
 
 
 {# ここで径間ボタンを生成 #}
-<form action="{% url 'bridge-table' object.infra.article.pk object.infra.pk %}">
+<form action="{% url 'bridge-table' article_pk object.pk %}">
     {% for button in buttons %}
     <button name="search_title_text" value="{{ forloop.counter }}径間">{{ forloop.counter }}径間</button>
     {% endfor %}
@@ -64,9 +64,10 @@
                             <input type="hidden" name="coords" value="{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}">
                             <input type="hidden" name="new_text">
                             <input type="hidden" name="join" value="{{ bridge.join }}">
-                            <button type="button" onclick="openModal( '{{ bridge.id }}','{{ bridge.infra.id }}','{{ bridge.table.id }}','{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}' )">変更</button>
+                            <button type="button" onclick="openModal( '{{ bridge.id }}','{{ bridge.table.id }}','{{ bridge.damage_coordinate_x }},{{ bridge.damage_coordinate_y }}' )">変更</button>
                                                             <!-- openModal()のときに各変更ボタンの一意なidと座標をscriptに渡す-->
-                            <button type="button" onclick="deleteData(this)">削除</button><p>{{bridge.id}}/{{bridge.infra.id}}/{{bridge.table.id}}</p>
+                            <button type="button" onclick="deleteData(this)">削除</button>
+                            {% comment %} <p>ボタンID{{bridge.id}}/テーブルID{{bridge.table.id}}</p> {% endcomment %}
                         {% endif %}
                         {% endfor %}
                         {% comment %} <form method="POST" action="{% url 'edit_report_data' bridge.id %}" class="edit-form">
@@ -226,7 +227,7 @@ function uploadPicture(input, pk) {
     });
 }
 // カスタムモーダル
-function openModal(damage_pk, pk, table_pk, coords) {
+function openModal(damage_pk, table_pk, coords) {
     console.log("おーぷん");
     console.log(coords)
 
@@ -234,11 +235,10 @@ function openModal(damage_pk, pk, table_pk, coords) {
 
     // ここで ビューに対して、`current_text`の値を手に入れる。
     // 
-    const url = "/bridge_table_edit/" + damage_pk + "/" + pk + "/" + table_pk + "/";
+    const url = "/bridge_table_edit/" + damage_pk + "/" + table_pk + "/";
     console.log("Generated URL: ", url); // ここで出力
     // 保存時にも使う変数を一時的に保管
     sessionStorage.setItem('damage_pk', damage_pk);
-    sessionStorage.setItem('pk', pk);
     sessionStorage.setItem('table_pk', table_pk);
     sessionStorage.setItem('coords', coords);
     // ↑のURLに対して、リクエストを送る
@@ -294,12 +294,11 @@ function saveChanges() {
     console.log("修正開始");
     // 保存していた変数を取得
     const damage_pk = sessionStorage.getItem('damage_pk');
-    const pk = sessionStorage.getItem('pk');
-    const pk = sessionStorage.getItem('table_pk');
+    const table_pk = sessionStorage.getItem('table_pk');
     const coords = sessionStorage.getItem('coords');
 
     const afterChange = document.getElementById('afterChange').value;
-    const url = "/bridge_table_send/" + damage_pk + "/" + pk + "/" + table_pk + "/";
+    const url = "/bridge_table_send/" + damage_pk + "/" + table_pk + "/";
     console.log("Generated URL: ", url); // ここで出力
     console.log(coords)
 

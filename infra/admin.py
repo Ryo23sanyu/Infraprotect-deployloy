@@ -6,8 +6,10 @@ from django.db.models import Case, When, Value, IntegerField
 from django.db.models import Q
 
 # models.pyのclass名とカッコの中を合わせる
-#admin.site.register(CustomUser, UserAdmin)
-admin.site.register(Infra) # 橋梁
+class InfraAdmin(admin.ModelAdmin): # 橋梁
+    list_display = ('title', '径間数', '路線名', 'article')
+admin.site.register(Infra, InfraAdmin)
+
 admin.site.register(Article) # 案件
 admin.site.register(Regulation) # 道路規制
 admin.site.register(LoadWeight) # 活荷重
@@ -21,8 +23,6 @@ admin.site.register(Material) # 番号登録(材料)
 class TableAdmin(admin.ModelAdmin): # 損傷写真帳
     list_display = ('infra', 'article', 'dxf')
 admin.site.register(Table, TableAdmin)
-
-
 
 class FullReportDataAdmin(admin.ModelAdmin): # 損傷写真帳の全データ
     list_display = ('parts_name', 'damage_name', 'span_number', 'infra', 'article')
@@ -62,7 +62,6 @@ admin.site.register(PartsNumber, PartsNumberAdmin)
 class NameEntryAdmin(admin.ModelAdmin): # 名前とアルファベットの紐付け
     list_display = ('article', 'name', 'alphabet')
 admin.site.register(NameEntry, NameEntryAdmin)
-
 
 """ 管理サイトの並び替え表示に必要な動作 """
 class CustomPartsNameFilter(admin.SimpleListFilter):

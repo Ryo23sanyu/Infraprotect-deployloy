@@ -2,7 +2,8 @@ import os
 import ezdxf
 
 # DXFファイルを読み込む
-doc = ezdxf.readfile(R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf')
+file = R'C:\work\django\myproject\myvenv\Infraproject\uploads\121_損傷橋.dxf'
+doc = ezdxf.readfile(file)
 
 # モデルスペースを取得
 msp = doc.modelspace()
@@ -25,7 +26,7 @@ for entity in msp: # モデルスペースの中のentityをループ処理
             if abs(x - cx) < epsilon and abs(y - cy) < epsilon:
                 print(entity.dxf.text)
                 # 更新するテキスト(固定値)
-                new_text = "主桁0000" # 更新するテキスト
+                new_text = "主桁0101\n⑦剥離・鉄筋露出-d\n写真番号-01" # 更新するテキスト
                 entity.dxf.text = new_text # 古いテキストを新しいテキストに置き換え
                 
                 # デスクトップのパスを取得（Windowsの例）

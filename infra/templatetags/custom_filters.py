@@ -25,3 +25,10 @@ def remove_prefix(value, arg):
     if value.startswith(arg):
         return value[len(arg):]
     return value
+
+@register.filter
+def sort_list(value):
+    try:
+        return sorted(value)
+    except TypeError:
+        return value

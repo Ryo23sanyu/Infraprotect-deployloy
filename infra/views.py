@@ -33,12 +33,14 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.storage import FileSystemStorage
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.db import transaction, IntegrityError
 
 from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
 from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentCauseEditForm, DamageCommentEditForm, DamageCommentJadgementEditForm, EditReportDataForm, FileUploadForm, FullReportDataEditForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
 from .forms import ArticleForm
 from urllib.parse import quote, unquote
+from ezdxf.enums import TextEntityAlignment
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -74,26 +76,30 @@ class DetailInfraView(LoginRequiredMixin, DetailView):
         return super().get_context_data(**kwargs)
   
 class CreateInfraView(LoginRequiredMixin, CreateView):
-    template_name = 'infra/infra_create.html' # 対応するhtmlの名前
-    model = Infra # models.pyのどのモデルと紐付くか
-    # form_class = BridgeCreateForm # forms.pyのどのクラスと紐付くか
+    # LoginRequiredMixin：ログインが必要とするためのミックスイン
+    # CreateView：Djangoの汎用ビューで、新しいオブジェクトを作成するためのビュー
+    template_name = 'infra/infra_create.html'
+    model = Infra
+    # fieldの値がテンプレートに表示される
     fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', 
               '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', 
-              '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'latitude', 'longitude', 'article')
+              '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'latitude', 'longitude')
+    success_url = reverse_lazy('detail-infra')
     
-    def form_valid(self, form):
-        article_pk = self.kwargs['article_pk']
+    def form_valid(self, form): # form_validはフォームが有効のとき呼び出される
+        article_pk = self.kwargs['article_pk'] # URLパラメータからarticle_pkを取得
         print(article_pk)
-        article = get_object_or_404(Article, pk=article_pk)
+        article = get_object_or_404(Article, pk=article_pk) # article_pkを使って、Articleモデルから対応するオブジェクトを取得。オブジェクトが見つからない場合は404エラーを返す
         print(article)
-        form.instance.article = article
+        form.instance.article = article # フォームインスタンス (form.instance) の articleフィールドに取得したarticleをセット
         print(form.instance)
+        self.article = article # インスタンス変数として保存
         return super().form_valid(form)
 
     def get_success_url(self):
-        # Define where you want to redirect after successful form submission
-        return reverse('article-detail', kwargs={'pk': self.object.article.pk})
-
+        return reverse('list-infra', kwargs={'article_pk': self.article.pk})
+        # return reverse('detail-article', kwargs={'pk': self.article.pk})
+        
     #新規作成時、交通規制の全データをコンテキストに含める。
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -259,6 +265,10 @@ class UpdateArticleView(LoginRequiredMixin, UpdateView):
 
 # << ファイルのアップロード・各infraに紐付け >>
 def file_upload(request, article_pk, pk):
+    print("アップロードID確認")
+    print(f"橋梁番号:{pk}")
+    print(f"案件番号:{article_pk}")
+
     if request.method == 'POST':
                 #                  ↓  request.POST の中にdxfファイルの名前が入っているだけ。.copy() を実行して編集可能にする。
         copied          = request.POST.copy()
@@ -271,8 +281,13 @@ def file_upload(request, article_pk, pk):
         form = TableForm(copied, request.FILES)
         
         # 既存のオブジェクトに対して新しいファイルを上書きする処理
-        if Table.objects.filter(infra=pk).first():
-            obj = Table.objects.get(infra=pk)
+        infra = Infra.objects.filter(id=pk).first()
+        print(f"Infra:{infra}({infra.id})") # 旗揚げチェック(4)
+        article = infra.article
+        print(f"article:{article}({article.id})") # お試し(2)
+        
+        if Table.objects.filter(infra=infra.id, article=article.id).first():
+            obj = Table.objects.get(infra=infra.id, article=article.id)
             form = TableForm(copied, request.FILES, instance=obj)
 
         if form.is_valid():
@@ -281,7 +296,7 @@ def file_upload(request, article_pk, pk):
     else:
         form = TableForm()
     
-    return render(request, 'infra/file_upload.html', {'form': form, 'article_pk': article_pk, 'pk': pk})
+    return render(request, 'infra/file_upload.html', {'object': pk, 'form': form, 'article_pk': article_pk, 'pk': pk})
 
 def file_upload_success(request):
     return render(request, 'infra/file_upload_success.html')
@@ -595,6 +610,10 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         print(f"article:{article}({article.id})") # お試し(2)
         table = Table.objects.filter(infra=infra.id, article=article.id).first()
         print(table) # 旗揚げチェック：お試し（infra/table/dxf/121_2径間番号違い.dxf）
+        
+        # 更新対象のフィールド名
+        fields_to_update = ['parts_name', 'damage_name', 'parts_split', 'join', 'this_time_picture', 'span_number', 'special_links']
+
         if not is_multi_list(split_names) and not is_multi_list(damages) and name_length == 1: # 部材名が1つの場合
             for single_damage in damages: 
                 parts_name = names[0]
@@ -621,13 +640,38 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                     'article': article,
                     'table': table
                 }
-                report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+                with transaction.atomic():
+                    try:
+                        # damage_coordinateのX,Y座標が一致しているか確認
+                        existing_record = FullReportData.objects.filter(
+                            damage_coordinate_x=data_fields['damage_coordinate_x'],
+                            damage_coordinate_y=data_fields['damage_coordinate_y']
+                        ).first()
+                        print(f"座標が一致するか確認:{existing_record}")
+
+                        if existing_record:
+                            # 一致した場合、特定フィールドを更新
+                            for field in fields_to_update:
+                                setattr(existing_record, field, data_fields[field])
+                            existing_record.save()
+                            print("既存のデータが更新されました。")
+                        else:
+                            # 新しい座標の場合、新しいデータを登録
+                            new_record = FullReportData.objects.create(**data_fields)
+                            new_record.save()
+                            print("新しいデータが作成されました。")
+                        
+                    except IntegrityError as e:
+                        print(f"ユニーク制約に違反しましたが、既存のデータは更新されませんでした: {e}")
+                        
+                report_data_exists = FullReportData.objects.filter(**data_fields).exists() # 同じ値を持つレコードが存在するか確認
                 if report_data_exists:
                     print("データが存在しています。")
+                    
                 else:
                     try:
-                        damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
-                        damage_obj.save()
+                        damage_obj, created = FullReportData.objects.update_or_create(**data_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                        damage_obj.save() # オブジェクトを保存
                     except IntegrityError:
                         print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
 
@@ -658,13 +702,45 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         'article': article,
                         'table': table
                     }
-                    report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+                    
+                    with transaction.atomic():
+                        try:
+                            # damage_coordinateのX,Y座標が一致しているか確認
+                            existing_record = FullReportData.objects.filter(
+                                damage_coordinate_x=data_fields['damage_coordinate_x'],
+                                damage_coordinate_y=data_fields['damage_coordinate_y']
+                            ).first()
+                            print(f"座標が一致するか確認:{existing_record}")
+
+                            if existing_record:
+                                # 一致した場合、特定フィールドを更新
+                                for field in fields_to_update:
+                                    setattr(existing_record, field, data_fields[field])
+                                existing_record.save()
+                                print("既存のデータが更新されました。")
+                            else:
+                                # 合致する古いデータを削除
+                                FullReportData.objects.filter(
+                                    parts_name=parts_name,
+                                    damage_name=damage_name
+                                ).delete()
+                                print("古いデータが削除されました。")
+
+                                # 新しいデータを登録
+                                new_record = FullReportData.objects.create(**data_fields)
+                                new_record.save()
+                                print("新しいデータが作成されました。")
+                        except IntegrityError as e:
+                            print(f"ユニーク制約に違反しましたが、既存のデータは更新されませんでした: {e}")
+                            
+                    report_data_exists = FullReportData.objects.filter(**data_fields).exists() # 同じ値を持つレコードが存在するか確認
                     if report_data_exists:
                         print("データが存在しています。")
+                        
                     else:
                         try:
-                            damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
-                            damage_obj.save()
+                            damage_obj, created = FullReportData.objects.update_or_create(**data_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                            damage_obj.save() # オブジェクトを保存
                         except IntegrityError:
                             print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
 
@@ -695,16 +771,48 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'article': article,
                             'table': table
                         }
-                        report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+
+                        with transaction.atomic():
+                            try:
+                                # damage_coordinateのX,Y座標が一致しているか確認
+                                existing_record = FullReportData.objects.filter(
+                                    damage_coordinate_x=data_fields['damage_coordinate_x'],
+                                    damage_coordinate_y=data_fields['damage_coordinate_y']
+                                ).first()
+                                print(f"座標が一致するか確認:{existing_record}")
+
+                                if existing_record:
+                                    # 一致した場合、特定フィールドを更新
+                                    for field in fields_to_update:
+                                        setattr(existing_record, field, data_fields[field])
+                                    existing_record.save()
+                                    print("既存のデータが更新されました。")
+                                else:
+                                    # 合致する古いデータを削除
+                                    FullReportData.objects.filter(
+                                        parts_name=parts_name,
+                                        damage_name=damage_name
+                                    ).delete()
+                                    print("古いデータが削除されました。")
+
+                                    # 新しいデータを登録
+                                    new_record = FullReportData.objects.create(**data_fields)
+                                    new_record.save()
+                                    print("新しいデータが作成されました。")
+                            except IntegrityError as e:
+                                print(f"ユニーク制約に違反しましたが、既存のデータは更新されませんでした: {e}")
+                                
+                        report_data_exists = FullReportData.objects.filter(**data_fields).exists() # 同じ値を持つレコードが存在するか確認
                         if report_data_exists:
                             print("データが存在しています。")
+                            
                         else:
                             try:
-                                damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
-                                damage_obj.save()
+                                damage_obj, created = FullReportData.objects.update_or_create(**data_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                                damage_obj.save() # オブジェクトを保存
                             except IntegrityError:
                                 print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
-
+                                
         else: # 多重リストの場合
             for i in range(name_length):
                 for name in split_names[i]:
@@ -733,13 +841,45 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'article': article,
                             'table': table
                         }
-                        report_data_exists = FullReportData.objects.filter(**data_fields).exists()
+                        
+                        with transaction.atomic():
+                            try:
+                                # damage_coordinateのX,Y座標が一致しているか確認
+                                existing_record = FullReportData.objects.filter(
+                                    damage_coordinate_x=data_fields['damage_coordinate_x'],
+                                    damage_coordinate_y=data_fields['damage_coordinate_y']
+                                ).first()
+                                print(f"座標が一致するか確認:{existing_record}")
+
+                                if existing_record:
+                                    # 一致した場合、特定フィールドを更新
+                                    for field in fields_to_update:
+                                        setattr(existing_record, field, data_fields[field])
+                                    existing_record.save()
+                                    print("既存のデータが更新されました。")
+                                else:
+                                    # 合致する古いデータを削除
+                                    FullReportData.objects.filter(
+                                        parts_name=parts_name,
+                                        damage_name=damage_name
+                                    ).delete()
+                                    print("古いデータが削除されました。")
+
+                                    # 新しいデータを登録
+                                    new_record = FullReportData.objects.create(**data_fields)
+                                    new_record.save()
+                                    print("新しいデータが作成されました。")
+                            except IntegrityError as e:
+                                print(f"ユニーク制約に違反しましたが、既存のデータは更新されませんでした: {e}")
+                                
+                        report_data_exists = FullReportData.objects.filter(**data_fields).exists() # 同じ値を持つレコードが存在するか確認
                         if report_data_exists:
                             print("データが存在しています。")
+                            
                         else:
                             try:
-                                damage_obj, created = FullReportData.objects.update_or_create(**data_fields)
-                                damage_obj.save()
+                                damage_obj, created = FullReportData.objects.update_or_create(**data_fields) # 指定したフィールドの値に基づいてデータを更新または作成
+                                damage_obj.save() # オブジェクトを保存
                             except IntegrityError:
                                 print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
 
@@ -777,9 +917,11 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     print(buttons)
     
     print(f"ボタン:{Table.objects.filter(infra=pk)}")# ボタン:<QuerySet [<Table: Table object (1)>]>
-    table_object = Table.objects.filter(infra=pk).first()
+        # クエリセットを使って対象のオブジェクトを取得
+    table_object = Infra.objects.filter(id=pk).first()    
     print(f"橋梁番号:{table_object}")# ボタン:Table object (1)
-    article_pk = table_object.infra.article.pk
+    print(f"橋梁番号:{table_object.id}")
+    article_pk = infra.article.id
     print(f"案件番号:{article_pk}") # 案件番号:1
     context = {'object': table_object, 'article_pk': article_pk, 'grouped_data': grouped_data, 'photo_grouped_data': photo_grouped_data, 'buttons': buttons}
     # 渡すデータ：　損傷データ　↑　　　       　   joinと損傷座標毎にグループ化したデータ　↑　　　　　　 写真毎にグループ化したデータ　↑ 　　       径間ボタン　↑
@@ -847,8 +989,13 @@ def upload_directory_path(instance, filename):
 # << 所見一覧 >>
 def observations_list(request, article_pk, pk):
     context = {}
-
-    table = Table.objects.filter(id=pk).first()
+    print("所見ID確認")
+    infra = Infra.objects.filter(id=pk).first()
+    print(f"Infra:{infra}") # 旗揚げチェック(4)
+    article = infra.article
+    print(f"article:{article}") # お試し(2)
+    table = Table.objects.filter(infra=infra.id, article=article.id).first()
+    # table = Table.objects.filter(id=pk).first()
     print(f"table_name:{table}")
 
     if table.dxf:
@@ -1085,10 +1232,15 @@ def observations_list(request, article_pk, pk):
     print(f"所見ボタン:{DamageComment.objects.filter(infra=pk).first()}")# ボタン:Table object (18)(QuerySetのままだとうまく動作しない)
     #   1(径間)  ,      1(主桁)  ,        01     ,    6(ひびわれ)
 
-    observer_object = Table.objects.filter(id=pk).first()
-    print(f"橋梁番号:{observer_object}") # 橋梁番号:Table object (1)
-    article_pk = observer_object.article.pk
-    print(f"案件番号:{article_pk}") # 案件番号:1
+    print("所見引き渡しID確認")
+    infra = Infra.objects.filter(id=pk).first()
+    print(f"Infra:{infra}") # 旗揚げチェック(4)
+    print(f"Infra:{infra.id}") # 旗揚げチェック(4)
+    article = infra.article
+    print(f"article:{article}") # お試し(2)
+    print(f"article:{article.id}") # お試し(2)
+    observer_object = infra
+    
     return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 所見コメントの登録 >>
@@ -1311,15 +1463,11 @@ def number_list(request, article_pk, pk):
     # return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 登録した番号を削除 >>
-def delete_number_entry(request, article_entry_id, entry_id):
-    entry = get_object_or_404(PartsNumber, article_pk=article_entry_id, pk=entry_id) # pkに対応するPartsNameオブジェクトをデータベースから取得
-    print(entry)
-    article_pk = entry.article.pk # entryのarticleのpkを取得（削除前に行う）
-    # pk = entry.pk
+def delete_number(request, article_pk, infra_pk, number):
     if request.method == 'POST':
-        entry.delete() # データベースから削除
-    parts_names = PartsNumber.objects.filter(article=article_pk)
-    return render(request, 'number_entry.html', {'article_pk': article_pk, "form": PartsNumberForm(), "parts_names":parts_names})
+        parts_number = get_object_or_404(PartsNumber, infra=infra_pk, article=article_pk, number=number)
+        parts_number.delete()
+    return redirect(reverse('number_list', args=[article_pk, infra_pk]))
 
 # 部材名と記号を紐付けるAjaxリクエスト
 def get_symbol(request):
@@ -2756,9 +2904,12 @@ def create_picturelist(request, table, dxf_filename, search_title_text, second_s
         # print(f"sorted_items：{sorted_items}")
     return sorted_items
 
+# << dxfファイルの基準点を左下に修正し、ずれた位置を修正 >>
+
+
 # << 旗揚げの修正 >>
-def edit_report_data(request, damage_pk, pk, table_pk):
-    print(f"damage_pk={damage_pk} pk={pk} table_pk={table_pk}")
+def edit_report_data(request, damage_pk, table_pk):
+    print(f"damage_pk={damage_pk} table_pk={table_pk}")
     report_data = get_object_or_404(FullReportData, pk=damage_pk)
     if request.method == "POST":
         points = request.POST.get("coords").split(",")
@@ -2784,16 +2935,8 @@ def edit_report_data(request, damage_pk, pk, table_pk):
                         print(f"変更前DXFテキスト:{entity.dxf.text}")
                         return entity.dxf.text
         
-        infra_name = Infra.objects.filter(pk=pk).first()
-        article_name = infra_name.article
-        print(f"Infra:{infra_name}/Article:{article_name}")
-        table = Table.objects.get(infra=infra_name, article=article_name)
-        print(f"変更TABLE:{table}") # Table object (5)
-        table_number = table.id
-        print(f"TABLEのID:{table_number}")
         table = Table.objects.filter(pk=table_pk).first()
         print("～～～")
-        print(f"TABLE:{pk}")
         print(f"変更TABLE:{table}") # Table object (5)
         print(f"変更後coords:{coords}") # [525003.839727268, 214191.031706055]
         if not table:
@@ -2810,38 +2953,59 @@ def edit_report_data(request, damage_pk, pk, table_pk):
     return render(request, 'infra/bridge_table.html', {'report_data': report_data})
 
 @csrf_exempt
-def edit_send_data(request, damage_pk, pk, table_pk):
-    print(f"修正対象：damage_pk={damage_pk} pk={pk} table_pk={table_pk}")
+def edit_send_data(request, damage_pk, table_pk):
+    print(f"修正対象：damage_pk={damage_pk} table_pk={table_pk}")
     report_data = get_object_or_404(FullReportData, pk=damage_pk)
+
     if request.method == "POST":
         data = json.loads(request.body)
         points = data.get('coords')
         new_text = data.get('new_text')
         print(f"変更points:{points}")
-        print(f"変更new_text:{new_text}")
+        # print(f"変更new_text:{new_text}")
+        target_attachment_point = 7
+        # 1: Top left、2: Top center、3: Top right、4: Middle left、5: Middle center、6: Middle right、7: Bottom left、8: Bottom center、9: Bottom right
+        print(f"ターゲット アタッチメント ポイント (初期設定): {target_attachment_point}")
+
         def find_square_around_text(dxf_filename, new_text):
             doc = ezdxf.readfile(dxf_filename)
             msp = doc.modelspace()
             epsilon = 0.001
-                
+            
+            # x_points, y_points = points.split(',')
+            x_points, y_points = map(float, points.split(','))
+            print(f"変更map_points:{x_points} / {y_points}")
+            
             for entity in msp:
                 if entity.dxftype() in {'TEXT', 'MTEXT'}:
                     insert_point = entity.dxf.insert
+                    print(f"　基準点:{insert_point}")
                     x,y = insert_point.x, insert_point.y
-                    x_points, y_points = points.split(',')
-                    print(f"変更    座標:{entity.dxf.text}--{float(x)}/{float(x_points)}/{float(y)}/{float(y_points)}//{points}")
+                    
                     if abs(float(x) - float(x_points)) < epsilon and abs(float(y) - float(y_points)) < epsilon: # 座標が一致した場合(誤差:epsilon)
                         entity.dxf.text = new_text  # 新しいテキストに置き換え
                         print(f"変更前文字:{new_text}")
-                        print(f"変更後文字:{entity.dxf.text}")
+                        if entity.dxftype() == 'TEXT':
+                            print(f"文字高さ: {entity.dxf.height}")
+                        elif entity.dxftype() == 'MTEXT':
+                            print(f"文字高さ: {entity.dxf.char_height}")
+                            line_spacing_distance = entity.dxf.char_height * entity.dxf.line_spacing_factor
+                            print(f"行間隔: {entity.dxf.line_spacing_factor}")
+                            print(f"行間隔の距離: {line_spacing_distance}")
+                            print(f"ターゲット アタッチメント ポイント (設定前): {entity.dxf.attachment_point}")
+                            entity.dxf.attachment_point = target_attachment_point
+                            print(f"ターゲット アタッチメント ポイント (設定後): {entity.dxf.attachment_point}")
+                            
+                        print(f"変更    座標:{entity.dxf.text}--{float(x)}/{float(x_points)}/{float(y)}/{float(y_points)}//{points}")
                         
-            desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-            output_filepath = os.path.join(desktop_path, "CAD変更.dxf")
-            doc.saveas(output_filepath)
+            # desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+            # output_filepath = os.path.join(desktop_path, "2013CAD変更~~~.dxf")
+            # doc.saveas(output_filepath)
+            doc.save()
             print(f"変更完了:{new_text}")
             return new_text
                               
-        table = Table.objects.filter(pk=table_pk).first()
+        table = get_object_or_404(Table, pk=table_pk)
         
         encoded_url_path = table.dxf.url
         decoded_url_path = urllib.parse.unquote(encoded_url_path)  # URLデコード

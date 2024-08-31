@@ -30,8 +30,8 @@ urlpatterns = [
     path('article/<int:article_pk>/infra/<int:pk>/dxf_output/', views.dxf_output, name='dxf-output'),# DXFファイル出力
     # << 損傷写真帳 >>
     path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table'),# 損傷写真帳
-    path('bridge_table_edit/<int:damage_pk>/<int:pk>/<int:table_pk>/', views.edit_report_data, name='edit_report_data'), # 旗揚げ内容の受信
-    path('bridge_table_send/<int:damage_pk>/<int:pk>/<int:table_pk>/', views.edit_send_data, name='edit_send_data'), # 旗揚げ内容の修正を送信
+    path('bridge_table_edit/<int:damage_pk>/<int:table_pk>/', views.edit_report_data, name='edit_report_data'), # 旗揚げ内容の受信
+    path('bridge_table_send/<int:damage_pk>/<int:table_pk>/', views.edit_send_data, name='edit_send_data'), # 旗揚げ内容の修正を送信
     path('serve-image/<str:file_path>/', serve_image, name='serve_image'), # 写真をアップロードせずに表示
     # path('bridge_table_delete/<int:pk>/', views.delete_report_data, name='delete_report_data'), # 旗揚げ内容の削除
     # << 名前の登録 >>
@@ -39,7 +39,7 @@ urlpatterns = [
     path('delete_name_entry/<int:entry_id>/', views.delete_name_entry, name='delete_name_entry'),# 登録した名前を削除
     # << 要素番号の登録 >>
     path('article/<int:article_pk>/infra/<int:pk>/number/', views.number_list, name='number-list'),# 要素番号登録
-    path('delete_number_entry/<int:article_pk>/<int:entry_id>/', views.delete_number_entry, name='delete_number_entry'),# 登録した番号を削除
+    path('delete_number/<int:article_pk>/infra/<int:infra_pk>/number/<int:number>/', views.delete_number, name='delete_number'),# 登録した番号を削除
     # << 所見一覧 >>
     path('article/<int:article_pk>/infra/<int:pk>/observations/', views.observations_list, name='observations-list'),# 所見一覧
     path('damage_comment_edit/<int:pk>/', views.damage_comment_edit , name="damage_comment_edit"), # 所見コメントを管理サイトに保存
