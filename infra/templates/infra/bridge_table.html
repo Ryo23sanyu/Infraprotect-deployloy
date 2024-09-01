@@ -40,15 +40,15 @@
                         {% if "NON-a" not in bridge.damage_name %} <!-- NON-aを含まない場合 -->
                             <br>
                             <div style="display: flex; gap: 5px; align-items: center;">
-                            <select id="measurement-{{ bridge.id }}" name="measurement" placeholder="名称" onChange="updatePlaceholder(this)" style="height:30px; resize: none;">{{ bridge.damage_size|default:"" }}<>
+                            <select id="measurement-{{ bridge.id }}" name="measurement" placeholder="名称" onChange="updateUnit(this, '{{ bridge.id }}')" style="height:30px; resize: none;">{{ bridge.damage_size|default:"" }}
                                 <option value=""></option>
-                                <option value="width">幅</option>
-                                <option value="area">面積</option>
-                                <option value="bolt">本数</option>
-                                <option value="level">段差量</option>
+                                <option value="width" {% if bridge.measurement == 'width' %}selected{% endif %}>幅</option>
+                                <option value="area" {% if bridge.measurement == 'area' %}selected{% endif %}>面積</option>
+                                <option value="bolt" {% if bridge.measurement == 'bolt' %}selected{% endif %}>本数</option>
+                                <option value="level" {% if bridge.measurement == 'level' %}selected{% endif %}>段差量</option>                            
                             </select>
                             <textarea type="text" id="damage_size-{{ bridge.id }}"    name="damage_size"    placeholder="数量" style="height:30px; width: 130px; resize: none;">{{ bridge.damage_size|default:"" }}</textarea> {% comment %} overflow-x: scroll; white-space: nowrap; {% endcomment %}
-                            <textarea type="text" id="unit-{{ bridge.id }}"           name="unit"           placeholder="単位" style="height:30px; width: 60px; resize: none;">{{ bridge.unit|default:"" }}</textarea>
+                            <textarea type="text" id="unit-{{ bridge.id }}"                                 placeholder="単位" style="height:30px; width: 60px; resize: none;"></textarea>
                             <textarea type="text" id="classification-{{ bridge.id }}" name="classification" placeholder="分類" style="height:30px; width: 60px; resize: none;">{{ bridge.classification|default:"" }}</textarea>
                             <textarea type="text" id="pattern-{{ bridge.id }}"        name="pattern"        placeholder="パターン" style="height:30px; width: 100px; resize: none;">{{ bridge.pattern|default:"" }}</textarea>
                             </div>
@@ -92,9 +92,9 @@
                                     
                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
                                             <input type="file" style="display: none" onchange="uploadPicture(this, {{ bridge.id }})" accept="image/*">
-                                            <button type="button" onclick="selectPicture(this)" style="margin-bottom: 10px;">変更</button>
-                                            <button style="margin-bottom: 10px;">追加</button>
-                                            <button>削除</button> <!--縦文字に変更-->
+                                            <button type="button" onclick="changePicture(this, {{ bridge.id }}, '{{ picture.strip }}')" style="margin-bottom: 10px;">変更</button>
+                                            <button type="button" onclick="addPicture(this, {{ bridge.id }})" style="margin-bottom: 10px;">追加</button>
+                                            <button type="button" onclick="deletePicture(this, {{ bridge.id }}, '{{ picture.strip }}')" style="margin-bottom: 10px;">削除</button> <!--縦文字に変更-->
                                         </div>
                                     </div>
                                 </li>
@@ -197,7 +197,87 @@ $(document).ready(function() {
     });
 });
 // 写真の変更
-function selectPicture(button) {
+function changePicture(button, bridgeId, oldPicturePath) { //引数としてボタン要素、橋のID、古い画像のパスを取得
+    let fileInput = button.previousElementSibling; //ボタンの直前にあるファイル入力要素を取得
+    fileInput.click(); //ファイル選択ダイアログを表示
+    fileInput.onchange = function(event) { //ファイルが選択されたときに実行されるイベントリスナーを定義
+        let formData = new FormData(); //選択されたファイルをフォームデータに追加
+        formData.append('file', fileInput.files[0]); //フォームデータオブジェクトを作成
+        formData.append('action', 'change'); //実行するアクションとして 'change' を追加
+        formData.append('bridgeId', bridgeId); //橋のIDをフォームデータに追加
+        formData.append('oldPicturePath', oldPicturePath); //古い画像のパスをフォームデータに追加
+
+        //URLに対して動作を実行
+        fetch("{% url 'upload-picture' article_pk=article_pk pk=object.pk %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if(data.success) {
+                  //location.reload(); //画像の変更が成功したらページをリロード(一旦リロードなし)
+              } else {
+                  alert('Failed to change picture');
+              }
+          });
+    }
+}
+// 写真の追加
+function addPicture(button, bridgeId) {
+    let fileInput = button.previousElementSibling;
+    fileInput.click();
+    fileInput.onchange = function(event) {
+        let formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('action', 'add');
+        formData.append('bridgeId', bridgeId);
+
+        fetch("{% url 'upload-picture' article_pk=article_pk pk=object.pk %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if(data.success) {
+                  location.reload();
+              } else {
+                  alert('Failed to add picture');
+              }
+          });
+    }
+}
+// 写真の削除
+function deletePicture(button, bridgeId, picturePath) {
+    if(confirm("Are you sure you want to delete this picture?")) {
+        let formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('bridgeId', bridgeId);
+        formData.append('picturePath', picturePath);
+
+        fetch("{% url 'upload-picture' article_pk=article_pk pk=object.pk %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        }).then(response => response.json())
+          .then(data => {
+              if(data.success) {
+                  location.reload();
+              } else {
+                  alert('Failed to delete picture');
+              }
+          });
+    }
+}
+
+
+// 写真の変更
+{% comment %} function selectPicture(button) {
     var fileInput = button.previousElementSibling;
     fileInput.click();
 }
@@ -225,7 +305,7 @@ function uploadPicture(input, pk) {
     .catch((error) => {
         console.error('Error:', error);
     });
-}
+} {% endcomment %}
 // カスタムモーダル
 function openModal(damage_pk, table_pk, coords) {
     console.log("おーぷん");
@@ -369,38 +449,35 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
-// 写真を変更する際にサーバーに送信
-{% comment %} document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll('button[id^="fileSelect-"]').forEach((button, index) => {
-        button.addEventListener('click', function() {
-            document.getElementById(`upload-file-${index + 1}`).click();
-        });
-
-        let uploadInput = document.getElementById(`upload-file-${index + 1}`);
-        uploadInput.addEventListener('change', function() {
-            let formData = new FormData();
-            formData.append('upload-file', uploadInput.files[0]);
-            formData.append('bridge_id', button.value);  // バリューとしてBridgeのIDを送信します。
-
-            fetch("{% url 'ajax_file_send' %}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.upload_file_url) {
-                    document.getElementById(`uploaded-image-${index + 1}`).src = data.upload_file_url;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        });
-    });
-}); {% endcomment %}
+// 単位を自動で入力
+function updateUnit(selectElem, bridgeId) {
+    var unitElem = document.getElementById('unit-' + bridgeId);
+    switch (selectElem.value) {
+        case 'width':
+            unitElem.value = 'mm';
+            break;
+        case 'area':
+            unitElem.value = 'mm';
+            break;
+        case 'bolt':
+            unitElem.value = '本';
+            break;
+        case 'level':
+            unitElem.value = 'mm';
+            break;
+        default:
+            unitElem.value = '';
+    }
+}
+// 初期値の設定
+document.addEventListener("DOMContentLoaded", function() {
+    {% for group in grouped_data %}
+        {% for bridge in group %}
+            var selectElem = document.getElementById('measurement-{{ bridge.id }}');
+            updateUnit(selectElem, {{ bridge.id }});
+        {% endfor %}
+    {% endfor %}
+});
 </script>
 
 {% endblock content %}

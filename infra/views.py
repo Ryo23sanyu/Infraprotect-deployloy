@@ -1177,6 +1177,73 @@ def update_full_report_data(request, pk):
             return JsonResponse({'status': 'error', 'errors': 'No valid data to update'})
     return JsonResponse({'status': 'invalid request'})
 
+# << 写真の変更内容を反映 >>
+def upload_picture(request, article_pk, pk):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        bridge_id = request.POST.get('bridgeId')
+        bridge = get_object_or_404(FullReportData, id=bridge_id)
+        print("写真帳の変更を行います")
+        print(f"action：{action}")
+        print(f"bridge_id：{bridge_id}")
+        print(f"bridge：{bridge}")
+        
+        if action == 'change':
+            old_picture_path = request.POST.get('oldPicturePath')
+            new_picture_path = handle_uploaded_file(request.FILES['file'])
+            bridge.this_time_picture = bridge.this_time_picture.replace(old_picture_path, new_picture_path)
+            bridge.save()
+            print("変更する動作")
+            print(f"old_picture_path：{old_picture_path}")
+            print(f"new_picture_path：{new_picture_path}")
+            print(f"bridge.this_time_picture：{bridge.this_time_picture}")
+            return JsonResponse({'success': True})
+
+        elif action == 'add':
+            new_picture_path = handle_uploaded_file(request.FILES['file'])
+            if bridge.this_time_picture:
+                bridge.this_time_picture += f', {new_picture_path}'
+            else:
+                bridge.this_time_picture = new_picture_path
+            bridge.save()
+            print("追加する動作")
+            print(f"new_picture_path：{new_picture_path}")
+            print(f"bridge.this_time_picture：{bridge.this_time_picture}")
+            return JsonResponse({'success': True})
+
+        elif action == 'delete':
+            picture_path = request.POST.get('picturePath')
+            pictures = bridge.this_time_picture.split(', ')
+            pictures.remove(picture_path)
+            bridge.this_time_picture = ', '.join(pictures) if pictures else None
+            bridge.save()
+            print("削除する動作")
+            print(f"picture_path：{picture_path}")
+            print(f"pictures：{pictures}")
+            print(f"bridge.this_time_picture：{bridge.this_time_picture}")
+            return JsonResponse({'success': True})
+
+        return JsonResponse({'success': False})
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+def handle_uploaded_file(f):
+    import os
+    from django.conf import settings
+    from django.core.files.storage import FileSystemStorage
+    
+    fs = FileSystemStorage()
+    filename = fs.save(f.name, f)
+    print(f"filename：{filename}")
+    folder_name = os.path.splitext(f.name)[0] # os.path.splittext：ファイルの拡張子を除いたベースネームを取得
+    full_path = os.path.join(fs.location, filename)
+    print(f"folder_name：{folder_name}")
+
+    folder_name = os.path.dirname(full_path)
+    print(f"folder_name：{folder_name}")
+    return f'infra/img/{folder_name}/{filename}'
+    # return os.path.join(settings.MEDIA_URL, filename)
+
+
 # << 対策区分のボタンを保存 >>
 def damage_comment_jadgement_edit(request, pk):
     if request.method == "POST":
@@ -1341,11 +1408,12 @@ def number_list(request, article_pk, pk):
     # return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 登録した番号を削除 >>
-def delete_number(request, article_pk, infra_pk, number):
+def delete_number(request, article_pk, pk, number):
+    print(f"{article_pk}/{pk}/{number}")
     if request.method == 'POST':
-        parts_number = get_object_or_404(PartsNumber, infra=infra_pk, article=article_pk, number=number)
+        parts_number = get_object_or_404(PartsNumber, pk=pk, article=article_pk, number=number)
         parts_number.delete()
-    return redirect(reverse('number_list', args=[article_pk, infra_pk]))
+    return redirect(reverse('number_list', args=[article_pk, pk]))
 
 # 部材名と記号を紐付けるAjaxリクエスト
 def get_symbol(request):

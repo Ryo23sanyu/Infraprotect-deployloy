@@ -12,7 +12,10 @@ class InfraAdmin(admin.ModelAdmin): # 橋梁
     list_display = ('title', '径間数', '路線名', 'article')
 admin.site.register(Infra, InfraAdmin)
 
-admin.site.register(Article) # 案件
+class ArticleAdmin(admin.ModelAdmin): # 案件
+    list_display = ('案件名', '土木事務所', '対象数', 'その他', 'ファイルパス')
+admin.site.register(Article, ArticleAdmin)
+
 admin.site.register(Regulation) # 道路規制
 admin.site.register(LoadWeight) # 活荷重
 admin.site.register(LoadGrade) # 等級
