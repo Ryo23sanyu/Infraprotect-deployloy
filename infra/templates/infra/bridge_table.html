@@ -322,8 +322,10 @@ function saveChanges() {
     })
     .then(data => {
         if(data.status === 'success') {
-            alert('変更が保存されました。ファイルがデスクトップに保存されました。');
+            alert('変更が保存されました。');
             closeModal();
+            // ページをリロード
+            window.location.reload();
         } else {
             alert('エラーが発生しました。');
         }

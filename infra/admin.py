@@ -4,6 +4,8 @@ from .models import Approach, DamageComment, DamageList, FullReportData, Infra, 
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Case, When, Value, IntegerField
 from django.db.models import Q
+from django.db.models.functions import Substr
+from django.db.models.functions import Length, Substr
 
 # models.pyのclass名とカッコの中を合わせる
 class InfraAdmin(admin.ModelAdmin): # 橋梁
@@ -34,8 +36,45 @@ class FullReportDataAdmin(admin.ModelAdmin): # 損傷写真帳の全データ
         exact_match_query = Q(infra__title=search_term)
         # 既存の部分一致と完全一致を組み合わせる
         queryset = queryset.filter(exact_match_query | Q(parts_name__icontains=search_term) | Q(article__案件名__icontains=search_term))
-
         return queryset, use_distinct
+    # def get_ordering_queryset(self, queryset):
+    #     # 並べ替えのための指定順リスト
+    #     parts_order_list = ['主桁', '横桁', '床版']
+    #     damage_order_list = ['①腐食', '②亀裂', '③ゆるみ・脱落']
+        
+    #     # parts_nameの指定したリスト順
+    #     parts_order_case = Case(
+    #         *[When(parts_name__icontains=part, then=index) for index, part in enumerate(parts_order_list)]
+    #     )
+
+    #     # parts_nameの末尾4桁（逆順）で並べ替えるための文字列を整数に変換
+    #     parts_name_substr = Substr('parts_name', Length('parts_name') - 4 + 1, 4)
+
+    #     # damage_nameの指定したリスト順
+    #     damage_order_case = Case(
+    #         *[When(damage_name__icontains=damage, then=index) for index, damage in enumerate(damage_order_list)]
+    #     )
+
+    #     # parts_order_case, parts_name_substr, damage_order_caseの順番で並び替え
+    #     queryset = queryset.annotate(
+    #         parts_order_val=Case(
+    #             *[When(parts_name=part, then=index) for index, part in enumerate(parts_order_list)],
+    #             default=len(parts_order_list),
+    #             output_field=IntegerField(),
+    #         ),
+    #         parts_name_end_4_chars=Substr('parts_name', Length('parts_name') - 4 + 1, 4),
+    #         damage_order_val=Case(
+    #             *[When(damage_name=damage, then=index) for index, damage in enumerate(damage_order_list)],
+    #             default=len(damage_order_list),
+    #             output_field=IntegerField(),
+    #         ),
+    #     ).order_by('parts_order_val', 'parts_name_end_4_chars', 'damage_order_val')
+
+    #     return queryset
+
+    # def get_queryset(self, request):
+    #     qs = super().get_queryset(request)
+    #     return self.get_ordering_queryset(qs)
 admin.site.register(FullReportData, FullReportDataAdmin)
 
 

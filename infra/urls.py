@@ -39,7 +39,7 @@ urlpatterns = [
     path('delete_name_entry/<int:entry_id>/', views.delete_name_entry, name='delete_name_entry'),# 登録した名前を削除
     # << 要素番号の登録 >>
     path('article/<int:article_pk>/infra/<int:pk>/number/', views.number_list, name='number-list'),# 要素番号登録
-    path('delete_number/<int:article_pk>/infra/<int:infra_pk>/number/<int:number>/', views.delete_number, name='delete_number'),# 登録した番号を削除
+    path('delete_number/<int:article_pk>/infra/<int:infra_pk>/number/<str:number>/', views.delete_number, name='delete_number'),# 登録した番号を削除
     # << 所見一覧 >>
     path('article/<int:article_pk>/infra/<int:pk>/observations/', views.observations_list, name='observations-list'),# 所見一覧
     path('damage_comment_edit/<int:pk>/', views.damage_comment_edit , name="damage_comment_edit"), # 所見コメントを管理サイトに保存
