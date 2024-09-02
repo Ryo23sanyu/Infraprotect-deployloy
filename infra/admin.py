@@ -1,10 +1,11 @@
+import re
 from django.contrib import admin
 from django.db import models
 from .models import Approach, DamageComment, DamageList, FullReportData, Infra, Material, PartsName, Table, Article, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition, PartsNumber, NameEntry
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Case, When, Value, IntegerField
-from django.db.models import Q
-from django.db.models.functions import Substr
+from django.db.models import F, Q
+from django.db.models.functions import Cast, Substr
 from django.db.models.functions import Length, Substr
 
 # models.pyのclass名とカッコの中を合わせる
@@ -30,54 +31,42 @@ class TableAdmin(admin.ModelAdmin): # 損傷写真帳
 admin.site.register(Table, TableAdmin)
 
 class FullReportDataAdmin(admin.ModelAdmin): # 損傷写真帳の全データ
-    list_display = ('parts_name', 'damage_name', 'span_number', 'infra', 'article')
+    list_display = ('parts_name', 'four_numbers', 'damage_name', 'span_number', 'infra', 'article')
     search_fields = ('parts_name', 'infra__title', 'article__案件名') # 検索対象：「infraのtitleフィールド」と指定
+    parts_name_order = ['主桁', '横桁', '床版', 'PC定着部', '橋台[胸壁]', '橋台[竪壁]', '橋台[翼壁]', '支承本体', '沓座モルタル', '防護柵', '地覆', '伸縮装置', '舗装', '排水ます', '排水管']
+    damage_name_order = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳', '㉑', '㉒', '㉓', '㉔', '㉕', '㉖']
+
+    def get_ordering(self, request):
+        return []  # デフォルトではカスタムロジックで並び替えるため空に
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        
+        # parts_nameの部分一致並び替え用ケース文
+        parts_name_cases = [When(parts_name__icontains=pn, then=idx) for idx, pn in enumerate(self.parts_name_order)]
+        damage_name_cases = [When(damage_name__icontains=dn, then=idx) for idx, dn in enumerate(self.damage_name_order)]
+
+        # span_number の長さを取得し、それを使って数値部分を抽出
+        qs = qs.annotate(
+            span_length=Length('span_number'),
+            parts_order=Case(*parts_name_cases, output_field=IntegerField(), default=len(self.parts_name_order)),
+            damage_order=Case(*damage_name_cases, output_field=IntegerField(), default=len(self.damage_name_order))
+        )
+
+        # Cast & Substr を使って span_number の数値部分を抽出
+        qs = qs.annotate(
+            span_number_numeric=Cast(Substr('span_number', 1, F('span_length') - 2), IntegerField())
+        )
+
+        qs = qs.order_by('article__案件名', 'infra__title', 'span_number_numeric', 'parts_order', 'four_numbers', 'damage_order')
+        return qs
+
     def get_search_results(self, request, queryset, search_term):
-        # デフォルトの動作
         queryset, use_distinct = super().get_search_results(request, queryset, search_term)
-        # infra__titleのみ完全一致
         exact_match_query = Q(infra__title=search_term)
-        # 既存の部分一致と完全一致を組み合わせる
         queryset = queryset.filter(exact_match_query | Q(parts_name__icontains=search_term) | Q(article__案件名__icontains=search_term))
         return queryset, use_distinct
-    # def get_ordering_queryset(self, queryset):
-    #     # 並べ替えのための指定順リスト
-    #     parts_order_list = ['主桁', '横桁', '床版']
-    #     damage_order_list = ['①腐食', '②亀裂', '③ゆるみ・脱落']
-        
-    #     # parts_nameの指定したリスト順
-    #     parts_order_case = Case(
-    #         *[When(parts_name__icontains=part, then=index) for index, part in enumerate(parts_order_list)]
-    #     )
-
-    #     # parts_nameの末尾4桁（逆順）で並べ替えるための文字列を整数に変換
-    #     parts_name_substr = Substr('parts_name', Length('parts_name') - 4 + 1, 4)
-
-    #     # damage_nameの指定したリスト順
-    #     damage_order_case = Case(
-    #         *[When(damage_name__icontains=damage, then=index) for index, damage in enumerate(damage_order_list)]
-    #     )
-
-    #     # parts_order_case, parts_name_substr, damage_order_caseの順番で並び替え
-    #     queryset = queryset.annotate(
-    #         parts_order_val=Case(
-    #             *[When(parts_name=part, then=index) for index, part in enumerate(parts_order_list)],
-    #             default=len(parts_order_list),
-    #             output_field=IntegerField(),
-    #         ),
-    #         parts_name_end_4_chars=Substr('parts_name', Length('parts_name') - 4 + 1, 4),
-    #         damage_order_val=Case(
-    #             *[When(damage_name=damage, then=index) for index, damage in enumerate(damage_order_list)],
-    #             default=len(damage_order_list),
-    #             output_field=IntegerField(),
-    #         ),
-    #     ).order_by('parts_order_val', 'parts_name_end_4_chars', 'damage_order_val')
-
-    #     return queryset
-
-    # def get_queryset(self, request):
-    #     qs = super().get_queryset(request)
-    #     return self.get_ordering_queryset(qs)
+    
 admin.site.register(FullReportData, FullReportDataAdmin)
 
 
@@ -87,7 +76,7 @@ class DamageListAdmin(admin.ModelAdmin): # 損傷一覧
 admin.site.register(DamageList, DamageListAdmin)
 
 
-class PartsNameAdmin(admin.ModelAdmin): # 番号登録
+class PartsNameAdmin(admin.ModelAdmin): # 部材名登録
     list_display = ('部材名', '記号', 'get_materials', '主要部材', 'display_order') # 表示するフィールド
     list_editable = ('display_order',) # 管理画面でdisplay_orderフィールドを直接編集
     ordering = ('display_order',) # 順序フィールドで並べ替え
@@ -97,7 +86,7 @@ class PartsNameAdmin(admin.ModelAdmin): # 番号登録
 admin.site.register(PartsName, PartsNameAdmin)
 
 class PartsNumberAdmin(admin.ModelAdmin): # 番号登録
-    list_display = ('infra', 'parts_name', 'symbol', 'number', 'get_material_list', 'main_frame', 'span_number')
+    list_display = ('infra', 'parts_name', 'symbol', 'number', 'get_material_list', 'main_frame', 'span_number', 'article', 'unique_id')
     ordering = ('infra', 'span_number', 'parts_name', 'number')
 admin.site.register(PartsNumber, PartsNumberAdmin)
 

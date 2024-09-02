@@ -87,3 +87,18 @@ left, right = points.split(',')
 # 結果を表示
 print(f"左側: {left}")
 print(f"右側: {right}")
+
+parts_name = "他21 another000101"
+
+# 正規表現パターンを定義
+pattern = r"(\d+)$"
+
+# parts_nameからパターンにマッチする部分を検索
+match = re.search(pattern, parts_name)
+
+# マッチした場合にその部分を取得
+if match:
+    last_number = match.group(1)
+    print("末尾の数字は:", last_number)
+else:
+    print("数字が見つかりませんでした")

@@ -1,5 +1,6 @@
 import os
 import re
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
@@ -188,6 +189,7 @@ class PartsNumber(models.Model):
     span_number = models.CharField(max_length=50)
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE)
     article = models.ForeignKey(Article, on_delete=models.CASCADE, null=True, blank=True)
+    unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True) # ユニークIDを設定するためのフィールド(UUID)
     class Meta:
         # ユニークの設定(fieldsの組み合わせを一意とする。nullが許可されているとデータが重複する可能性があるため、notnullの要素を扱う)
         constraints = [
@@ -207,6 +209,7 @@ class FullReportData(models.Model):
     parts_name = models.CharField(max_length=255) # '排水管 Dp0101'
     damage_name = models.CharField(max_length=255) # '①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e'
     parts_split = models.CharField(max_length=255) # '排水管 Dp00'
+    four_numbers = models.CharField(max_length=255) # '0101'
     join = models.CharField(max_length=255) # {'parts_name': ['排水管 Dp0101'], 'damage_name': ['①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e']}
     picture_number = models.CharField(max_length=255, null=True, blank=True) # '写真番号-31'
     this_time_picture = models.CharField(max_length=255, null=True, blank=True) # 'infra/img\\9月7日\u3000佐藤\u3000地上\\P9070617.JPG'

@@ -42,6 +42,7 @@ from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageComment
 from .forms import ArticleForm
 from urllib.parse import quote, unquote
 from ezdxf.enums import TextEntityAlignment
+from django.db.models import Case, When, IntegerField
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -614,12 +615,20 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         if not is_multi_list(split_names) and not is_multi_list(damages) and name_length == 1: # 部材名が1つの場合
             for single_damage in damages: 
                 parts_name = names[0]
+                pattern = r"(\d+)$"
+                # parts_nameからパターンにマッチする部分を検索
+                match = re.search(pattern, parts_name)
+                if match:
+                    four_numbers = match.group(1)
+                else:
+                    four_numbers = "00"
                 damage_name = flatten(single_damage)
                 print(f"parts_name1:{parts_name}")
                 print(f"damage_name1:{damage_name}")
                 parts_split = process_names(flatten(parts_name))
                 update_or_create_fields = {
                     'parts_name': parts_name,
+                    'four_numbers': four_numbers,
                     'damage_name': damage_name,
                     'parts_split': parts_split,
                     'join': join,
@@ -653,12 +662,20 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
             if damage_length == 1: # かつ損傷名が1つの場合
                 for single_name in split_names:
                     parts_name = single_name
+                    pattern = r"(\d+)$"
+                    # parts_nameからパターンにマッチする部分を検索
+                    match = re.search(pattern, parts_name)
+                    if match:
+                        four_numbers = match.group(1)
+                    else:
+                        four_numbers = "00"
                     damage_name = flatten(damages[0])
                     print(f"parts_name2:{parts_name}")
                     print(f"damage_name2:{damage_name}")
                     parts_split = process_names(flatten(parts_name))
                     update_or_create_fields = {
                         'parts_name': parts_name,
+                        'four_numbers': four_numbers,
                         'damage_name': damage_name,
                         'parts_split': parts_split,
                         'join': join,
@@ -692,12 +709,20 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                 for name in split_names:
                     for damage in damages:
                         parts_name = name
+                        pattern = r"(\d+)$"
+                        # parts_nameからパターンにマッチする部分を検索
+                        match = re.search(pattern, parts_name)
+                        if match:
+                            four_numbers = match.group(1)
+                        else:
+                            four_numbers = "00"
                         damage_name = flatten(damage)
                         print(f"parts_name3:{parts_name}")
                         print(f"damage_name3:{damage_name}")
                         parts_split = process_names(flatten(parts_name))
                         update_or_create_fields = {
                             'parts_name': parts_name,
+                            'four_numbers': four_numbers,
                             'damage_name': damage_name,
                             'parts_split': parts_split,
                             'join': join,
@@ -729,12 +754,20 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                 for name in split_names[i]:
                     for damage in damages[i]:
                         parts_name = name
+                        pattern = r"(\d+)$"
+                        # parts_nameからパターンにマッチする部分を検索
+                        match = re.search(pattern, parts_name)
+                        if match:
+                            four_numbers = match.group(1)
+                        else:
+                            four_numbers = "00"
                         damage_name = flatten(damage)
                         print(f"parts_name4:{parts_name}")
                         print(f"damage_name4:{damage_name}")
                         parts_split = process_names(flatten(parts_name))
                         update_or_create_fields = {
                             'parts_name': parts_name,
+                            'four_numbers': four_numbers,
                             'damage_name': damage_name,
                             'parts_split': parts_split,
                             'join': join,
@@ -1391,29 +1424,34 @@ def number_list(request, article_pk, pk):
                 parts_number.material.set(request.POST.getlist("material"))
             else:
                 print(form.errors)
-        
+
     parts_names = PartsName.objects.all()
+    print(parts_names)
+    print(f"pk：{pk}、article_pk：{article_pk}")
     create_number_list = PartsNumber.objects.filter(infra=pk)
-    
+    print(f"create_number_list：{create_number_list}")
+    print(f"橋梁番号:{create_number_list}") # 橋梁番号:Table object (1)
+    print(f"案件番号:{article_pk}") # 案件番号:1
+    for item in create_number_list:
+        print(f"Number: {item.number}, Unique ID: {item.unique_id}")
+
     grouped_parts = defaultdict(list)
     for accordion_list in create_number_list:
         title = f"{accordion_list.parts_name.部材名}（{accordion_list.symbol}）{accordion_list.get_material_list()} {accordion_list.span_number}径間"
         grouped_parts[title].append(accordion_list.number)
 
-    create_number_list = PartsNumber.objects.filter(infra=pk).first()
-    print(f"橋梁番号:{create_number_list}") # 橋梁番号:Table object (1)
-    article_pk = create_number_list.article.pk
-    print(f"案件番号:{article_pk}") # 案件番号:1
     return render(request, 'number_entry.html', {'object': create_number_list, 'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items()})
     # return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 登録した番号を削除 >>
-def delete_number(request, article_pk, pk, number):
-    print(f"{article_pk}/{pk}/{number}")
+def delete_number(request, article_pk, pk, unique_id):
+    print(f"{article_pk}/{pk}")
     if request.method == 'POST':
-        parts_number = get_object_or_404(PartsNumber, pk=pk, article=article_pk, number=number)
+        print(f"削除対象：{PartsNumber.objects.filter(infra=pk, article=article_pk)}")
+        parts_number = get_object_or_404(PartsNumber, infra=pk, article=article_pk, unique_id=unique_id)
         parts_number.delete()
-    return redirect(reverse('number_list', args=[article_pk, pk]))
+        return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk})
+    # return redirect(reverse('number_list', args=[article_pk, pk]))
 
 # 部材名と記号を紐付けるAjaxリクエスト
 def get_symbol(request):
@@ -2914,7 +2952,19 @@ def edit_send_data(request, damage_pk, table_pk):
     
     sample = FullReportData.objects.filter(article=article, infra=infra)
     print(sample)
-
+    
+    parts_name_order = ['主桁', '横桁', '床版', 'PC定着部', '橋台[胸壁]', '橋台[竪壁]', '橋台[翼壁]', '支承本体', '沓座モルタル', '防護柵', '地覆', '伸縮装置', '舗装', '排水ます', '排水管']
+    damage_name_order = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳', '㉑', '㉒', '㉓', '㉔', '㉕', '㉖']
+    
+    # parts_nameの部分一致並び替え用ケース文
+    parts_name_cases = [When(parts_name__icontains=pn, then=idx) for idx, pn in enumerate(parts_name_order)]
+    damage_name_cases = [When(damage_name__icontains=dn, then=idx) for idx, dn in enumerate(damage_name_order)]
+    
+    sorted_edit_data = sample.annotate(
+        parts_order=Case(*parts_name_cases, output_field=IntegerField(), default=len(parts_name_order)),
+        damage_order=Case(*damage_name_cases, output_field=IntegerField(), default=len(damage_name_order))
+    ).order_by('parts_order', 'damage_order')
+    
     if request.method == "POST":
         data = json.loads(request.body)
         points = data.get('coords') # 532578.7587482664,229268.8593029478
@@ -2986,4 +3036,4 @@ def edit_send_data(request, damage_pk, table_pk):
 
         return JsonResponse({"status": "success", 'current_text': current_text})
 
-    return render(request, 'infra/bridge_table.html', {'report_data': report_data})
+    return render(request, 'infra/bridge_table.html', {'report_data': report_data, 'grouped_data': sorted_edit_data})
