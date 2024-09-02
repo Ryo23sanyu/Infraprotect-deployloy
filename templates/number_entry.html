@@ -286,7 +286,7 @@
             {% for parts in parts_list|sort_list %}
             <div style="position: relative; display: inline-block; margin-left: 10px; margin-right: 20px; padding: 10px; border: none;">
                 <p style="display: inline; margin: 0; position: relative;">{{ parts.number }}</p>
-                <form action="{% url 'delete_number' article_pk=article_pk pk=pk unique_id=unique_id %}" method="post" style="display: inline;">
+                <form action="{% url 'delete_number' article_pk=article_pk pk=pk unique_id=parts.unique_id %}" method="post" style="display: inline;">
                     {% csrf_token %}
                     <button type="submit" class="delete-number-button">✕</button>
                 </form>

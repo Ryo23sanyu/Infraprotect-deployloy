@@ -83,12 +83,13 @@
                         <p>{{ picture }}</p>
                             <ul class="side">
                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
-                                    <div style="display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置-->
-                                    
-                                        <div>
+                                    <div style="position: relative; display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置<div style="display: flex; align-items: center;"> -->
+                                        <div style="position: relative;">
+                                            <div style="position: absolute; top: 0px; left: -50px; background-color: none; color: black; padding: 2px 5px; font-size: 12px; border: 1px solid grey;">
+                                                <textarea class="picture-number" style="border: none; width: 30px;">{{ bridge.picture_number }}</textarea> <!-- 番号を表示し編集可能にする -->
+                                            </div>{% comment %} src="{{ picture|remove_prefix:'/infra/static' }}" {% url 'serve_image' picture %} strip:先頭と末尾から空白を取り除く {% endcomment %}
                                             <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static picture.strip %}" width="200" height="150" style="margin:0 10px;">
-                                        </div>{% comment %} src="{{ picture|remove_prefix:'/infra/static' }}" {% url 'serve_image' picture %} strip:先頭と末尾から空白を取り除く {% endcomment %}
-                                    
+                                        </div>
                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
                                             <input type="file" style="display: none" onchange="uploadPicture(this, {{ bridge.id }})" accept="image/*">
                                             <button type="button" onclick="changePicture(this, {{ bridge.id }}, '{{ picture.strip }}')" style="margin-bottom: 10px;">変更</button>
@@ -152,7 +153,7 @@
 </div>
 
 <script>
-//保存ボタンを押さなくてもデータを保存する(リアルタイム保存)
+// 保存ボタンを押さなくてもデータを保存する(リアルタイム保存)
 $(document).ready(function() {
     // AJAXリクエストを送信する関数
     function saveField(fieldName, fieldValue, itemId) {

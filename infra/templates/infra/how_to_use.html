@@ -1,14 +1,14 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>使用方法</title>
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}使用方法{% endblock title %}
+{% block h1 %}使用方法{% endblock %}
+
+{% block content %}
     <style>
-        /* CSSはここに記述してください */
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0px;
             line-height: 1.6;
         }
         .section {
@@ -38,11 +38,9 @@
             height: auto;
         }
     </style>
-</head>
-<body>
-
+<br>
 <div class="section">
-    <h2>1. 大題ここに記入</h2>
+    <h2>1. 案件登録</h2>
     <div class="content">
         <div class="text">
             <p>ここに説明文を記入します。詳細な情報や手順などを含めてください。</p>
@@ -54,7 +52,18 @@
 </div>
 
 <div class="section">
-    <h2>2. 大題ここに記入</h2>
+    <h2>2. 橋梁登録</h2>
+    <div class="content no-image">
+        <div class="text">
+            <p>ここに説明文を記入します。写真が不要な場合は、このように横いっぱいまで表示されます。</p>
+            <p>ページ内にGooglemapとセンサス地図版を組み込んでいます。Googlemapで任意の位置をクリックすると、センサスも同じ位置に移動します。</p>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>3. アップロード</h2>
     <div class="content no-image">
         <div class="text">
             <p>ここに説明文を記入します。写真が不要な場合は、このように横いっぱいまで表示されます。</p>
@@ -63,7 +72,7 @@
 </div>
 
 <div class="section">
-    <h2>3. 大題ここに記入</h2>
+    <h2>4. 損傷写真帳</h2>
     <div class="content">
         <div class="text">
             <p>ここに説明文を記入します。詳細な情報や手順などを含めてください。</p>
@@ -80,5 +89,58 @@
     </div>
 </div>
 
-</body>
-</html>
+<div class="section">
+    <h2>5. 番号登録</h2>
+    <div class="content">
+        <div class="text">
+            <p>ここに説明文を記入します。詳細な情報や手順などを含めてください。</p>
+        </div>
+        <div class="image">
+            <img src="image3.jpg" alt="挿絵の説明">
+        </div>
+    </div>
+
+    <div class="content no-image">
+        <div class="text">
+            <p>ここに説明文を記入します。写真が不要な場合は、このように横いっぱいまで表示されます。</p>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>6. 所見一覧</h2>
+    <div class="content">
+        <div class="text">
+            <p>ここに説明文を記入します。詳細な情報や手順などを含めてください。</p>
+        </div>
+        <div class="image">
+            <img src="image3.jpg" alt="挿絵の説明">
+        </div>
+    </div>
+
+    <div class="content no-image">
+        <div class="text">
+            <p>ここに説明文を記入します。写真が不要な場合は、このように横いっぱいまで表示されます。</p>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>7. データ出力</h2>
+    <div class="content">
+        <div class="text">
+            <p>ここに説明文を記入します。詳細な情報や手順などを含めてください。</p>
+        </div>
+        <div class="image">
+            <img src="image3.jpg" alt="挿絵の説明">
+        </div>
+    </div>
+
+    <div class="content no-image">
+        <div class="text">
+            <p>ここに説明文を記入します。写真が不要な場合は、このように横いっぱいまで表示されます。</p>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

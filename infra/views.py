@@ -42,7 +42,6 @@ from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageComment
 from .forms import ArticleForm
 from urllib.parse import quote, unquote
 from ezdxf.enums import TextEntityAlignment
-from django.db.models import Case, When, IntegerField
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -194,9 +193,10 @@ def infra_view(request):
     return render(request, 'infra/infra_detail.html')
 
 def index_view(request):
-    order_by = request.GET.get('order_by', '案件名')
-    object_list = Article.objects.order_by(order_by)
-    return render(request, 'infra/index.html', {'object_list': object_list})
+    # order_by = request.GET.get('order_by', '案件名')
+    # object_list = Article.objects.order_by(order_by)
+    # return render(request, 'infra/index.html', {'object_list': object_list})
+    return render(request, 'infra/how_to_use.html')
 
 class ListArticleView(LoginRequiredMixin, ListView):
     template_name = 'infra/article_list.html'
@@ -496,6 +496,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         matches = re.findall(pattern, text)
         return matches
     
+    picture_counter = 1
     for damage_data in database_sorted_items:
         # 元の辞書から 'picture_number' の値を取得
         #             　辞書型 ↓           ↓ キーの名前      ↓ 存在しない場合、デフォルト値として空白を返す
@@ -569,7 +570,8 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         
         def process_names(names):
             """
-            与えられたnamesを処理し、適切な部分を返す関数。
+            与えられたnamesを処理し、適切な部分を返す関数
+            所見用にparts_splitに格納
             """
             
             parts_left = ["主桁", "PC定着部"]  # 左の数字
@@ -611,6 +613,8 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         print(f"article:{article}({article.id})") # お試し(2)
         table = Table.objects.filter(infra=infra.id, article=article.id).first()
         print(table) # 旗揚げチェック：お試し（infra/table/dxf/121_2径間番号違い.dxf）
+        
+        
           
         if not is_multi_list(split_names) and not is_multi_list(damages) and name_length == 1: # 部材名が1つの場合
             for single_damage in damages: 
@@ -647,6 +651,25 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                     'table': table
                 }
                 print(f"径間番号:{span_number}")
+                if FullReportData.objects.filter(join=join, this_time_picture=this_time_picture, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                    update_or_create_fields['this_time_picture'] = ""
+                    update_or_create_fields['picture_number'] = ""
+
+                if update_or_create_fields['this_time_picture']:
+                    if "," in update_or_create_fields['this_time_picture']:
+                        comma_count = update_or_create_fields['this_time_picture'].count(',')
+                        print(f"写真枚数は{comma_count}枚です")
+
+                        # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
+                        box = list(range(picture_counter, picture_counter + comma_count + 1))
+                        formatted_output = ', '.join(map(str, box))
+                        print(formatted_output)
+                        update_or_create_fields['picture_number'] = formatted_output
+                        picture_counter += comma_count + 1
+                    else:
+                        update_or_create_fields['picture_number'] = picture_counter
+                        picture_counter += 1
+                    
                 if not FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
                     try:
                         damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
@@ -694,6 +717,25 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         'table': table
                     }           
                     print(f"径間番号:{span_number}")                 
+                    if FullReportData.objects.filter(join=join, this_time_picture=this_time_picture, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                        update_or_create_fields['this_time_picture'] = ""
+                        update_or_create_fields['picture_number'] = ""
+                        
+                    if update_or_create_fields['this_time_picture']:
+                        if "," in update_or_create_fields['this_time_picture']:
+                            comma_count = update_or_create_fields['this_time_picture'].count(',')
+                            print(f"写真枚数は{comma_count}枚です")
+
+                            # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
+                            box = list(range(picture_counter, picture_counter + comma_count + 1))
+                            formatted_output = ', '.join(map(str, box))
+                            print(formatted_output)
+                            update_or_create_fields['picture_number'] = formatted_output
+                            picture_counter += comma_count + 1
+                        else:
+                            update_or_create_fields['picture_number'] = picture_counter
+                            picture_counter += 1
+                        
                     if not FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
                         try:
                             damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
@@ -741,6 +783,25 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'table': table
                         }
                         print(f"径間番号:{span_number}")
+                        if FullReportData.objects.filter(join=join, this_time_picture=this_time_picture, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                            update_or_create_fields['this_time_picture'] = ""
+                            update_or_create_fields['picture_number'] = ""
+                            
+                        if update_or_create_fields['this_time_picture']:
+                            if "," in update_or_create_fields['this_time_picture']:
+                                comma_count = update_or_create_fields['this_time_picture'].count(',')
+                                print(f"写真枚数は{comma_count}枚です")
+
+                                # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
+                                box = list(range(picture_counter, picture_counter + comma_count + 1))
+                                formatted_output = ', '.join(map(str, box))
+                                print(formatted_output)
+                                update_or_create_fields['picture_number'] = formatted_output
+                                picture_counter += comma_count + 1
+                            else:
+                                update_or_create_fields['picture_number'] = picture_counter
+                                picture_counter += 1
+                            
                         if not FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
                             try:
                                 damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
@@ -786,6 +847,25 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                             'table': table
                         }
                         print(f"径間番号:{span_number}")
+                        if FullReportData.objects.filter(join=join, this_time_picture=this_time_picture, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                            update_or_create_fields['this_time_picture'] = ""
+                            update_or_create_fields['picture_number'] = ""
+                            
+                        if update_or_create_fields['this_time_picture']:
+                            if "," in update_or_create_fields['this_time_picture']:
+                                comma_count = update_or_create_fields['this_time_picture'].count(',')
+                                print(f"写真枚数は{comma_count}枚です")
+
+                                # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
+                                box = list(range(picture_counter, picture_counter + comma_count + 1))
+                                formatted_output = ', '.join(map(str, box))
+                                print(formatted_output)
+                                update_or_create_fields['picture_number'] = formatted_output
+                                picture_counter += comma_count + 1
+                            else:
+                                update_or_create_fields['picture_number'] = picture_counter
+                                picture_counter += 1
+                    
                         if not FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
                             try:
                                 damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
@@ -819,7 +899,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         grouped_data.append(list(group))
         
     photo_grouped_data = []
-    for pic_key, pic_group in groupby(bridges, key=attrgetter('this_time_picture', 'span_number')):
+    for pic_key, pic_group in groupby(bridges, key=attrgetter('span_number')):
         photo_grouped_data.append(list(pic_group))
         
     buttons_count = int(table.infra.径間数) # 数値として扱う
@@ -1438,7 +1518,10 @@ def number_list(request, article_pk, pk):
     grouped_parts = defaultdict(list)
     for accordion_list in create_number_list:
         title = f"{accordion_list.parts_name.部材名}（{accordion_list.symbol}）{accordion_list.get_material_list()} {accordion_list.span_number}径間"
-        grouped_parts[title].append(accordion_list.number)
+        grouped_parts[title].append({
+        'number': accordion_list.number,
+        'unique_id': accordion_list.unique_id
+        })
 
     return render(request, 'number_entry.html', {'object': create_number_list, 'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items()})
     # return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
@@ -1450,7 +1533,7 @@ def delete_number(request, article_pk, pk, unique_id):
         print(f"削除対象：{PartsNumber.objects.filter(infra=pk, article=article_pk)}")
         parts_number = get_object_or_404(PartsNumber, infra=pk, article=article_pk, unique_id=unique_id)
         parts_number.delete()
-        return render(request, 'number_entry.html', {'article_pk': article_pk, 'pk': pk})
+        return redirect('number-list', article_pk=article_pk, pk=pk)
     # return redirect(reverse('number_list', args=[article_pk, pk]))
 
 # 部材名と記号を紐付けるAjaxリクエスト
@@ -2952,19 +3035,7 @@ def edit_send_data(request, damage_pk, table_pk):
     
     sample = FullReportData.objects.filter(article=article, infra=infra)
     print(sample)
-    
-    parts_name_order = ['主桁', '横桁', '床版', 'PC定着部', '橋台[胸壁]', '橋台[竪壁]', '橋台[翼壁]', '支承本体', '沓座モルタル', '防護柵', '地覆', '伸縮装置', '舗装', '排水ます', '排水管']
-    damage_name_order = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳', '㉑', '㉒', '㉓', '㉔', '㉕', '㉖']
-    
-    # parts_nameの部分一致並び替え用ケース文
-    parts_name_cases = [When(parts_name__icontains=pn, then=idx) for idx, pn in enumerate(parts_name_order)]
-    damage_name_cases = [When(damage_name__icontains=dn, then=idx) for idx, dn in enumerate(damage_name_order)]
-    
-    sorted_edit_data = sample.annotate(
-        parts_order=Case(*parts_name_cases, output_field=IntegerField(), default=len(parts_name_order)),
-        damage_order=Case(*damage_name_cases, output_field=IntegerField(), default=len(damage_name_order))
-    ).order_by('parts_order', 'damage_order')
-    
+
     if request.method == "POST":
         data = json.loads(request.body)
         points = data.get('coords') # 532578.7587482664,229268.8593029478
@@ -2980,6 +3051,8 @@ def edit_send_data(request, damage_pk, table_pk):
         if damage_points_text:
             print(f"削除対象:{damage_points_text}")
             deleted_count, _ = damage_points_text.delete()
+            # TODO 順番が崩れるため、今回は全件削除(修正対象)
+            sample.delete()
             if deleted_count > 0:
                 print(f"{deleted_count} 件のオブジェクトを削除しました")
             else:
@@ -3036,4 +3109,4 @@ def edit_send_data(request, damage_pk, table_pk):
 
         return JsonResponse({"status": "success", 'current_text': current_text})
 
-    return render(request, 'infra/bridge_table.html', {'report_data': report_data, 'grouped_data': sorted_edit_data})
+    return render(request, 'infra/bridge_table.html', {'report_data': report_data})

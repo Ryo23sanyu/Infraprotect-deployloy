@@ -31,7 +31,7 @@ class TableAdmin(admin.ModelAdmin): # 損傷写真帳
 admin.site.register(Table, TableAdmin)
 
 class FullReportDataAdmin(admin.ModelAdmin): # 損傷写真帳の全データ
-    list_display = ('parts_name', 'four_numbers', 'damage_name', 'span_number', 'infra', 'article')
+    list_display = ('parts_name', 'four_numbers', 'damage_name', 'picture_number', 'span_number', 'infra', 'article')
     search_fields = ('parts_name', 'infra__title', 'article__案件名') # 検索対象：「infraのtitleフィールド」と指定
     parts_name_order = ['主桁', '横桁', '床版', 'PC定着部', '橋台[胸壁]', '橋台[竪壁]', '橋台[翼壁]', '支承本体', '沓座モルタル', '防護柵', '地覆', '伸縮装置', '舗装', '排水ます', '排水管']
     damage_name_order = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳', '㉑', '㉒', '㉓', '㉔', '㉕', '㉖']
@@ -58,7 +58,7 @@ class FullReportDataAdmin(admin.ModelAdmin): # 損傷写真帳の全データ
             span_number_numeric=Cast(Substr('span_number', 1, F('span_length') - 2), IntegerField())
         )
 
-        qs = qs.order_by('article__案件名', 'infra__title', 'span_number_numeric', 'parts_order', 'four_numbers', 'damage_order')
+        qs = qs.order_by('article__案件名', 'infra__title', 'span_number_numeric', 'parts_order', 'four_numbers', 'picture_number', 'damage_order')
         return qs
 
     def get_search_results(self, request, queryset, search_term):

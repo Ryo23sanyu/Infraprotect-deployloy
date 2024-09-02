@@ -102,3 +102,22 @@ if match:
     print("末尾の数字は:", last_number)
 else:
     print("数字が見つかりませんでした")
+
+
+this = "infra/img\9月7日　佐藤　地上\P9070450.JPG, infra/img\9月7日　佐藤　地上\P9070452.JPG, infra/img\9月7日　佐藤　地上\P9070400.JPG"
+# コンマの数を出力
+comma_count = this.count(',')
+
+# コンマの数を出力
+print(f"コンマの数は {comma_count} 個です。")
+
+counter = 15
+# コンマの数だけのリストを作成
+if comma_count > 0:
+    # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
+    box = list(range(counter, counter + comma_count + 1))
+    print(box)
+    formatted_output = ','.join(map(str, box))
+    print(formatted_output)
+else:
+    print("コンマは含まれていません。")
