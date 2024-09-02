@@ -79,14 +79,18 @@
                 <td class="center-align">
                     <ul class="vert"> 
                         {% if bridge.this_time_picture is not None %}
-                        {% for picture in bridge.this_time_picture|split_comma %}
+                        {% with zip_lists=bridge.this_time_picture|zip_lists:bridge.picture_number %}<!-- カスタムフィルターを使用して2つのforループを合体 -->
+                        {% for picture, number in zip_lists %}{% comment %} {% for picture in bridge.this_time_picture|split_comma %} {% endcomment %}
+                        
                         <p>{{ picture }}</p>
                             <ul class="side">
                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
                                     <div style="position: relative; display: flex; align-items: center;"> <!--align-items: center; 縦の中央に配置<div style="display: flex; align-items: center;"> -->
                                         <div style="position: relative;">
-                                            <div style="position: absolute; top: 0px; left: -50px; background-color: none; color: black; padding: 2px 5px; font-size: 12px; border: 1px solid grey;">
-                                                <textarea class="picture-number" style="border: none; width: 30px;">{{ bridge.picture_number }}</textarea> <!-- 番号を表示し編集可能にする -->
+                                            <div style="position: absolute; top: 0px; left: -50px; background-color: none; color: black; padding: 2px 5px; font-size: 12px; border: 1px solid grey; width: 50px; height: 30px; overflow: hidden;">
+                                                {% comment %} {% for number in bridge.picture_number|split_comma %} {% endcomment %}
+                                                <textarea type="number" id="picture_number-{{ bridge.id }}" name="picture_number" style="border: none; width: 100%; height: 100%; resize: none; overflow: hidden;">{{ number.strip }}</textarea> <!-- 番号を表示し編集可能にする -->
+
                                             </div>{% comment %} src="{{ picture|remove_prefix:'/infra/static' }}" {% url 'serve_image' picture %} strip:先頭と末尾から空白を取り除く {% endcomment %}
                                             <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static picture.strip %}" width="200" height="150" style="margin:0 10px;">
                                         </div>
@@ -127,6 +131,7 @@
                                 </li>
                             </ul>
                         {% endfor %}
+                        {% endwith %}
                         {% endif %}
                         
                     </ul>
@@ -275,40 +280,38 @@ function deletePicture(button, bridgeId, picturePath) {
     }
 }
 
+// 写真番号を保存
+document.addEventListener('DOMContentLoaded', function() {
+    const textareas = document.querySelectorAll('textarea[name="picture_number"]');
+    textareas.forEach((textarea) => {
+        textarea.addEventListener('change', function() {
+            const pictureId = this.id.split('-')[1];  // IDからbridge.idを取得
+            const newValue = this.value;
 
-// 写真の変更
-{% comment %} function selectPicture(button) {
-    var fileInput = button.previousElementSibling;
-    fileInput.click();
-}
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/update_picture_number/');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('X-CSRFToken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
-function uploadPicture(input, pk) {
-    var file = input.files[0];
-    if (!file) return;
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        console.log(xhr.responseText);
+                    } else {
+                        console.error('Failed to update');
+                    }
+                }
+            };
 
-    var formData = new FormData();
-    formData.append('this_time_picture', file);
-    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-    fetch(`/update_picture/${pk}/`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            location.reload();  // 更新が成功したらページをリロード
-        } else {
-            alert('写真のアップロードに失敗しました');
-        }
-    })
-    .catch((error) => {
-        console.error('Error:', error);
+            xhr.send(JSON.stringify({ 'bridge_id': pictureId, 'new_value': newValue }));
+        });
     });
-} {% endcomment %}
+});
+
+
 // カスタムモーダル
 function openModal(damage_pk, table_pk, coords) {
-    console.log("おーぷん");
+    console.log("オープン・ザ・モーダル");
     console.log(coords)
 
     document.getElementById('customModal').style.display = 'flex';
@@ -350,16 +353,13 @@ function openModal(damage_pk, table_pk, coords) {
                 // \pt2750; や \ptz; のようなパターンを削除
                 return str.replace(/\\pt[\d\w]+;/g, '');
             }
-
             // 改行を \P に変換した後の文字列を取得
             const replacedText = data.current_text.replace(/\\P/g, '\n');
-
             // 特定のパターンを削除
             const cleanedText = removeSpecificPatterns(replacedText);
             // 帰ってきたcurrent_text を使って、モーダルの要素に、textを貼り付ける。
             document.querySelector("#beforeChange").value = cleanedText;
             document.querySelector("#afterChange").value = cleanedText;
-
         } else {
             console.error('Response was not successful:', data); // エラーログの追加
             alert('失敗しました');

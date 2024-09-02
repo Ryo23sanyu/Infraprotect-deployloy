@@ -332,7 +332,10 @@ class DamageComment(models.Model):
         else:
             self.number = 17
         # get_combined_textメソッドで生成されたテキストをauto_commentフィールドに代入
-        self.auto_comment = self.get_combined_text()
+        if self.damage_name == "NON":
+            self.auto_comment = "健全である。"
+        else:
+            self.auto_comment = self.get_combined_text()
 
         super().save(*args, **kwargs)
     """"""

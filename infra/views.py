@@ -35,6 +35,8 @@ from django.views.generic import ListView, DetailView, CreateView, DeleteView, U
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.db import transaction, IntegrityError
 from django.db.models import Q
+from django.db.models import Value, IntegerField, Case, When
+from django.db.models.functions import Substr, Cast, Length
 
 from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
@@ -890,17 +892,49 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         search_title_text = "1径間" # 検索URLにsearch_title_textがない場合
     second_search_title_text = "損傷図"
     
-    bridges = FullReportData.objects.filter(infra=pk, span_number=search_title_text)
-    print(f"search_title_texts:{search_title_text}")
-    print(f"FullReportData:{bridges.first()}")
-    # HTMLにまとめて表示するためのグループ化
+    # parts_name のカスタム順序リスト
+    parts_order = ['主桁', '横桁', '床版', 'PC定着部', '橋台[胸壁]', '橋台[竪壁]', '橋台[翼壁]', '支承本体', '沓座モルタル', '防護柵', '地覆', '伸縮装置', '舗装', '排水ます', '排水管']
+    parts_order_cases = [When(Q(parts_name__icontains=part), then=Value(i)) for i, part in enumerate(parts_order)]
+
+    # damage_name のカスタム順序リスト
+    damage_order = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳', '㉑', '㉒', '㉓', '㉔', '㉕', '㉖']
+    damage_order_cases = [When(Q(damage_name__startswith=char), then=Value(i)) for i, char in enumerate(damage_order)]
+    
+    # データ取得と基幹部分の注釈
+    bridges_base = (
+        FullReportData.objects
+        .filter(infra=pk, span_number__icontains=search_title_text)
+        .annotate(
+            span_number_int=Cast(Substr('span_number', 1, Length('span_number')), IntegerField())
+        )
+    )
+    # グループ化
     grouped_data = []
-    for key, group in groupby(bridges, key=attrgetter('join', 'damage_coordinate_x', 'damage_coordinate_y')):
+    for key, group in groupby(bridges_base, key=attrgetter('join', 'damage_coordinate_x', 'damage_coordinate_y')):
         grouped_data.append(list(group))
-        
+
     photo_grouped_data = []
-    for pic_key, pic_group in groupby(bridges, key=attrgetter('span_number')):
+    for pic_key, pic_group in groupby(bridges_base, key=attrgetter('span_number')):
         photo_grouped_data.append(list(pic_group))
+
+    # グループ内のアイテムを並び替え
+    def sort_group(group):
+        return sorted(
+            group,
+            key=lambda x: (
+                x.span_number_int,
+                next((i for i, part in enumerate(parts_order) if part in x.parts_name), len(parts_order)),
+                next((i for i, char in enumerate(damage_order) if x.damage_name.startswith(char)), len(damage_order)),
+                int(x.four_numbers) if x.four_numbers.isdigit() else float('inf'),
+                x.join, 
+                x.damage_coordinate_x, 
+                x.damage_coordinate_y
+            )
+        )
+
+    # グループを並び替え
+    sorted_grouped_data = [sort_group(group) for group in grouped_data]
+    sorted_photo_grouped_data = [sort_group(group) for group in photo_grouped_data]
         
     buttons_count = int(table.infra.径間数) # 数値として扱う
     buttons = list(range(1, buttons_count + 1)) # For loopのためのリストを作成
@@ -914,7 +948,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     print(f"橋梁番号:{table_object.id}")
     article_pk = infra.article.id
     print(f"案件番号:{article_pk}") # 案件番号:1
-    context = {'object': table_object, 'article_pk': article_pk, 'grouped_data': grouped_data, 'photo_grouped_data': photo_grouped_data, 'buttons': buttons}
+    context = {'object': table_object, 'article_pk': article_pk, 'grouped_data': sorted_grouped_data, 'photo_grouped_data': sorted_photo_grouped_data, 'buttons': buttons}
     # 渡すデータ：　損傷データ　↑　　　       　   joinと損傷座標毎にグループ化したデータ　↑　　　　　　 写真毎にグループ化したデータ　↑ 　　       径間ボタン　↑
     # テンプレートをレンダリング
     return render(request, 'infra/bridge_table.html', context)
@@ -1178,7 +1212,17 @@ def observations_list(request, article_pk, pk):
         damage_max_lank = max(damage_lanks)
         damage_min_lank = min(damage_lanks)
         
-        combined_pictures = ','.join(str(picture) for picture in set(data['this_time_pictures']) if picture is not None) # 重複なし
+        before_combined_pictures = ','.join(str(picture) for picture in set(data['this_time_pictures']) if picture is not None) # 重複なし
+        def transform_string(changed_comma: str) -> str:
+            # 先頭の1文字がコンマのとき、先頭の文字を削除
+            if changed_comma.startswith(","):
+                changed_comma = changed_comma[1:]
+            # 文字列の中にコンマが2連続していた場合、コンマに置換
+            changed_comma = changed_comma.replace(",,", ",")
+            return changed_comma
+        
+        combined_pictures = transform_string(before_combined_pictures)
+
 
         try:
             damage_comment_entry = DamageComment(
@@ -1572,6 +1616,52 @@ def number_view(request):
                 result += "{:02d}{:02d}\n".format(prefix, suffix)
 
     print(result)
+
+# << 損傷写真帳の番号登録 >>
+@csrf_exempt
+def edit_picture_number(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        bridge_id = data.get('bridge_id')
+        new_value = data.get('new_value')
+
+        try:
+            bridge_data = FullReportData.objects.get(id=bridge_id)
+            bridge_data.picture_number = new_value
+            bridge_data.save()
+
+            # 番号重複を避けるため、全体を見直す処理
+            full_report_data = FullReportData.objects.all().order_by('id')
+            current_numbers = set()
+            unique_numbers = set()
+
+            for report in full_report_data:
+                number = report.picture_number
+                if number in current_numbers:
+                    unique_numbers.add(number)
+                else:
+                    current_numbers.add(number)
+            
+            conflicting_reports = [report for report in full_report_data if report.picture_number in unique_numbers]
+
+            for report in conflicting_reports:
+                # 番号の抜けを避けるための処理（連番付け替え）
+                
+                # while f'写真番号-{new_number}' in current_numbers:
+                if report.this_time_picture != "":
+                    new_number = 1
+                    while new_number in current_numbers: # 条件が満たされるまでループ
+                        new_number += 1
+                    # report.picture_number = f'写真番号-{new_number}'
+                    report.picture_number = new_number
+                    report.save()
+                current_numbers.add(report.picture_number)
+
+            return JsonResponse({'status': 'success'})
+        except FullReportData.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Not found'}, status=404)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
 # << 橋梁緒言の選択肢 >>
 def infraregulations_view(request):
@@ -3048,17 +3138,9 @@ def edit_send_data(request, damage_pk, table_pk):
         
         x_points, y_points = map(float, points.split(','))
         damage_points_text = FullReportData.objects.filter(damage_coordinate_x=x_points, damage_coordinate_y=y_points)
-        if damage_points_text:
-            print(f"削除対象:{damage_points_text}")
-            deleted_count, _ = damage_points_text.delete()
-            # TODO 順番が崩れるため、今回は全件削除(修正対象)
-            sample.delete()
-            if deleted_count > 0:
-                print(f"{deleted_count} 件のオブジェクトを削除しました")
-            else:
-                print("削除できませんでした")
-        else:
-            print("削除対象が見つかりません")
+        print(f"削除対象:{damage_points_text}")
+        damage_points_text.delete()
+      
         if not FullReportData.objects.filter(damage_coordinate_x=x_points, damage_coordinate_y=y_points):
             print("削除しました")
         
@@ -3067,7 +3149,6 @@ def edit_send_data(request, damage_pk, table_pk):
             msp = doc.modelspace()
             epsilon = 0.001
             
-            # x_points, y_points = points.split(',')
             print(f"変更map_points:{x_points} / {y_points}")
             
             for entity in msp:
@@ -3092,13 +3173,10 @@ def edit_send_data(request, damage_pk, table_pk):
                             
                         print(f"変更    座標:{entity.dxf.text}--{float(x)}/{float(x_points)}/{float(y)}/{float(y_points)}//{points}")
                         
-            # desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-            # output_filepath = os.path.join(desktop_path, "2013CAD変更~~~.dxf")
-            # doc.saveas(output_filepath)
             doc.save()
             print(f"変更完了:{new_text}")
             return new_text
-                              
+
         table = get_object_or_404(Table, pk=table_pk)
         
         encoded_url_path = table.dxf.url
@@ -3109,4 +3187,64 @@ def edit_send_data(request, damage_pk, table_pk):
 
         return JsonResponse({"status": "success", 'current_text': current_text})
 
-    return render(request, 'infra/bridge_table.html', {'report_data': report_data})
+    # 並び替えのロジックを追加
+    parts_order = ['主桁', '横桁', '床版', 'PC定着部', '橋台[胸壁]', '橋台[竪壁]', '橋台[翼壁]', '支承本体', '沓座モルタル', '防護柵', '地覆', '伸縮装置', '舗装', '排水ます', '排水管']
+    parts_order_cases = [When(Q(parts_name__icontains=part), then=Value(i)) for i, part in enumerate(parts_order)]
+
+    damage_order = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳', '㉑', '㉒', '㉓', '㉔', '㉕', '㉖']
+    damage_order_cases = [When(Q(damage_name__startswith=char), then=Value(i)) for i, char in enumerate(damage_order)]
+    
+    bridges_base = (
+        FullReportData.objects
+        .filter(infra=table_pk)
+        .annotate(
+            span_number_int=Cast(Substr('span_number', 1, Length('span_number')), IntegerField())
+        )
+    )
+
+    grouped_data = []
+    for key, group in groupby(bridges_base, key=attrgetter('join', 'damage_coordinate_x', 'damage_coordinate_y')):
+        grouped_data.append(list(group))
+
+    photo_grouped_data = []
+    for pic_key, pic_group in groupby(bridges_base, key=attrgetter('span_number')):
+        photo_grouped_data.append(list(pic_group))
+
+    def sort_group(group):
+        return sorted(
+            group,
+            key=lambda x: (
+                x.span_number_int,
+                next((i for i, part in enumerate(parts_order) if part in x.parts_name), len(parts_order)),
+                next((i for i, char in enumerate(damage_order) if x.damage_name.startswith(char)), len(damage_order)),
+                int(x.four_numbers) if x.four_numbers.isdigit() else float('inf'),
+                x.join, 
+                x.damage_coordinate_x, 
+                x.damage_coordinate_y
+            )
+        )
+
+    sorted_grouped_data = [sort_group(group) for group in grouped_data]
+    sorted_photo_grouped_data = [sort_group(group) for group in photo_grouped_data]
+
+    buttons_count = int(table_instance.infra.径間数)
+    buttons = list(range(1, buttons_count + 1))
+    print(buttons)
+
+    print(f"ボタン:{Table.objects.filter(infra=table_pk)}")
+    table_object = Infra.objects.filter(id=table_pk).first()    
+    print(f"橋梁番号:{table_object}")
+    print(f"橋梁番号:{table_object.id}")
+    article_pk = infra.article.id
+    print(f"案件番号:{article_pk}")
+
+    context = {
+        'object': table_object, 
+        'article_pk': article_pk, 
+        'grouped_data': sorted_grouped_data, 
+        'photo_grouped_data': sorted_photo_grouped_data, 
+        'buttons': buttons,
+        'report_data': report_data
+    }
+
+    return render(request, 'infra/bridge_table.html', context)

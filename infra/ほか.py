@@ -121,3 +121,18 @@ if comma_count > 0:
     print(formatted_output)
 else:
     print("コンマは含まれていません。")
+    
+def transform_string(s: str) -> str:
+    # 先頭の1文字がコンマのとき、先頭の文字を削除
+    if s.startswith(","):
+        s = s[1:]
+    
+    # 文字列の中にコンマが2連続していた場合、コンマに置換
+    s = s.replace(",,", ",")
+    
+    return s
+
+# テスト例
+input_string = ",hello,,world,,!"
+output_string = transform_string(input_string)
+print(output_string)  # 結果: "hello,world,!"

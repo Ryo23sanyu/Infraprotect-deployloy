@@ -9,6 +9,7 @@ from django.conf.urls.static import static
 # 例：article/<int:article_pk>/infra/<int:pk>/update/（article〇番のinfra△番の更新ページ）
 #                   ↑ article の id       ↑ infra の id
 urlpatterns = [
+    # << 初期ページ >>
     path('', views.index_view, name='index'),
     # << 橋梁関係 >>
     path('article/<int:article_pk>/infra/', views.ListInfraView.as_view(), name='list-infra'),# 対象橋梁の一覧
@@ -32,9 +33,8 @@ urlpatterns = [
     path('article/<int:article_pk>/infra/<int:pk>/bridge-table/', views.bridge_table, name='bridge-table'),# 損傷写真帳
     path('bridge_table_edit/<int:damage_pk>/<int:table_pk>/', views.edit_report_data, name='edit_report_data'), # 旗揚げ内容の受信
     path('bridge_table_send/<int:damage_pk>/<int:table_pk>/', views.edit_send_data, name='edit_send_data'), # 旗揚げ内容の修正を送信
-    path('serve-image/<str:file_path>/', serve_image, name='serve_image'), # 写真をアップロードせずに表示
-    path('article/<int:article_pk>/infra/<int:pk>/bridge-table/upload/', views.upload_picture, name='upload-picture'),
-    # path('bridge_table_delete/<int:pk>/', views.delete_report_data, name='delete_report_data'), # 旗揚げ内容の削除
+    path('update_picture_number/', views.edit_picture_number, name='edit_picture_number'), # 写真番号の保存
+
     # << 名前の登録 >>
     path('article/<int:article_pk>/names/', views.names_list, name='names-list'),# 名前とアルファベットの紐付け
     path('delete_name_entry/<int:entry_id>/', views.delete_name_entry, name='delete_name_entry'),# 登録した名前を削除
@@ -60,6 +60,8 @@ urlpatterns = [
     path('images/', views.image_list, name='image_list'),# 全景写真
     path('photo/', views.display_photo, name='photo'),# 全景写真のアップロード
     path('change-photo/', views.change_photo, name='change_photo'),# 全景写真の変更
+    path('serve-image/<str:file_path>/', serve_image, name='serve_image'), # 写真をアップロードせずに表示
+    path('article/<int:article_pk>/infra/<int:pk>/bridge-table/upload/', views.upload_picture, name='upload-picture'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

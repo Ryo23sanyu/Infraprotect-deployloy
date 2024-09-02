@@ -32,3 +32,8 @@ def sort_list(value):
         return sorted(value)
     except TypeError:
         return value
+    
+# 2つのforループを合体させて同じ挙動とする(bridge_table.html)
+@register.filter
+def zip_lists(a, b):
+    return zip(a.split(','), b.split(','))
