@@ -109,8 +109,10 @@ class Infra(models.Model):
     橋長 = models.DecimalField(max_digits=10, decimal_places=2)# 橋長(最大桁数10桁、小数点以下2桁)
     全幅員 = models.DecimalField(max_digits=10, decimal_places=2)# 全幅員(最大桁数10桁、小数点以下2桁)
     路線名 = models.CharField(max_length=50)# 路線名
-    latitude = models.CharField(max_length=50, blank=True)# 緯度
-    longitude = models.CharField(max_length=50, blank=True)# 経度
+    latitude = models.CharField(max_length=50, blank=True)# 起点側緯度
+    longitude = models.CharField(max_length=50, blank=True)# 起点側経度
+    end_latitude = models.CharField(max_length=50, blank=True)# 終点側緯度
+    end_longitude = models.CharField(max_length=50, blank=True)# 終点側経度
     橋梁コード = models.CharField(max_length=50, blank=True)# 橋梁コード
     活荷重 = models.ManyToManyField(LoadWeight)# 活荷重
     等級 = models.ManyToManyField(LoadGrade)# 等級
@@ -249,6 +251,7 @@ class DamageList(models.Model):
     pattern = models.CharField(max_length=255, null=True, blank=True) # パターン「6」
     span_number = models.CharField(max_length=255)
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE) # サンプル橋
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, null=True, blank=True)
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['parts_name', 'symbol', 'number', 'material', 'main_parts', 
@@ -275,6 +278,7 @@ class DamageComment(models.Model):
     auto_comment = models.CharField(max_length=255, null=True, blank=True) # 自動表示のコメント
     span_number = models.CharField(max_length=255) # 1(径間)
     infra = models.ForeignKey(Infra, verbose_name="Infra", on_delete=models.CASCADE) # サンプル橋
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, null=True, blank=True)
     
     """ 並び替えに必要な動作(値を入れるフィールドを用意) """
     def save(self, *args, **kwargs):

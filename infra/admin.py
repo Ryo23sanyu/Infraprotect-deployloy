@@ -112,9 +112,8 @@ class CustomPartsNameFilter(admin.SimpleListFilter):
             return queryset.filter(replace_name__icontains=self.value())
         return queryset
 
-admin.site.register(DamageComment) # 所見データ
-class DamageCommentAdmin(admin.ModelAdmin):
-    list_display = ('span_number', 'parts_name', 'parts_number', 'damage_name', 'number')
+class DamageCommentAdmin(admin.ModelAdmin): # 所見データ
+    list_display = ('parts_name', 'parts_number', 'damage_name', 'number', 'infra', 'span_number', 'article')
     list_filter = (CustomPartsNameFilter,)
     search_fields = ('replace_name__icontains',)
 
@@ -131,4 +130,5 @@ class DamageCommentAdmin(admin.ModelAdmin):
             )
         ).order_by('span_number', 'replace_name', 'parts_number', 'number')
                   #   1(径間)          主桁　　　　　　　01　　　　　1(腐食)
+admin.site.register(DamageComment, DamageCommentAdmin)
 """ 管理サイトの並び替え表示に必要な動作（ここまで） """

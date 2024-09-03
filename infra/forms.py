@@ -162,6 +162,6 @@ class ArticleForm(forms.ModelForm):
 class InfraForm(forms.ModelForm):
     class Meta:
         model = Infra
-        fields = ['title', '径間数', '橋長', '全幅員', '路線名', 'latitude', 'longitude', '橋梁コード', '活荷重', '等級', '適用示方書', 
+        fields = ['title', '径間数', '橋長', '全幅員', '路線名', 'latitude', 'longitude', 'end_latitude', 'end_longitude', '橋梁コード', '活荷重', '等級', '適用示方書', 
                   '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', '路下条件', 
                   '特記事項', 'カテゴリー', '交通量', '大型車混入率', 'article']

@@ -44,7 +44,7 @@
   }
 
   /* ボタンの枠線、中の色を指定 */
-  .btn {
+  .cause-btn {
     background-color: #4CAF50; /* ボタンの背景色 */
     border: 2px solid black; /* ボタンの枠線の色と太さ */
     color: white; /* ボタンの文字色 */
@@ -65,13 +65,13 @@
     vertical-align: middle; /* テキストの垂直方向の位置を中央に */
   }
   /* ホバー時（カーソルを合わせたとき）のボタンスタイル */
-  .btn:hover {
+  .cause-btn:hover {
       background-color: #FF9900; /* ホバー時の背景色をオレンジに変更 */
       /* border: 2px solid #FF9900; ボタンの枠線の色もオレンジに変更 */
       color: white; /* ボタンの文字色 */
   }
   /* ボタンを横並びにする */
-  .button-container {
+  .button-observer-container {
       display: flex; /* フレックスボックスを使用 */
       flex-wrap: wrap; /* 幅に収まりきらない場合は折り返す */
       justify-content: space-between; /* ボタンの間隔を均等にする */
@@ -158,28 +158,28 @@
           </div>
         </td>
         <td>
-          <div class="button-container">
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-1" data-judge="疲労" name="cause" value="疲労" class="btn {% if item.cause == '疲労' %}selected{% endif %}">疲労</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-2" data-judge="塩害" name="cause" value="塩害" class="btn {% if item.cause == '塩害' %}selected{% endif %}">塩害</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-3" data-judge="凍害" name="cause" value="凍害" class="btn {% if item.cause == '凍害' %}selected{% endif %}">凍害</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-4" data-judge="アルカリ骨材反応" name="cause" value="アルカリ骨材反応" class="btn {% if item.cause == 'アルカリ骨材反応' %}selected{% endif %}">アルカリ骨材反応</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-5" data-judge="中性化" name="cause" value="中性化" class="btn {% if item.cause == '中性化' %}selected{% endif %}">中性化</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-6" data-judge="材料劣化" name="cause" value="材料劣化" class="btn {% if item.cause == '材料劣化' %}selected{% endif %}">材料劣化</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-7" data-judge="想定外の荷重" name="cause" value="想定外の荷重" class="btn {% if item.cause == '想定外の荷重' %}selected{% endif %}">想定外の荷重</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-8" data-judge="衝突" name="cause" value="衝突" class="btn {% if item.cause == '衝突' %}selected{% endif %}">衝突</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-9" data-judge="偏土圧・圧密沈下" name="cause" value="偏土圧・圧密沈下" class="btn {% if item.cause == '偏土圧・圧密沈下' %}selected{% endif %}">偏土圧・圧密沈下</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-10" data-judge="洗掘・浸食" name="cause" value="洗掘・浸食" class="btn {% if item.cause == '洗掘・浸食' %}selected{% endif %}">洗掘・浸食</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-11" data-judge="地震" name="cause" value="地震" class="btn {% if item.cause == '地震' %}selected{% endif %}">地震</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-12" data-judge="乾燥収縮・温度応力" name="cause" value="乾燥収縮・温度応力" class="btn {% if item.cause == '乾燥収縮・温度応力' %}selected{% endif %}">乾燥収縮・温度応力</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-13" data-judge="科学的腐食" name="cause" value="科学的腐食" class="btn {% if item.cause == '科学的腐食' %}selected{% endif %}">科学的腐食</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-14" data-judge="品質の経年変化" name="cause" value="品質の経年変化" class="btn {% if item.cause == '品質の経年変化' %}selected{% endif %}">品質の経年変化</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-15" data-judge="製作・施工不良" name="cause" value="製作・施工不良" class="btn {% if item.cause == '製作・施工不良' %}selected{% endif %}">製作・施工不良</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-16" data-judge="防水・排水工不良" name="cause" value="防水・排水工不良" class="btn {% if item.cause == '防水・排水工不良' %}selected{% endif %}">防水・排水工不良</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-17" data-judge="構造形式・形状不良" name="cause" value="構造形式・形状不良" class="btn {% if item.cause == '構造形式・形状不良' %}selected{% endif %}">構造形式・形状不良</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-18" data-judge="人為的" name="cause" value="人為的" class="btn {% if item.cause == '人為的' %}selected{% endif %}">人為的</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-19" data-judge="鳥害" name="cause" value="鳥害" class="btn {% if item.cause == '鳥害' %}selected{% endif %}">鳥害</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-20" data-judge="経年" name="cause" value="経年" class="btn {% if item.cause == '経年' %}selected{% endif %}">経年</button></form>
-            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-21" data-judge="自由記述" name="cause" value="自由記述" class="btn {% if item.cause == '自由記述' %}selected{% endif %}">自由記述</button></form>
+          <div class="button-observer-container">
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-1" data-judge="疲労" name="cause" value="疲労" class="btn cause-btn {% if item.cause == '疲労' %}selected{% endif %}">疲労</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-2" data-judge="塩害" name="cause" value="塩害" class="btn cause-btn {% if item.cause == '塩害' %}selected{% endif %}">塩害</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-3" data-judge="凍害" name="cause" value="凍害" class="btn cause-btn {% if item.cause == '凍害' %}selected{% endif %}">凍害</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-4" data-judge="アルカリ骨材反応" name="cause" value="アルカリ骨材反応" class="btn cause-btn {% if item.cause == 'アルカリ骨材反応' %}selected{% endif %}">アルカリ骨材反応</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-5" data-judge="中性化" name="cause" value="中性化" class="btn cause-btn {% if item.cause == '中性化' %}selected{% endif %}">中性化</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-6" data-judge="材料劣化" name="cause" value="材料劣化" class="btn cause-btn {% if item.cause == '材料劣化' %}selected{% endif %}">材料劣化</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-7" data-judge="想定外の荷重" name="cause" value="想定外の荷重" class="btn cause-btn {% if item.cause == '想定外の荷重' %}selected{% endif %}">想定外の荷重</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-8" data-judge="衝突" name="cause" value="衝突" class="btn cause-btn {% if item.cause == '衝突' %}selected{% endif %}">衝突</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-9" data-judge="偏土圧・圧密沈下" name="cause" value="偏土圧・圧密沈下" class="btn cause-btn {% if item.cause == '偏土圧・圧密沈下' %}selected{% endif %}">偏土圧・圧密沈下</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-10" data-judge="洗掘・浸食" name="cause" value="洗掘・浸食" class="btn cause-btn {% if item.cause == '洗掘・浸食' %}selected{% endif %}">洗掘・浸食</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-11" data-judge="地震" name="cause" value="地震" class="btn cause-btn {% if item.cause == '地震' %}selected{% endif %}">地震</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-12" data-judge="乾燥収縮・温度応力" name="cause" value="乾燥収縮・温度応力" class="btn cause-btn {% if item.cause == '乾燥収縮・温度応力' %}selected{% endif %}">乾燥収縮・温度応力</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-13" data-judge="科学的腐食" name="cause" value="科学的腐食" class="btn cause-btn {% if item.cause == '科学的腐食' %}selected{% endif %}">科学的腐食</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-14" data-judge="品質の経年変化" name="cause" value="品質の経年変化" class="btn cause-btn {% if item.cause == '品質の経年変化' %}selected{% endif %}">品質の経年変化</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-15" data-judge="製作・施工不良" name="cause" value="製作・施工不良" class="btn cause-btn {% if item.cause == '製作・施工不良' %}selected{% endif %}">製作・施工不良</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-16" data-judge="防水・排水工不良" name="cause" value="防水・排水工不良" class="btn cause-btn {% if item.cause == '防水・排水工不良' %}selected{% endif %}">防水・排水工不良</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-17" data-judge="構造形式・形状不良" name="cause" value="構造形式・形状不良" class="btn cause-btn {% if item.cause == '構造形式・形状不良' %}selected{% endif %}">構造形式・形状不良</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-18" data-judge="人為的" name="cause" value="人為的" class="btn cause-btn {% if item.cause == '人為的' %}selected{% endif %}">人為的</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-19" data-judge="鳥害" name="cause" value="鳥害" class="btn cause-btn {% if item.cause == '鳥害' %}selected{% endif %}">鳥害</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-20" data-judge="経年" name="cause" value="経年" class="btn cause-btn {% if item.cause == '経年' %}selected{% endif %}">経年</button></form>
+            <form action="{% url 'damage_comment_cause_edit' item.id %}" method="post">{% csrf_token %} <button id="btn{{ forloop.counter }}-21" data-judge="自由記述" name="cause" value="自由記述" class="btn cause-btn cause-btn {% if item.cause == '自由記述' %}selected{% endif %}">自由記述</button></form>
           </div>
         </td>
         <td>
@@ -252,8 +252,8 @@
           });
       });
 
-      // Button-containerについて
-      document.querySelectorAll('.button-container button').forEach(button => {
+      // Button-observer-containerについて
+      document.querySelectorAll('.button-observer-container button').forEach(button => {
           button.addEventListener('click', (event) => {
               // 全ての兄弟要素の選択を解除
               event.target.parentNode.querySelectorAll('button').forEach(btn => {

@@ -34,14 +34,12 @@ from django.core.files.storage import FileSystemStorage
 from django.views.generic import ListView, DetailView, CreateView, DeleteView, UpdateView
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.db import transaction, IntegrityError
-from django.db.models import Q
-from django.db.models import Value, IntegerField, Case, When
+from django.db.models import Q, Value, IntegerField, Case, When
 from django.db.models.functions import Substr, Cast, Length
 
 from infraproject import settings
 from .models import Approach, Article, DamageComment, DamageList, DamageReport, FullReportData, Infra, PartsName, PartsNumber, Table, LoadGrade, LoadWeight, Photo, Panorama, NameEntry, Regulation, Rulebook, Thirdparty, UnderCondition, Material
-from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentCauseEditForm, DamageCommentEditForm, DamageCommentJadgementEditForm, EditReportDataForm, FileUploadForm, FullReportDataEditForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm
-from .forms import ArticleForm
+from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentCauseEditForm, DamageCommentEditForm, DamageCommentJadgementEditForm, EditReportDataForm, FileUploadForm, FullReportDataEditForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm, ArticleForm
 from urllib.parse import quote, unquote
 from ezdxf.enums import TextEntityAlignment
 
@@ -86,7 +84,7 @@ class CreateInfraView(LoginRequiredMixin, CreateView):
     # fieldの値がテンプレートに表示される
     fields = ('title', '径間数', '橋長', '全幅員','橋梁コード', '活荷重', '等級', '適用示方書', 
               '上部構造形式', '下部構造形式', '基礎構造形式', '近接方法', '交通規制', '第三者点検', '海岸線との距離', 
-              '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'latitude', 'longitude')
+              '路下条件', '交通量', '大型車混入率', '特記事項', 'カテゴリー', 'latitude', 'longitude', 'end_latitude', 'end_longitude')
     success_url = reverse_lazy('detail-infra')
     
     def form_valid(self, form): # form_validはフォームが有効のとき呼び出される
@@ -194,6 +192,7 @@ def infra_view(request):
     # 通常のビューロジック
     return render(request, 'infra/infra_detail.html')
 
+# << indexページ(使用方法) >>
 def index_view(request):
     # order_by = request.GET.get('order_by', '案件名')
     # object_list = Article.objects.order_by(order_by)
@@ -616,8 +615,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
         table = Table.objects.filter(infra=infra.id, article=article.id).first()
         print(table) # 旗揚げチェック：お試し（infra/table/dxf/121_2径間番号違い.dxf）
         
-        
-          
+        # << 管理サイトに登録するコード >>
         if not is_multi_list(split_names) and not is_multi_list(damages) and name_length == 1: # 部材名が1つの場合
             for single_damage in damages: 
                 parts_name = names[0]
@@ -632,7 +630,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                 print(f"parts_name1:{parts_name}")
                 print(f"damage_name1:{damage_name}")
                 parts_split = process_names(flatten(parts_name))
-                update_or_create_fields = {
+                update_fields = {
                     'parts_name': parts_name,
                     'four_numbers': four_numbers,
                     'damage_name': damage_name,
@@ -654,34 +652,34 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                 }
                 print(f"径間番号:{span_number}")
                 if FullReportData.objects.filter(join=join, this_time_picture=this_time_picture, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
-                    update_or_create_fields['this_time_picture'] = ""
-                    update_or_create_fields['picture_number'] = ""
+                    update_fields['this_time_picture'] = ""
+                    update_fields['picture_number'] = ""
 
-                if update_or_create_fields['this_time_picture']:
-                    if "," in update_or_create_fields['this_time_picture']:
-                        comma_count = update_or_create_fields['this_time_picture'].count(',')
+                if update_fields['this_time_picture']:
+                    if "," in update_fields['this_time_picture']:
+                        comma_count = update_fields['this_time_picture'].count(',')
                         print(f"写真枚数は{comma_count}枚です")
 
                         # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
                         box = list(range(picture_counter, picture_counter + comma_count + 1))
                         formatted_output = ', '.join(map(str, box))
                         print(formatted_output)
-                        update_or_create_fields['picture_number'] = formatted_output
+                        update_fields['picture_number'] = formatted_output
                         picture_counter += comma_count + 1
                     else:
-                        update_or_create_fields['picture_number'] = picture_counter
+                        update_fields['picture_number'] = picture_counter
                         picture_counter += 1
-                    
-                if not FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                
+                report_data_exists = FullReportData.objects.filter(**update_fields).exists()
+                if report_data_exists:
+                    print("データが存在しています。")
+                else:
                     try:
-                        damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
-                        damage_obj.save() # オブジェクトを保存
-                        print("保存しました。")
+                        damage_obj, created = FullReportData.objects.update_or_create(**update_fields)
+                        damage_obj.save()
                     except IntegrityError:
                         print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
-                        
-                #else:
-                    #pass
+                    
                     
         elif not is_multi_list(split_names) and not is_multi_list(damages) and name_length >= 2: # 部材名が2つ以上の場合
             if damage_length == 1: # かつ損傷名が1つの場合
@@ -698,7 +696,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                     print(f"parts_name2:{parts_name}")
                     print(f"damage_name2:{damage_name}")
                     parts_split = process_names(flatten(parts_name))
-                    update_or_create_fields = {
+                    update_fields = {
                         'parts_name': parts_name,
                         'four_numbers': four_numbers,
                         'damage_name': damage_name,
@@ -720,34 +718,33 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                     }           
                     print(f"径間番号:{span_number}")                 
                     if FullReportData.objects.filter(join=join, this_time_picture=this_time_picture, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
-                        update_or_create_fields['this_time_picture'] = ""
-                        update_or_create_fields['picture_number'] = ""
+                        update_fields['this_time_picture'] = ""
+                        update_fields['picture_number'] = ""
                         
-                    if update_or_create_fields['this_time_picture']:
-                        if "," in update_or_create_fields['this_time_picture']:
-                            comma_count = update_or_create_fields['this_time_picture'].count(',')
+                    if update_fields['this_time_picture']:
+                        if "," in update_fields['this_time_picture']:
+                            comma_count = update_fields['this_time_picture'].count(',')
                             print(f"写真枚数は{comma_count}枚です")
 
                             # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
                             box = list(range(picture_counter, picture_counter + comma_count + 1))
                             formatted_output = ', '.join(map(str, box))
                             print(formatted_output)
-                            update_or_create_fields['picture_number'] = formatted_output
+                            update_fields['picture_number'] = formatted_output
                             picture_counter += comma_count + 1
                         else:
-                            update_or_create_fields['picture_number'] = picture_counter
+                            update_fields['picture_number'] = picture_counter
                             picture_counter += 1
-                        
-                    if not FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                    
+                    report_data_exists = FullReportData.objects.filter(**update_fields).exists()
+                    if report_data_exists:
+                        print("データが存在しています。")
+                    else:
                         try:
-                            damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
-                            damage_obj.save() # オブジェクトを保存
-                            print("保存しました。")
+                            damage_obj, created = FullReportData.objects.update_or_create(**update_fields)
+                            damage_obj.save()
                         except IntegrityError:
                             print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
-
-                    #else:
-                        #pass
                         
             elif not is_multi_list(split_names) and not is_multi_list(damages) and damage_length >= 2: # かつ損傷名が2つ以上の場合
                 for name in split_names:
@@ -764,7 +761,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         print(f"parts_name3:{parts_name}")
                         print(f"damage_name3:{damage_name}")
                         parts_split = process_names(flatten(parts_name))
-                        update_or_create_fields = {
+                        update_fields = {
                             'parts_name': parts_name,
                             'four_numbers': four_numbers,
                             'damage_name': damage_name,
@@ -786,29 +783,31 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         }
                         print(f"径間番号:{span_number}")
                         if FullReportData.objects.filter(join=join, this_time_picture=this_time_picture, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
-                            update_or_create_fields['this_time_picture'] = ""
-                            update_or_create_fields['picture_number'] = ""
+                            update_fields['this_time_picture'] = ""
+                            update_fields['picture_number'] = ""
                             
-                        if update_or_create_fields['this_time_picture']:
-                            if "," in update_or_create_fields['this_time_picture']:
-                                comma_count = update_or_create_fields['this_time_picture'].count(',')
+                        if update_fields['this_time_picture']:
+                            if "," in update_fields['this_time_picture']:
+                                comma_count = update_fields['this_time_picture'].count(',')
                                 print(f"写真枚数は{comma_count}枚です")
 
                                 # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
                                 box = list(range(picture_counter, picture_counter + comma_count + 1))
                                 formatted_output = ', '.join(map(str, box))
                                 print(formatted_output)
-                                update_or_create_fields['picture_number'] = formatted_output
+                                update_fields['picture_number'] = formatted_output
                                 picture_counter += comma_count + 1
                             else:
-                                update_or_create_fields['picture_number'] = picture_counter
+                                update_fields['picture_number'] = picture_counter
                                 picture_counter += 1
-                            
-                        if not FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                        
+                        report_data_exists = FullReportData.objects.filter(**update_fields).exists()
+                        if report_data_exists:
+                            print("データが存在しています。")
+                        else:
                             try:
-                                damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
-                                damage_obj.save() # オブジェクトを保存
-                                print("保存しました。")
+                                damage_obj, created = FullReportData.objects.update_or_create(**update_fields)
+                                damage_obj.save()
                             except IntegrityError:
                                 print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
                                  
@@ -828,7 +827,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         print(f"parts_name4:{parts_name}")
                         print(f"damage_name4:{damage_name}")
                         parts_split = process_names(flatten(parts_name))
-                        update_or_create_fields = {
+                        update_fields = {
                             'parts_name': parts_name,
                             'four_numbers': four_numbers,
                             'damage_name': damage_name,
@@ -850,29 +849,31 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                         }
                         print(f"径間番号:{span_number}")
                         if FullReportData.objects.filter(join=join, this_time_picture=this_time_picture, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
-                            update_or_create_fields['this_time_picture'] = ""
-                            update_or_create_fields['picture_number'] = ""
+                            update_fields['this_time_picture'] = ""
+                            update_fields['picture_number'] = ""
                             
-                        if update_or_create_fields['this_time_picture']:
-                            if "," in update_or_create_fields['this_time_picture']:
-                                comma_count = update_or_create_fields['this_time_picture'].count(',')
+                        if update_fields['this_time_picture']:
+                            if "," in update_fields['this_time_picture']:
+                                comma_count = update_fields['this_time_picture'].count(',')
                                 print(f"写真枚数は{comma_count}枚です")
 
                                 # counterから始まるコンマの数だけのリストを作成（comma_countはコンマの数なので、必要な要素数は comma_count + 1）
                                 box = list(range(picture_counter, picture_counter + comma_count + 1))
                                 formatted_output = ', '.join(map(str, box))
                                 print(formatted_output)
-                                update_or_create_fields['picture_number'] = formatted_output
+                                update_fields['picture_number'] = formatted_output
                                 picture_counter += comma_count + 1
                             else:
-                                update_or_create_fields['picture_number'] = picture_counter
+                                update_fields['picture_number'] = picture_counter
                                 picture_counter += 1
-                    
-                        if not FullReportData.objects.filter(parts_name=parts_name, damage_name=damage_name, span_number=span_number, table=table, damage_coordinate_x=damage_coordinate_x, damage_coordinate_y=damage_coordinate_y):
+                        
+                        report_data_exists = FullReportData.objects.filter(**update_fields).exists()
+                        if report_data_exists:
+                            print("データが存在しています。")
+                        else:
                             try:
-                                damage_obj, created = FullReportData.objects.update_or_create(**update_or_create_fields) # 指定したフィールドの値に基づいてデータを更新または作成
-                                damage_obj.save() # オブジェクトを保存
-                                print("保存しました。")
+                                damage_obj, created = FullReportData.objects.update_or_create(**update_fields)
+                                damage_obj.save()
                             except IntegrityError:
                                 print("ユニーク制約に違反していますが、既存のデータを更新しませんでした。")
                                 
@@ -1092,12 +1093,14 @@ def observations_list(request, article_pk, pk):
     for part in parts_data:
         part_full_name = f"{part.parts_name} {part.symbol}{part.number}"
         span_number = part.span_number + '径間'
+        print(f"partデータのarticle：{part.article}")
 
         # FullReportDataから該当するデータを取得
         report_data_list = FullReportData.objects.filter(
             parts_name=part_full_name, # FullReportDataのparts_nameオブジェクトがpart_full_name(主桁 Mg0101)と同じ、かつ
             span_number=span_number, # FullReportDataのspan_numberオブジェクトがspan_number(1径間)と同じ、かつ
-            infra=part.infra # FullReportDataのinfraオブジェクトがpart.infraと同じ場合
+            infra=part.infra, # FullReportDataのinfraオブジェクトがpart.infraと同じ場合
+            article=part.article
         )  
 
         for report_data in report_data_list:
@@ -1133,7 +1136,8 @@ def observations_list(request, article_pk, pk):
                 damage_name = damage_name, # 剥離・鉄筋露出
                 damage_lank = damage_lank, # d
                 span_number = part.span_number,
-                infra = part.infra
+                infra = part.infra,
+                article = part.article
             )
 
             try:
@@ -1156,7 +1160,8 @@ def observations_list(request, article_pk, pk):
         report_data_list = FullReportData.objects.filter(
             parts_name=part_full_name,
             span_number=span_number,
-            infra=part.infra
+            infra=part.infra,
+            article=part.article
         )
 
         for report_data in report_data_list:
@@ -1166,17 +1171,17 @@ def observations_list(request, article_pk, pk):
 
             parts_name = f"{part.parts_name} {part.number}"
 
-            if any(word in parts_name for word in main_parts_list_left):
+            if any(word in parts_name for word in main_parts_list_left): # main_parts_list_leftリストと一致した場合
                 left = parts_name.find(" ")
                 number2 = parts_name[left+1:]
                 number_part = re.search(r'[A-Za-z]*(\d+)', number2).group(1)
                 result_parts_name = parts_name[:left] + " " + number_part[:2]
-            elif any(word in parts_name for word in main_parts_list_right):
+            elif any(word in parts_name for word in main_parts_list_right): # main_parts_list_rightリストと一致した場合
                 right = parts_name.find(" ")
                 number2 = parts_name[right+1:]
                 number_part = re.search(r'[A-Za-z]*(\d+)', number2).group(1)
                 result_parts_name = parts_name[:right] + " " + number_part[2:] if len(number_part) < 5 else number_part[2:]
-            elif any(word in parts_name for word in main_parts_list_zero):
+            elif any(word in parts_name for word in main_parts_list_zero): # main_parts_list_zeroリストと一致した場合
                 right = parts_name.find(" ")
                 result_parts_name = parts_name[:right] + " 00"
             else:
@@ -1191,7 +1196,7 @@ def observations_list(request, article_pk, pk):
             else:
                 damage_name = damage_name[1:] 
             damage_lank = report_data.damage_name.split('-')[1] if '-' in report_data.damage_name else report_data.damage_name    
-
+            # 部材名と損傷名の組み合わせでデータを作成
             damage_comments[(result_parts_name, damage_name)]['damage_lanks'].append(damage_lank)
             damage_comments[(result_parts_name, damage_name)]['this_time_pictures'].append(report_data.this_time_picture)
             
@@ -1206,6 +1211,7 @@ def observations_list(request, article_pk, pk):
             damage_comments[(result_parts_name, damage_name)]['main_parts'] = "〇" if part.main_frame else ""
             damage_comments[(result_parts_name, damage_name)]['span_number'] = part.span_number
             damage_comments[(result_parts_name, damage_name)]['infra'] = part.infra
+            damage_comments[(result_parts_name, damage_name)]['article'] = part.article
 
     for (result_parts_name, damage_name), data in damage_comments.items():
         damage_lanks = data['damage_lanks']
@@ -1223,20 +1229,30 @@ def observations_list(request, article_pk, pk):
         
         combined_pictures = transform_string(before_combined_pictures)
 
-
+        # << 管理サイトに登録するコード >>
         try:
-            damage_comment_entry = DamageComment(
+            damage_comment_entry, created = DamageComment.objects.get_or_create(
                 parts_name=result_parts_name,
-                material=data['material'],
-                main_parts=data['main_parts'],
                 damage_name=damage_name,
-                damage_max_lank=damage_max_lank,
-                damage_min_lank=damage_min_lank,
-                this_time_picture=combined_pictures,
                 span_number=data['span_number'],
-                infra=data['infra']
+                infra=data['infra'],
+                article=data['article'],
+                defaults={
+                    'material': data['material'],
+                    'main_parts': data['main_parts'],
+                    'damage_max_lank': damage_max_lank,
+                    'damage_min_lank': damage_min_lank,
+                    'this_time_picture': combined_pictures
+                }
             )
-            damage_comment_entry.save()
+            if not created:
+                # 既存データが見つかった場合には、フィールド値を更新
+                damage_comment_entry.material = data['material']
+                damage_comment_entry.main_parts = data['main_parts']
+                damage_comment_entry.damage_max_lank = damage_max_lank
+                damage_comment_entry.damage_min_lank = damage_min_lank
+                damage_comment_entry.this_time_picture = combined_pictures
+                damage_comment_entry.save()
 
         except IntegrityError:
             # 重複データがある場合の処理
@@ -1549,13 +1565,14 @@ def number_list(request, article_pk, pk):
             else:
                 print(form.errors)
 
-    parts_names = PartsName.objects.all()
-    print(parts_names)
     print(f"pk：{pk}、article_pk：{article_pk}")
     create_number_list = PartsNumber.objects.filter(infra=pk)
     print(f"create_number_list：{create_number_list}")
-    print(f"橋梁番号:{create_number_list}") # 橋梁番号:Table object (1)
+    print("-----------------------------------------")
+    print(f"橋梁番号:{pk}") # 橋梁番号:Table object (1)
     print(f"案件番号:{article_pk}") # 案件番号:1
+    number_object = Infra.objects.filter(id=pk).first()
+    print(f"サイドバーに渡すID：{number_object}")
     for item in create_number_list:
         print(f"Number: {item.number}, Unique ID: {item.unique_id}")
 
@@ -1567,7 +1584,7 @@ def number_list(request, article_pk, pk):
         'unique_id': accordion_list.unique_id
         })
 
-    return render(request, 'number_entry.html', {'object': create_number_list, 'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), "parts_names":parts_names, 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items()})
+    return render(request, 'number_entry.html', {'object': number_object, 'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items()})
     # return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 登録した番号を削除 >>
@@ -1807,7 +1824,7 @@ def excel_output(request, article_pk, pk):
     wb = openpyxl.load_workbook(original_file_path, keep_vba=True)
     
     # << Django管理サイトからデータを取得（その１用） >>
-    no01_records = Infra.objects.filter(id=pk)
+    no01_records = Infra.objects.filter(id=pk, article=article_pk)
     ws = wb['その１']
     for record in no01_records:
         print(record.title)
@@ -1827,7 +1844,7 @@ def excel_output(request, article_pk, pk):
         ws['AK10'] = rulebooks
 
     # << Django管理サイトからデータを取得（その７、８用） >>
-    no0708_records = DamageComment.objects.filter(infra=pk)
+    no0708_records = DamageComment.objects.filter(infra=pk, article=article_pk)
     # 並び替えて出力
     sorted_records = sorted(no0708_records, key=custom_sort_key)
     # カウンタ変数をシートごとに用意
@@ -1891,7 +1908,8 @@ def excel_output(request, article_pk, pk):
                 ws[f'BC{row}'] = "健全である。"
 
     # << （その１０） >>
-    no10_records = FullReportData.objects.filter(infra=pk)
+    no10_records = FullReportData.objects.filter(infra=pk, article=article_pk, this_time_picture__isnull=False).exclude(this_time_picture='')
+    #                                                                          this_time_fieldがnull(空)=でない 除外する(this_time_picture='')
     ws = wb['その１０']
     print(f"最大径間数：{span}")
     print(f"最大径間数：{int(span)}")
@@ -1983,7 +2001,7 @@ def excel_output(request, article_pk, pk):
         # 行の高さを元に戻す
         for i, height in enumerate(heights):
             sheet.row_dimensions[insert_at_row + i + (copy_end_row - copy_start_row + 1)].height = height
-        
+
         # コピーされた行を挿入
         for i, row_data in enumerate(rows_to_copy):
             new_row = insert_at_row + i
@@ -2019,31 +2037,86 @@ def excel_output(request, article_pk, pk):
         sheet.print_area = print_area    
         
         hide_sheet.sheet_state = 'hidden'
+        
+    # 写真を貼る動作を関数化
+    def process_image_to_excel(this_image_path, static_files_dir, i10, ws, max_width, max_height):   
+        # (関数化に必要なデータ：1つ目　受け取る変数)     
+        decoded_picture_path = urllib.parse.unquote(this_image_path) # URLデコード
+        print(decoded_picture_path)
+        sub_image_path = os.path.join(static_files_dir, decoded_picture_path.lstrip('/'))
+        print(sub_image_path)
+        print("2")
+        full_image_path = sub_image_path.replace("/", "\\")
+        print(full_image_path)
+        if os.path.exists(full_image_path):
+            print('true')
+            print(full_image_path)
+            # 画像を開いてリサイズ
+            pil_img = pil_img = PILImage.open(full_image_path)
+            width, height = pil_img.size
+            aspect_ratio = width / height
 
+            if aspect_ratio > max_width / max_height:
+                new_width = min(width, max_width)
+                new_height = new_width / aspect_ratio
+            else:
+                new_height = min(height, max_height)
+                new_width = new_height * aspect_ratio
+
+            resized_img = pil_img.resize((int(new_width), int(new_height)))
+
+            # 一時ファイル用のテンポラリディレクトリを作成
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                resized_img_path = tmp.name
+
+            # 画像を一時ファイルに保存
+            resized_img.save(resized_img_path)
+
+            # openpyxl用の画像オブジェクトを作成
+            img = OpenpyxlImage(resized_img_path)
+
+            # セルの位置に画像を貼り付け
+            img.anchor = i10
+            ws.add_image(img)
+            i10 += 1  # カウンタを進める」
+            return i10  # 更新されたカウンタを返す(関数化に必要なデータ：2つ目　返すデータ)
+        else:
+            print('false')
+            return i10  # 更新されたカウンタを返す(関数化に必要なデータ：2つ目　返すデータ)
+            
+                    
     for record in no10_records:
         span_number = record.span_number.replace('径間', '')
+        print(f"ここは{span_number}径間目")
         print(f"その10レコード数：{len(no10_records)}")
         if int(span_number) == span + 1:
+            print(f"－－－{span}径間")
             span = int(span_number)
-            initial_row10 = initial_row10 + 28 * math.ceil(i10 / 6) # 9+28×(ページ数)
+            
+            page_plus = math.ceil(i10/6)
+            print(f"現在、{page_plus}ページ目")
+            i10 = page_plus * 6
+            print(f"径間が変わるとしたら{i10}個目")
             ws[join_spannumber_cell[i10]] = span
             
-        if int(span_number) == span and record.this_time_picture != "": # 同じ径間で写真データが含まれている場合
+        if int(span_number) == span: # 同じ径間の場合
             if i10 % 6 == 5 and i10 > 10:
                 hide_sheet_copy_and_paste(wb, ws) # プログラム4｜1ページ増やすマクロを実行
 
             print(f"対象数:{i10}/{len(no10_records)}")
-            if record.parts_name in " ":
+            if " " in record.parts_name:
+                print(record.parts_name)
                 # 文字列を空白で分ける
-                split_parts = record.parts_name.split()
+                split_parts = record.parts_name.split(" ")
                 # 最初の部分「アクション-1」を取得
                 parts_name = split_parts[0]
                 # 2番目の部分から数値部分だけを取得
                 parts_number = re.search(r'\d+', split_parts[1]).group()
             else:
+                print("カッコなし")
                 parts_name = ""
                 parts_number = ""
-            if record.damage_name in "-":
+            if "-" in record.damage_name:
                 # 置き換え用の辞書
                 number_change = {
                     '①': '腐食',
@@ -2075,22 +2148,29 @@ def excel_output(request, article_pk, pk):
                 }
 
                 first_char = record.damage_name[0] # 先頭の1文字を取得                
-                
+                print(f"first_char　{first_char}")
                 damage_name = number_change.get(first_char, "") # 辞書で値を取得
                 damage_lank = record.damage_name[-1]
+                print(f"damage_name　{damage_name}")
+                print(f"damage_lank　{damage_lank}")
             else:
                 damage_name = ""
                 damage_lank = ""
+                
+            # 最大の写真サイズ（幅、高さ）
+            max_width, max_height = 240, 180 # 4:3
             ws[join_partsname_cell[i10]] = parts_name # 部材名
             ws[join_number_cell[i10]] = parts_number # 要素番号
             ws[join_damagename_cell[i10]] = damage_name # 損傷の種類
             ws[join_lank_cell[i10]] = damage_lank # 損傷の程度
-            ws[join_picture_cell[i10]] = record.this_time_picture # 損傷写真
+            ws[join_picture_cell[i10]] = process_image_to_excel(this_image_path=record.this_time_picture, static_files_dir=settings.STATICFILES_DIRS[0],
+                                                                i10=i10, ws=ws, max_width=max_width, max_height=max_height) # 損傷写真
+            # 関数を使用する場合は関数と同じ変数を渡す(関数化に必要なデータ：3つ目　使うデータ)
             ws[join_damage_memo_cell[i10]] = record.textarea_content # メモ
             i10 += 1
 
     # << Django管理サイトからデータを取得（その１１、１２用） >>
-    no1112_records = DamageList.objects.filter(infra=pk)
+    no1112_records = DamageList.objects.filter(infra=pk, article=article_pk)
     # 並び替え
     sorted_records = sorted(no1112_records, key=custom_sort_key)
     span = 1
@@ -3139,8 +3219,20 @@ def edit_send_data(request, damage_pk, table_pk):
         x_points, y_points = map(float, points.split(','))
         damage_points_text = FullReportData.objects.filter(damage_coordinate_x=x_points, damage_coordinate_y=y_points)
         print(f"削除対象:{damage_points_text}")
-        damage_points_text.delete()
-      
+        damage_points_text.delete
+        """
+        if damage_points_text:
+            print(f"削除対象:{damage_points_text}")
+            deleted_count, _ = damage_points_text.delete()
+            # TODO 順番が崩れるため、今回は全件削除(修正対象)
+            sample.delete()
+            if deleted_count > 0:
+                print(f"{deleted_count} 件のオブジェクトを削除しました")
+            else:
+                print("削除できませんでした")
+        else:
+            print("削除対象が見つかりません")
+            """
         if not FullReportData.objects.filter(damage_coordinate_x=x_points, damage_coordinate_y=y_points):
             print("削除しました")
         
@@ -3149,6 +3241,7 @@ def edit_send_data(request, damage_pk, table_pk):
             msp = doc.modelspace()
             epsilon = 0.001
             
+            # x_points, y_points = points.split(',')
             print(f"変更map_points:{x_points} / {y_points}")
             
             for entity in msp:
@@ -3173,10 +3266,13 @@ def edit_send_data(request, damage_pk, table_pk):
                             
                         print(f"変更    座標:{entity.dxf.text}--{float(x)}/{float(x_points)}/{float(y)}/{float(y_points)}//{points}")
                         
+            # desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+            # output_filepath = os.path.join(desktop_path, "2013CAD変更~~~.dxf")
+            # doc.saveas(output_filepath)
             doc.save()
             print(f"変更完了:{new_text}")
             return new_text
-
+                              
         table = get_object_or_404(Table, pk=table_pk)
         
         encoded_url_path = table.dxf.url
@@ -3187,64 +3283,4 @@ def edit_send_data(request, damage_pk, table_pk):
 
         return JsonResponse({"status": "success", 'current_text': current_text})
 
-    # 並び替えのロジックを追加
-    parts_order = ['主桁', '横桁', '床版', 'PC定着部', '橋台[胸壁]', '橋台[竪壁]', '橋台[翼壁]', '支承本体', '沓座モルタル', '防護柵', '地覆', '伸縮装置', '舗装', '排水ます', '排水管']
-    parts_order_cases = [When(Q(parts_name__icontains=part), then=Value(i)) for i, part in enumerate(parts_order)]
-
-    damage_order = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳', '㉑', '㉒', '㉓', '㉔', '㉕', '㉖']
-    damage_order_cases = [When(Q(damage_name__startswith=char), then=Value(i)) for i, char in enumerate(damage_order)]
-    
-    bridges_base = (
-        FullReportData.objects
-        .filter(infra=table_pk)
-        .annotate(
-            span_number_int=Cast(Substr('span_number', 1, Length('span_number')), IntegerField())
-        )
-    )
-
-    grouped_data = []
-    for key, group in groupby(bridges_base, key=attrgetter('join', 'damage_coordinate_x', 'damage_coordinate_y')):
-        grouped_data.append(list(group))
-
-    photo_grouped_data = []
-    for pic_key, pic_group in groupby(bridges_base, key=attrgetter('span_number')):
-        photo_grouped_data.append(list(pic_group))
-
-    def sort_group(group):
-        return sorted(
-            group,
-            key=lambda x: (
-                x.span_number_int,
-                next((i for i, part in enumerate(parts_order) if part in x.parts_name), len(parts_order)),
-                next((i for i, char in enumerate(damage_order) if x.damage_name.startswith(char)), len(damage_order)),
-                int(x.four_numbers) if x.four_numbers.isdigit() else float('inf'),
-                x.join, 
-                x.damage_coordinate_x, 
-                x.damage_coordinate_y
-            )
-        )
-
-    sorted_grouped_data = [sort_group(group) for group in grouped_data]
-    sorted_photo_grouped_data = [sort_group(group) for group in photo_grouped_data]
-
-    buttons_count = int(table_instance.infra.径間数)
-    buttons = list(range(1, buttons_count + 1))
-    print(buttons)
-
-    print(f"ボタン:{Table.objects.filter(infra=table_pk)}")
-    table_object = Infra.objects.filter(id=table_pk).first()    
-    print(f"橋梁番号:{table_object}")
-    print(f"橋梁番号:{table_object.id}")
-    article_pk = infra.article.id
-    print(f"案件番号:{article_pk}")
-
-    context = {
-        'object': table_object, 
-        'article_pk': article_pk, 
-        'grouped_data': sorted_grouped_data, 
-        'photo_grouped_data': sorted_photo_grouped_data, 
-        'buttons': buttons,
-        'report_data': report_data
-    }
-
-    return render(request, 'infra/bridge_table.html', context)
+    return render(request, 'infra/bridge_table.html', {'report_data': report_data})
