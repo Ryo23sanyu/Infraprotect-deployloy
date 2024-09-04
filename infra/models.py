@@ -215,13 +215,18 @@ class BridgePicture(models.Model):
     parts_split = models.CharField(max_length=255) # '排水管 Dp00'
     damage_coordinate_x = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
     damage_coordinate_y = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
+    memo = models.TextField()
     picture_coordinate_x = models.CharField(max_length=255, null=True, blank=True) # '538810.3087944178', '228910.3502713814'
     picture_coordinate_y = models.CharField(max_length=255, null=True, blank=True) # '538810.3087944178', '228910.3502713814'
     span_number = models.CharField(max_length=255) # 1径間
     table = models.ForeignKey(Table, on_delete=models.CASCADE)
     article = models.ForeignKey(Article, on_delete=models.CASCADE) # 一意にするためのarticle
     infra = models.ForeignKey(Infra, verbose_name="橋梁名", on_delete=models.CASCADE) # 一意にするためのinfra
-
+    class Meta:
+        # ユニークの設定(fieldsの組み合わせを一意とする。nullが許可されているとデータが重複する可能性があるため、notnullの要素を扱う)
+        constraints = [
+            models.UniqueConstraint(fields=['picture_number', 'damage_coordinate_x', 'damage_coordinate_y', 'span_number', 'table', 'infra', 'article'], name='unique_bridge_picture')
+        ]
 # models.TextField()：文字数上限なし
 
 # << 損傷用のデータをDBに格納 >>
@@ -275,6 +280,7 @@ class DamageList(models.Model):
             models.UniqueConstraint(fields=['parts_name', 'symbol', 'number', 'material', 'main_parts', 
                                             'damage_name', 'span_number', 'infra'], name='unique_damage_list')
         ]
+
     def __str__(self):
         return f"{self.parts_name} {self.symbol}{self.number}({self.damage_name}：{self.damage_lank})"
 

@@ -71,7 +71,7 @@ class FullReportDataAdmin(admin.ModelAdmin): # 損傷写真帳の全データ
 admin.site.register(FullReportData, FullReportDataAdmin)
 
 class BridgePictureAdmin(admin.ModelAdmin): # 写真登録
-    list_display = ('infra', 'damage_name', 'picture_number', 'image', 'image_tag', 'span_number', 'article')
+    list_display = ('infra', 'parts_split', 'damage_name', 'picture_number', 'image', 'image_tag', 'span_number', 'article')
     # 管理サイトに写真を表示する方法
     def image_tag(self, obj):
         if obj.image:

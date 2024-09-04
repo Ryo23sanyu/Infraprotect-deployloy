@@ -169,4 +169,4 @@ class InfraForm(forms.ModelForm):
 class BridgePictureForm(forms.ModelForm):
     class Meta:
         model = BridgePicture
-        fields = ['image', 'picture_number', 'damage_name', 'parts_split', 'damage_coordinate_x', 'damage_coordinate_y', 'picture_coordinate_x', 'picture_coordinate_y', 'span_number', 'table', 'infra', 'article']
+        fields = ['image', 'picture_number', 'damage_name', 'parts_split', 'memo', 'damage_coordinate_x', 'damage_coordinate_y', 'picture_coordinate_x', 'picture_coordinate_y', 'span_number', 'table', 'infra', 'article']

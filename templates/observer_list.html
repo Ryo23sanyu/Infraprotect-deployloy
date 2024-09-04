@@ -137,7 +137,9 @@
         <td>
           <div class="image-scroll-container">
             {% if item.this_time_picture %}
-              {% for picture in item.this_time_picture|split_comma %}
+            {% for picture in item.this_time_picture|split_comma %}
+                <p>{{ item.images }}</p>    
+                <p>{{ image }}</p>
                 <img id="photo_{{ forloop.counter }}" src="{% static picture.strip %}" alt="損傷写真">
               {% endfor %}
             {% else %}

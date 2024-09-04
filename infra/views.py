@@ -756,19 +756,35 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                                             for picture in join_picture_damage_name:
                                                 print(picture)
                                                 if picture.damage_name:
-                                                    print(picture.damage_name)
-                                                    picture.damage_name = f"{picture.damage_name},{damage_name}"
+                                                    print(picture.damage_name) # 損傷名
+                                                    edited_result_parts_name = re.sub(pattern, remove_alphabets, parts_split)
+                                                    new_damage_name = re.sub(r'^.', '', damage_name)
+                                                    # 末尾のハイフン+任意の1文字を削除
+                                                    damage_name = re.sub(r'-.{1}$', '', new_damage_name)
+                                                    picture.memo = f"{picture.memo} / {parts_split},{damage_name}"
                                                 else:
-                                                    picture.damage_name = damage_name
+                                                    picture.memo = f"{parts_split},{damage_name}"
                                                 picture.save()
                                             print(join_picture_damage_name)
                                         print("picture_number_boxのインデックスが範囲外です")
                                         continue
+                                    # 「スペース + 2文字以上のアルファベット + 2文字以上の数字」にマッチする部分を捉える
+                                    pattern = r'\s+[A-Za-z]{2,}[0-9]{2,}'
+                                    # マッチした部分からアルファベット部分だけを削除するための関数を定義
+                                    def remove_alphabets(match):
+                                        # マッチした文字列からアルファベット部分を削除
+                                        return re.sub(r'[A-Za-z]+', '', match.group())
+
+                                    # re.subでパターンにマッチする部分を編集
+                                    edited_result_parts_name = re.sub(pattern, remove_alphabets, parts_split)
+                                    new_damage_name = re.sub(r'^.', '', damage_name)
+                                    damage_name = re.sub(r'-.{1}$', '', new_damage_name)
                                     bridge_picture = BridgePicture(
                                         image=ContentFile(image_file.read(), name=os.path.basename(image_path.strip().replace('\\','/'))), 
                                         picture_number=current_picture_number,
                                         damage_name=damage_name,
-                                        parts_split=parts_split,
+                                        parts_split=edited_result_parts_name,
+                                        memo=f"{edited_result_parts_name},{damage_name}",
                                         damage_coordinate_x=damage_coordinate_x,
                                         damage_coordinate_y=damage_coordinate_y,
                                         picture_coordinate_x=picture_coordinate_x,
@@ -876,19 +892,35 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                                                 for picture in join_picture_damage_name:
                                                     print(picture)
                                                     if picture.damage_name:
-                                                        print(picture.damage_name)
-                                                        picture.damage_name = f"{picture.damage_name},{damage_name}"
+                                                        print(picture.damage_name) # 損傷名
+                                                        edited_result_parts_name = re.sub(pattern, remove_alphabets, parts_split)
+                                                        new_damage_name = re.sub(r'^.', '', damage_name)
+                                                        # 末尾のハイフン+任意の1文字を削除
+                                                        damage_name = re.sub(r'-.{1}$', '', new_damage_name)
+                                                        picture.memo = f"{picture.memo} / {parts_split},{damage_name}"
                                                     else:
-                                                        picture.damage_name = damage_name
+                                                        picture.memo = f"{parts_split},{damage_name}"
                                                     picture.save()
                                                 print(join_picture_damage_name)
                                             print("picture_number_boxのインデックスが範囲外です")
                                             continue
+                                        # 「スペース + 2文字以上のアルファベット + 2文字以上の数字」にマッチする部分を捉える
+                                        pattern = r'\s+[A-Za-z]{2,}[0-9]{2,}'
+                                        # マッチした部分からアルファベット部分だけを削除するための関数を定義
+                                        def remove_alphabets(match):
+                                            # マッチした文字列からアルファベット部分を削除
+                                            return re.sub(r'[A-Za-z]+', '', match.group())
+
+                                        # re.subでパターンにマッチする部分を編集
+                                        edited_result_parts_name = re.sub(pattern, remove_alphabets, parts_split)
+                                        new_damage_name = re.sub(r'^.', '', damage_name)
+                                        damage_name = re.sub(r'-.{1}$', '', new_damage_name)
                                         bridge_picture = BridgePicture(
                                             image=ContentFile(image_file.read(), name=os.path.basename(image_path.strip().replace('\\','/'))), 
                                             picture_number=current_picture_number,
                                             damage_name=damage_name,
-                                            parts_split=parts_split,
+                                            parts_split=edited_result_parts_name,
+                                            memo=f"{edited_result_parts_name},{damage_name}",
                                             damage_coordinate_x=damage_coordinate_x,
                                             damage_coordinate_y=damage_coordinate_y,
                                             picture_coordinate_x=picture_coordinate_x,
@@ -995,19 +1027,35 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                                                     for picture in join_picture_damage_name:
                                                         print(picture)
                                                         if picture.damage_name:
-                                                            print(picture.damage_name)
-                                                            picture.damage_name = f"{picture.damage_name},{damage_name}"
+                                                            print(picture.damage_name) # 損傷名
+                                                            edited_result_parts_name = re.sub(pattern, remove_alphabets, parts_split)
+                                                            new_damage_name = re.sub(r'^.', '', damage_name)
+                                                            # 末尾のハイフン+任意の1文字を削除
+                                                            damage_name = re.sub(r'-.{1}$', '', new_damage_name)
+                                                            picture.memo = f"{picture.memo} / {parts_split},{damage_name}"
                                                         else:
-                                                            picture.damage_name = damage_name
+                                                            picture.memo = f"{parts_split},{damage_name}"
                                                         picture.save()
                                                     
                                                 print("picture_number_boxのインデックスが範囲外です")
                                                 continue
+                                            # 「スペース + 2文字以上のアルファベット + 2文字以上の数字」にマッチする部分を捉える
+                                            pattern = r'\s+[A-Za-z]{2,}[0-9]{2,}'
+                                            # マッチした部分からアルファベット部分だけを削除するための関数を定義
+                                            def remove_alphabets(match):
+                                                # マッチした文字列からアルファベット部分を削除
+                                                return re.sub(r'[A-Za-z]+', '', match.group())
+
+                                            # re.subでパターンにマッチする部分を編集
+                                            edited_result_parts_name = re.sub(pattern, remove_alphabets, parts_split)
+                                            new_damage_name = re.sub(r'^.', '', damage_name)
+                                            damage_name = re.sub(r'-.{1}$', '', new_damage_name)
                                             bridge_picture = BridgePicture(
                                                 image=ContentFile(image_file.read(), name=os.path.basename(image_path.strip().replace('\\','/'))), 
                                                 picture_number=current_picture_number,
                                                 damage_name=damage_name,
-                                                parts_split=parts_split,
+                                                parts_split=edited_result_parts_name,
+                                                memo=f"{edited_result_parts_name},{damage_name}",
                                                 damage_coordinate_x=damage_coordinate_x,
                                                 damage_coordinate_y=damage_coordinate_y,
                                                 picture_coordinate_x=picture_coordinate_x,
@@ -1115,19 +1163,35 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
                                                     for picture in join_picture_damage_name:
                                                         print(picture)
                                                         if picture.damage_name:
-                                                            print(picture.damage_name)
-                                                            picture.damage_name = f"{picture.damage_name},{damage_name}"
+                                                            print(picture.damage_name) # 損傷名
+                                                            edited_result_parts_name = re.sub(pattern, remove_alphabets, parts_split)
+                                                            new_damage_name = re.sub(r'^.', '', damage_name)
+                                                            # 末尾のハイフン+任意の1文字を削除
+                                                            damage_name = re.sub(r'-.{1}$', '', new_damage_name)
+                                                            picture.memo = f"{picture.memo} / {parts_split},{damage_name}"
                                                         else:
-                                                            picture.damage_name = damage_name
+                                                            picture.memo = f"{parts_split},{damage_name}"
                                                         picture.save()
                                                     print(join_picture_damage_name)
                                                 print("picture_number_boxのインデックスが範囲外です")
                                                 continue
+                                            # 「スペース + 2文字以上のアルファベット + 2文字以上の数字」にマッチする部分を捉える
+                                            pattern = r'\s+[A-Za-z]{2,}[0-9]{2,}'
+                                            # マッチした部分からアルファベット部分だけを削除するための関数を定義
+                                            def remove_alphabets(match):
+                                                # マッチした文字列からアルファベット部分を削除
+                                                return re.sub(r'[A-Za-z]+', '', match.group())
+
+                                            # re.subでパターンにマッチする部分を編集
+                                            edited_result_parts_name = re.sub(pattern, remove_alphabets, parts_split)
+                                            new_damage_name = re.sub(r'^.', '', damage_name)
+                                            damage_name = re.sub(r'-.{1}$', '', new_damage_name)
                                             bridge_picture = BridgePicture(
                                                 image=ContentFile(image_file.read(), name=os.path.basename(image_path.strip().replace('\\','/'))), 
                                                 picture_number=current_picture_number,
                                                 damage_name=damage_name,
-                                                parts_split=parts_split,
+                                                parts_split=edited_result_parts_name,
+                                                memo=f"{edited_result_parts_name},{damage_name}",
                                                 damage_coordinate_x=damage_coordinate_x,
                                                 damage_coordinate_y=damage_coordinate_y,
                                                 picture_coordinate_x=picture_coordinate_x,
@@ -1228,8 +1292,9 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
     article_pk = infra.article.id
     print(f"案件番号:{article_pk}") # 案件番号:1
     
-    picture_data = []
+    picture_data = [] # ここで毎回初期化されます
     for data in bridges_base:
+        # クエリセットでフィルタリング
         matches = BridgePicture.objects.filter(
             picture_coordinate_x=data.picture_coordinate_x,
             picture_coordinate_y=data.picture_coordinate_y,
@@ -1237,7 +1302,7 @@ def bridge_table(request, article_pk, pk): # idの紐付け infra/bridge_table.h
             table=data.table,
             infra=data.infra,
             article=data.article
-        )
+        ).distinct()
         picture_data.append({"full_report": data, "matches": matches})
         
     context = {'object': table_object, 'article_pk': article_pk, 'grouped_data': sorted_grouped_data, 'photo_grouped_data': sorted_photo_grouped_data, 'buttons': buttons, 'picture_data': picture_data}
@@ -1556,22 +1621,27 @@ def observations_list(request, article_pk, pk):
         
         # BridgePictureからのimageを取得し、damage_comment_entryに追加する
         bridge_pictures = BridgePicture.objects.filter(
-            parts_split=result_parts_name, # 主桁 Mg01=主桁 01
-            damage_name=damage_name, # 
-            span_number=data['span_number'],
+            memo__contains=f"{result_parts_name},{damage_name}", # __contains：部分一致
+            span_number=f"{data['span_number']}径間",
             infra=data['infra'],
             article=data['article']
         )
-
+        print(f"ヒット{bridge_pictures}") # 
+        print("  ～～～　")
+        print(f"{result_parts_name},{damage_name}") # 支承本体 0102,剥離・鉄筋露出
+        print(span_number) # 1径間
+        print(data['infra']) # サンプル橋
+        print(data['article']) # サンプル
+        print("ヒット**")
         images = []
         for picture in bridge_pictures:
             images.append(picture.image.url)
+            print(picture)
 
         damage_comment_entry.images = images
            
     # span_numberの順かつ、replace_nameの順かつ、parts_numberの順かつ、numberの順に並び替え 
     sorted_data = DamageComment.objects.filter(infra=pk).order_by('span_number', 'replace_name', 'parts_number', 'number')
-    """ここまで"""
     
     if "search_title_text" in request.GET:
         search_title_text = request.GET["search_title_text"]
@@ -1600,8 +1670,9 @@ def observations_list(request, article_pk, pk):
     print(f"article:{article}") # お試し(2)
     print(f"article:{article.id}") # お試し(2)
     observer_object = infra
-    
-    return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
+    print(f"使用写真：{images}")
+    print("------------------")
+    return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons, 'images': images})
 
 # << 所見コメントの登録 >>
 def damage_comment_edit(request, pk):

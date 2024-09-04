@@ -136,3 +136,15 @@ def transform_string(s: str) -> str:
 input_string = ",hello,,world,,!"
 output_string = transform_string(input_string)
 print(output_string)  # 結果: "hello,world,!"
+
+text = "①あいう-o"
+
+# 正規表現パターンを使用して、必要な部分を取り出し、それ以外を削除
+# ^は文字列の先頭、\dは数字、.$は文字列の末尾に1文字、-$は末尾のハイフン、\wはアルファベットの1文字
+# 先頭の任意の1文字を削除
+text1 = re.sub(r'^.', '', text)
+
+# 末尾のハイフン+任意の1文字を削除
+text2 = re.sub(r'-.{1}$', '', text)
+
+print(text2)  # あいう
