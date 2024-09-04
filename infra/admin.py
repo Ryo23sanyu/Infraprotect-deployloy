@@ -1,12 +1,13 @@
 import re
 from django.contrib import admin
 from django.db import models
-from .models import Approach, DamageComment, DamageList, FullReportData, Infra, Material, PartsName, Table, Article, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition, PartsNumber, NameEntry
+from .models import Approach, BridgePicture, DamageComment, DamageList, FullReportData, Infra, Material, PartsName, Table, Article, LoadGrade, LoadWeight, Regulation, Rulebook, Thirdparty, UnderCondition, PartsNumber, NameEntry
 from django.contrib.auth.admin import UserAdmin
 from django.db.models import Case, When, Value, IntegerField
 from django.db.models import F, Q
 from django.db.models.functions import Cast, Substr
 from django.db.models.functions import Length, Substr
+from django.utils.html import format_html
 
 # models.pyのclass名とカッコの中を合わせる
 class InfraAdmin(admin.ModelAdmin): # 橋梁
@@ -68,6 +69,16 @@ class FullReportDataAdmin(admin.ModelAdmin): # 損傷写真帳の全データ
         return queryset, use_distinct
     
 admin.site.register(FullReportData, FullReportDataAdmin)
+
+class BridgePictureAdmin(admin.ModelAdmin): # 写真登録
+    list_display = ('infra', 'damage_name', 'picture_number', 'image', 'image_tag', 'span_number', 'article')
+    # 管理サイトに写真を表示する方法
+    def image_tag(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="max-width: 100px; max-height: 100px;" />'.format(obj.image.url))
+        return "No Image"
+    image_tag.short_description = 'Image'
+admin.site.register(BridgePicture, BridgePictureAdmin)
 
 
 class DamageListAdmin(admin.ModelAdmin): # 損傷一覧

@@ -101,7 +101,8 @@ class Thirdparty(models.Model):
 class UnderCondition(models.Model):
     路下条件 = models.CharField(max_length=50, choices=路下条件_CHOICES)
     def __str__(self):
-        return self.路下条件
+        return self.路下条件  
+    
     
 class Infra(models.Model):
     title = models.CharField(max_length=100)# 橋名
@@ -205,7 +206,24 @@ class PartsNumber(models.Model):
         return ", ".join([m.材料 for m in self.material.all()])
 
     get_material_list.short_description = "Material"
-    
+
+# << 写真データを格納するモデル >>
+class BridgePicture(models.Model):
+    image = models.ImageField(upload_to='photos/') # 写真データ
+    picture_number = models.IntegerField() # 数字のみの入力
+    damage_name = models.CharField(max_length=255) # '①腐食(大大)-e', '⑤防食機能の劣化(分類1)-e'
+    parts_split = models.CharField(max_length=255) # '排水管 Dp00'
+    damage_coordinate_x = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
+    damage_coordinate_y = models.CharField(max_length=255) # '538482.3557216563', '229268.8593029478'
+    picture_coordinate_x = models.CharField(max_length=255, null=True, blank=True) # '538810.3087944178', '228910.3502713814'
+    picture_coordinate_y = models.CharField(max_length=255, null=True, blank=True) # '538810.3087944178', '228910.3502713814'
+    span_number = models.CharField(max_length=255) # 1径間
+    table = models.ForeignKey(Table, on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE) # 一意にするためのarticle
+    infra = models.ForeignKey(Infra, verbose_name="橋梁名", on_delete=models.CASCADE) # 一意にするためのinfra
+
+# models.TextField()：文字数上限なし
+
 # << 損傷用のデータをDBに格納 >>
 class FullReportData(models.Model):
     parts_name = models.CharField(max_length=255) # '排水管 Dp0101'

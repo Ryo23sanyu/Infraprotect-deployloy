@@ -78,10 +78,10 @@
                 {% if forloop.first %}
                 <td class="center-align">
                     <ul class="vert"> 
-                        {% if bridge.this_time_picture is not None %}
-                        {% with zip_lists=bridge.this_time_picture|zip_lists:bridge.picture_number %}<!-- カスタムフィルターを使用して2つのforループを合体 -->
-                        {% for picture, number in zip_lists %}{% comment %} {% for picture in bridge.this_time_picture|split_comma %} {% endcomment %}
-                        
+                        {% for entry in picture_data %}
+                        {% if entry.full_report.id == group.0.id %}
+                        {% for picture in entry.matches %}
+
                         <p>{{ picture }}</p>
                             <ul class="side">
                                 <li style="top-bottom: 5px; margin-bottom: 5px;"> <!-- ここで下部の空間を指定 -->
@@ -89,10 +89,10 @@
                                         <div style="position: relative;">
                                             <div style="position: absolute; top: 0px; left: -50px; background-color: none; color: black; padding: 2px 5px; font-size: 12px; border: 1px solid grey; width: 50px; height: 30px; overflow: hidden;">
                                                 {% comment %} {% for number in bridge.picture_number|split_comma %} {% endcomment %}
-                                                <textarea type="number" id="picture_number-{{ bridge.id }}" name="picture_number" style="border: none; width: 100%; height: 100%; resize: none; overflow: hidden;">{{ number.strip }}</textarea> <!-- 番号を表示し編集可能にする -->
+                                                <textarea type="number" id="picture_number-{{ bridge.id }}" name="picture_number" style="border: none; width: 100%; height: 100%; resize: none; overflow: hidden;">{{ picture.picture_number }}</textarea> <!-- 番号を表示し編集可能にする -->
 
                                             </div>{% comment %} src="{{ picture|remove_prefix:'/infra/static' }}" {% url 'serve_image' picture %} strip:先頭と末尾から空白を取り除く {% endcomment %}
-                                            <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{% static picture.strip %}" width="200" height="150" style="margin:0 10px;">
+                                            <img id="uploaded-image-{{ forloop.parentloop.counter }}" src="{{ picture.image.url }}" width="200" height="150" style="margin:0 10px;">
                                         </div>
                                         <div style="display: flex; flex-direction: column; justify-content: center;"> <!--justify-content: center; ボタンを縦の中央に配置-->
                                             <input type="file" style="display: none" onchange="uploadPicture(this, {{ bridge.id }})" accept="image/*">
@@ -131,8 +131,8 @@
                                 </li>
                             </ul>
                         {% endfor %}
-                        {% endwith %}
                         {% endif %}
+                        {% endfor %}
                         
                     </ul>
                 

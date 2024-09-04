@@ -1,6 +1,8 @@
 import re
 from django import template
 
+from infra.models import BridgePicture
+
 register = template.Library()
 
 @register.filter
@@ -37,3 +39,11 @@ def sort_list(value):
 @register.filter
 def zip_lists(a, b):
     return zip(a.split(','), b.split(','))
+
+# 異なるモデルのデータをテンプレートに表示
+@register.filter
+def get_bridge_picture(pictures, picture):
+    try:
+        return pictures.get(this_time_picture=picture)
+    except BridgePicture.DoesNotExist:
+        return None
