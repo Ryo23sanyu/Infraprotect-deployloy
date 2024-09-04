@@ -157,7 +157,7 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 #         },
 #     },
 # }
-"""
+
 if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
 
     #INSTALLED_APPSにcloudinaryの追加
@@ -192,10 +192,10 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
     DATABASES = { 
             'default': {
                 'ENGINE': 'django.db.backends.postgresql_psycopg2',
-                'NAME'    : os.environ["dc2sprm9le5saq"],# Database
-                'USER'    : os.environ["u26hjo6ktr3rrk"],# User
-                'PASSWORD': os.environ["p6f91ee24a3ee134d11c3d1657aa369e224bf9b8a22451a1f039e6f1d0de7315d"], # Password
-                'HOST'    : os.environ["cat670aihdrkt1.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com"], # Port
+                'NAME'    : os.environ["DB_NAME"],
+                'USER'    : os.environ["DB_USER"],
+                'PASSWORD': os.environ["DB_PASSWORD"],
+                'HOST'    : os.environ["DB_HOST"],
                 'PORT': '5432',
                 }
             }
@@ -208,10 +208,10 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
     
 
     #cloudinaryの設定
-    CLOUDINARY_STORAGE = {
-            'CLOUD_NAME': os.environ["hslrqdyny"], 
-            'API_KEY'   : os.environ["435863325477269"], 
-            'API_SECRET': os.environ["N337D13Yjy6-J0K8K7d_IgFU_-Y"],
+    CLOUDINARY_STORAGE = { 
+            'CLOUD_NAME': os.environ["CLOUD_NAME"], 
+            'API_KEY'   : os.environ["API_KEY"], 
+            'API_SECRET': os.environ["API_SECRET"],
             "SECURE"    : True,
             }
 
@@ -223,4 +223,3 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
 
     #これで全てのファイルがアップロード可能(上限20MB。ビュー側でアップロードファイル制限するなら基本これでいい)
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
-"""
