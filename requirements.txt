@@ -21,3 +21,4 @@ openpyxl
 ezdxf
 pandas
 markupsafe
+Pillow
