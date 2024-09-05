@@ -141,22 +141,9 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 10  # 10 MBの例
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'console': {
-#             'level': 'DEBUG',
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'loggers': {
-#         'django.db.backends': {
-#             'handlers': ['console'],
-#             'level': 'DEBUG',
-#         },
-#     },
-# }
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
 
@@ -214,7 +201,9 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
             'API_SECRET': os.environ["API_SECRET"],
             "SECURE"    : True,
             }
-
+    
+    # cloudinary://435863325477269:N337D13Yjy6-J0K8K7d_IgFU_-Y@hslrqdyny
+    # cloudinary://[API_KEY]      :[API_SECRET]               @[CLOUD_NAME]
     #これは画像だけ(上限20MB)
     #DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
