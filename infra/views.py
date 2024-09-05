@@ -1867,7 +1867,7 @@ def delete_name_entry(request, entry_id):
 
 # << 番号登録 >>
 def number_list(request, article_pk, pk):
-
+    parts_names = PartsName.objects.all().order_by('display_order')  # 順序フィールドで並べ替え
     # 同じname属性の値をすべて取り出す
     serial_numbers = request.POST.getlist("serial_number") # ['0101', '0103', '0201', '0203']
     single_numbers = request.POST.getlist("single_number") # ['0101', '0201', '0301', '0401']
@@ -1964,7 +1964,7 @@ def number_list(request, article_pk, pk):
         'unique_id': accordion_list.unique_id
         })
 
-    return render(request, 'number_entry.html', {'object': number_object, 'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items()})
+    return render(request, 'number_entry.html', {'object': number_object, 'article_pk': article_pk, 'pk': pk, "form": PartsNumberForm(), 'create_number_list': create_number_list, 'grouped_parts': grouped_parts.items(), 'parts_names': parts_names})
     # return render(request, 'observer_list.html', {'object': observer_object, 'article_pk': article_pk, 'data': filtered_bridges, 'article_pk': article_pk, 'pk': pk, 'buttons': buttons})
 
 # << 登録した番号を削除 >>
