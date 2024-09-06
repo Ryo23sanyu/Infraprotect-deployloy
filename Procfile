@@ -1,1 +1,1 @@
-web: gunicorn infraproject.wsgi:application --log-file -
+web: gunicorn infraprotect.wsgi:application --log-file -
