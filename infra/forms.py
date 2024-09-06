@@ -120,7 +120,7 @@ class FileUploadSampleForm(forms.Form):
 class FullReportDataForm(forms.ModelForm):
     class Meta:
         model = FullReportData
-        fields = ['parts_name', 'damage_name', 'join', 'picture_number', 'this_time_picture', 'last_time_picture', 
+        fields = ['parts_name', 'damage_name', 'join', 'picture_number', 'this_time_picture', 'last_time_picture',
                   'textarea_content', 'damage_coordinate_x', 'damage_coordinate_y', 'picture_coordinate_x', 'picture_coordinate_y']
 
 # << 損傷写真帳の入力データを登録 >>　update_full_report_data関数をビューに作成　update_full_report_dataパスをURLに作成

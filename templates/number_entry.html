@@ -216,15 +216,13 @@
         <div class="form-section">
             <div class="inline-group">
                 <label for="part-name">部材名:</label>
-                <div class="dropdown-container">
-                    <select id="part-name" name="parts_name" onchange="toggleMainFrame(this)">
-                        {% for parts_name in parts_names %}
-                        <option value="{{ parts_name.id }}" data-main="{{ parts_name.主要部材|yesno:'true,false' }}">
-                            {{ parts_name.部材名 }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
+                <select id="part-name" name="parts_name" onchange="toggleMainFrame(this)">
+                    {% for parts_name in parts_names %}
+                    <option value="{{ parts_name.id }}" data-main="{{ parts_name.主要部材|yesno:'true,false' }}">
+                        {{ parts_name.部材名 }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="inline-group">
@@ -435,47 +433,49 @@ $(accordionDetails).on("mouseleave", function(event) {
     $(this).show();
   });
 });
-// プルダウン内に検索ボックスを表示
 document.addEventListener('DOMContentLoaded', function() {
-    const selectBox = document.getElementById('part-name');
-    const originalOptions = Array.from(selectBox.options);
-    const searchBox = document.getElementById('search-box');
-
-    searchBox.addEventListener('input', function() {
-        const searchTerm = searchBox.value.toLowerCase();
-        const filteredOptions = originalOptions.filter(function(option) {
-            return option.textContent.toLowerCase().includes(searchTerm);
-        });
-
-        // Optionsを一旦クリアする
-        selectBox.innerHTML = '';
-
-        // 絞り込んだオプションを追加する
-        filteredOptions.forEach(function(option) {
-            selectBox.appendChild(option);
-        });
-
-        // 検索結果がない場合、プルダウンを表示しない
-        if (filteredOptions.length > 0) {
-            selectBox.size = filteredOptions.length;
-        } else {
-            selectBox.size = 1;
-            const emptyOption = new Option("該当なし", "", true, true);
-            selectBox.add(emptyOption);
-        }
-    });
-
-    // 検索ボックスのEnterで一番上の選択肢を選択する
-    searchBox.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            if (selectBox.options.length > 0) {
-                selectBox.selectedIndex = 0;
-                selectBox.dispatchEvent(new Event('change'));
+    var partsSelect = document.getElementById('part-name');
+    partsSelect.addEventListener('change', function() {
+        // 正しいセレクトボックスのIDを確認する
+        var selectedPartId = this.value;
+        var materials = document.querySelectorAll('.material-option');
+        materials.forEach(function(material) {
+            if (material.getAttribute('data-parts-id') == selectedPartId) {
+                material.style.display = 'block';
+            } else {
+                material.style.display = 'none';
             }
-        }
+        });
     });
 
+    partsSelect.dispatchEvent(new Event('change')); // 初期化
+});
+
+$(document).ready(function(){
+    $('#part-name').change(function(){
+        var partId = $(this).val();
+        $.ajax({
+            url: "{% url 'ajax_get_symbol' %}",
+            data: {
+                'part_id': partId
+            },
+            success: function(data){
+                $('#symbol').val(data.symbol);
+            }
+        });
+    });
+});
+
+function toggleMainFrame(selectElement) {
+    var selectedOption = selectElement.options[selectElement.selectedIndex];
+    var isMain = selectedOption.getAttribute('data-main') === 'true';
+    document.getElementById('main_frame').checked = isMain;
+}
+
+// ページ初期化時にもトグルを実行
+document.addEventListener('DOMContentLoaded', function() {
+    var selectElement = document.getElementById('part-name');
+    toggleMainFrame(selectElement);
 });
 </script>
 {% endblock %}

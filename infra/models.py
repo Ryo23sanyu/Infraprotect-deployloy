@@ -44,6 +44,8 @@ class DamageReport(models.Model):
     first = models.CharField(max_length=100)
     second = models.TextField()
 
+
+
 # << ディレクトリの動的変更 >>
 # << 案件作成のモデル >>
 CATEGORY = (('bridge', '橋梁'), ('pedestrian', '歩道橋'), ('other', 'その他'))
@@ -109,7 +111,7 @@ class Infra(models.Model):
     径間数 = models.IntegerField()# 径間数
     橋長 = models.DecimalField(max_digits=10, decimal_places=2)# 橋長(最大桁数10桁、小数点以下2桁)
     全幅員 = models.DecimalField(max_digits=10, decimal_places=2)# 全幅員(最大桁数10桁、小数点以下2桁)
-    路線名 = models.CharField(max_length=50)# 路線名
+    路線名 = models.CharField(max_length=200)# 路線名
     latitude = models.CharField(max_length=50, blank=True)# 起点側緯度
     longitude = models.CharField(max_length=50, blank=True)# 起点側経度
     end_latitude = models.CharField(max_length=50, blank=True)# 終点側緯度
@@ -142,7 +144,7 @@ class UploadedFile(models.Model):
 # << 各インフラにdxfを紐付け >>
 class Table(models.Model):
     infra = models.ForeignKey(Infra, verbose_name="橋梁名", on_delete=models.CASCADE) # ForeignKeyフィールドによってInfraとのリレーションシップを定義
-    dxf = models.FileField(verbose_name="dxfファイル", upload_to="uploads/") # infraを作成するときに登録するdxfファイル用
+    dxf = models.FileField(verbose_name="dxfファイル", upload_to="infra/table/dxf/") # infraを作成するときに登録するdxfファイル用
     article = models.ForeignKey(Article, on_delete=models.CASCADE, null=True, blank=True)
     def __str__(self):
         return f"{self.infra}：{self.article}（{self.dxf}）"
