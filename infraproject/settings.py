@@ -135,8 +135,8 @@ else:
     #↓は一般的なLinuxサーバーにデプロイする場合のパス。クラウドにデプロイする場合、下記は要修正。
     MEDIA_ROOT      = "/var/www/{}/media".format(PROJECT_NAME)
 """
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # 「C:\work\django\myproject\myvenv\Infraproject\media」
+# MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # 「C:\work\django\myproject\myvenv\Infraproject\media」
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -238,6 +238,7 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
     #これで全てのファイルがアップロード可能(上限20MB。ビュー側でアップロードファイル制限するなら基本これでいい)
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
 """
+DEFAULT_AUTO_FIELD='django.db.models.AutoField'
 if not DEBUG:
 
     # Herokuデプロイ時に必要になるライブラリのインポート
