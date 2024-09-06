@@ -8,8 +8,8 @@ app_name = 'accounts'
 
 urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
-    path('logout/', LogoutView.as_view(template_name='accounts/logged_out.html'), name='logout'), # next_pageにインデックスページを指定
-    # path('logout/', auth_views.LogoutView.as_view(template_name='accounts/logged_out.html'), name='logout'),
+    # path('logout/', LogoutView.as_view(template_name='accounts/logged_out.html'), name='logout'), # next_pageにインデックスページを指定
+    path('logout/', auth_views.LogoutView.as_view(template_name='accounts/logged_out.html'), name='logout'),
     path('signup/', SignupView.as_view(), name='signup'),
     path('register/', views.register_view, name='register'), # アカウント作成ページ
     path('my_page/', views.my_page_view, name='my_page'), # マイページ

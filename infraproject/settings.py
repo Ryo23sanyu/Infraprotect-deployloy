@@ -167,7 +167,8 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
 
     # ALLOWED_HOSTSに( Herokuのアプリのドメイン名 )を入力
     # os.environ は環境変数。後で、Herokuの設定に追加をする。
-    ALLOWED_HOSTS = [ os.environ["HOST"] ]
+    ALLOWED_HOSTS = [os.environ.get("HOST", "infraprotect-fe1819f27e30.herokuapp.com"), "localhost"]
+    # [ os.environ["HOST"] ]
 
     # CSRFトークンの生成、ハッシュ化に使われる。
     SECRET_KEY = os.environ["SECRETKEY"]
