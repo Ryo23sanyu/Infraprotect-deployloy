@@ -46,6 +46,7 @@ from .models import Approach, Article, BridgePicture, DamageComment, DamageList,
 from .forms import BridgeCreateForm, BridgeUpdateForm, CensusForm, DamageCommentCauseEditForm, DamageCommentEditForm, DamageCommentJadgementEditForm, EditReportDataForm, FileUploadForm, FullReportDataEditForm, NameEntryForm, PartsNumberForm, TableForm, UploadForm, PhotoUploadForm, NameForm, ArticleForm
 from urllib.parse import quote, unquote
 from ezdxf.enums import TextEntityAlignment
+import logging
 
 class ListInfraView(LoginRequiredMixin, ListView):
     template_name = 'infra/infra_list.html'
@@ -271,6 +272,7 @@ class UpdateArticleView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('list-article')
 
 # << ファイルのアップロード・各infraに紐付け >>
+logger = logging.getLogger(__name__)
 def file_upload(request, article_pk, pk):
     print("アップロードID確認")
     print(f"橋梁番号:{pk}")
@@ -279,6 +281,21 @@ def file_upload(request, article_pk, pk):
     print(f"Infra:{infra}({infra.id})") # 旗揚げチェック(4)
     article = infra.article
     print(f"article:{article}({article.id})") # お試し(2)
+    
+    try:
+        infra = Infra.objects.get(id=pk)
+        article = infra.article
+    except Infra.DoesNotExist:
+        logger.error(f"インフラ {pk} が存在しません")
+        return render(request, 'infra/file_upload.html', {
+            'error': 'インフラが存在しません',
+            'form': None,
+            'article_pk': article_pk,
+            'pk': pk
+        })
+    
+    logger.debug(f"Infra:{infra} ({infra.id})")
+    logger.debug(f"article:{article} ({article.id})")
     
     if request.method == 'POST':
                 #                  ↓  request.POST の中にdxfファイルの名前が入っているだけ。.copy() を実行して編集可能にする。
@@ -303,21 +320,26 @@ def file_upload(request, article_pk, pk):
             _, file_extension = os.path.splitext(new_file.name)
             
             if file_extension.lower() == '.dxf':# dxfファイルをstaticディレクトリに保存
-                static_dir = os.path.join(settings.BASE_DIR, 'static')
-                if not os.path.exists(static_dir):
-                    os.makedirs(static_dir)
-                
-                file_path = os.path.join(static_dir, new_file.name)
-                with open(file_path, 'wb+') as destination:
-                    for chunk in new_file.chunks():
-                        destination.write(chunk)
-                
-                form.save()
-                return redirect('file_upload_success')
-        
-            else: # ファイルをクラウディナリーにアップロード
-                form.save()
-                return redirect('file_upload_success')
+                try:
+                    static_dir = os.path.join(settings.BASE_DIR, 'static/dxf')
+                    if not os.path.exists(static_dir):
+                        os.makedirs(static_dir)
+                    
+                    file_path = os.path.join(static_dir, new_file.name)
+                    with open(file_path, 'wb+') as destination:
+                        for chunk in new_file.chunks():
+                            destination.write(chunk)
+                    
+                    form.save()
+                    return redirect('file_upload_success')
+                except Exception as e:
+                    logger.error(f"ファイル保存中にエラーが発生しました: {e}")
+                    return render(request, 'infra/file_upload.html', {
+                        'error': 'ファイル保存中にエラーが発生しました',
+                        'form': form,
+                        'article_pk': article_pk,
+                        'pk': pk,
+                    })
             
     else:
         form = TableForm()
