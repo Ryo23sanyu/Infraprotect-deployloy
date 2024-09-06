@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts.apps.AccountsConfig",
     "infra.apps.InfraConfig",
+    'storages', #←追加
 ]
 
 MIDDLEWARE = [
@@ -125,7 +126,15 @@ if DEBUG:
     )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #「C:\work\django\myproject\myvenv\Infraproject\」と同じ
-
+"""
+MEDIA_URL   = "/media/"
+if DEBUG:
+    MEDIA_ROOT  = os.path.join(BASE_DIR, "media")
+else:
+    PROJECT_NAME    = os.path.basename(BASE_DIR)
+    #↓は一般的なLinuxサーバーにデプロイする場合のパス。クラウドにデプロイする場合、下記は要修正。
+    MEDIA_ROOT      = "/var/www/{}/media".format(PROJECT_NAME)
+"""
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') # 「C:\work\django\myproject\myvenv\Infraproject\media」
 
@@ -158,7 +167,7 @@ LOGGING = {
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+"""
 if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
 
     #INSTALLED_APPSにcloudinaryの追加
@@ -167,8 +176,7 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
 
     # ALLOWED_HOSTSに( Herokuのアプリのドメイン名 )を入力
     # os.environ は環境変数。後で、Herokuの設定に追加をする。
-    ALLOWED_HOSTS = [os.environ.get("HOST", "infraprotect-fe1819f27e30.herokuapp.com"), "localhost"]
-    # [ os.environ["HOST"] ]
+    ALLOWED_HOSTS = [ os.environ["HOST"] ]
 
     # CSRFトークンの生成、ハッシュ化に使われる。
     SECRET_KEY = os.environ["SECRETKEY"]
@@ -229,3 +237,55 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
 
     #これで全てのファイルがアップロード可能(上限20MB。ビュー側でアップロードファイル制限するなら基本これでいい)
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
+"""
+if not DEBUG:
+
+    # Herokuデプロイ時に必要になるライブラリのインポート
+    import django_heroku
+    import dj_database_url
+
+    # ALLOWED_HOSTSにホスト名)を入力
+    ALLOWED_HOSTS = [ 'hogehoge.herokuapp.com' ]
+    
+    # 静的ファイル配信ミドルウェア、whitenoiseを使用。※順番不一致だと動かないため下記をそのままコピーする。
+    MIDDLEWARE = [
+        'django.middleware.security.SecurityMiddleware',
+        'whitenoise.middleware.WhiteNoiseMiddleware',
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.middleware.common.CommonMiddleware',
+        'django.middleware.csrf.CsrfViewMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware',
+        'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        ]
+    
+    
+    # DBを使用する場合は下記を入力する。
+    DATABASES = { 
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql_psycopg2',
+                'NAME'    : os.environ["DB_NAME"],
+                'USER'    : os.environ["DB_USER"],
+                'PASSWORD': os.environ["DB_PASSWORD"],
+                'HOST'    : os.environ["DB_HOST"],
+                'PORT': '5432',
+                }
+            } 
+    db_from_env = dj_database_url.config(conn_max_age=600, ssl_require=True)
+    DATABASES['default'].update(db_from_env)
+    
+    # 静的ファイル(static)の存在場所を指定する。
+    STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+    #ストレージ設定。
+    AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
+    AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
+    AWS_STORAGE_BUCKET_NAME = os.environ["AWS_STORAGE_BUCKET_NAME"]
+
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    S3_URL = 'http://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
+    MEDIA_URL = S3_URL
+    
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
