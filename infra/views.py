@@ -298,11 +298,11 @@ def file_upload(request, article_pk, pk):
             form = TableForm(copied, request.FILES, instance=obj)
         
         if form.is_valid():
+            new_file = request.FILES['dxf']
             # ファイル拡張子を取得
             _, file_extension = os.path.splitext(new_file.name)
             
             if file_extension.lower() == '.dxf':# dxfファイルをstaticディレクトリに保存
-                new_file = request.FILES['dxf']
                 static_dir = os.path.join(settings.BASE_DIR, 'static')
                 if not os.path.exists(static_dir):
                     os.makedirs(static_dir)

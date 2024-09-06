@@ -117,11 +117,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = "infra/static/"# infra/static/以降のファイルパスをviews.pyで指定
+# STATIC_URL = "infra/static/"# infra/static/以降のファイルパスをviews.pyで指定
+STATIC_URL = "/static/"
 
 if DEBUG:
-    STATICFILES_DIRS = (
-        os.path.join(BASE_DIR, "infra/static/"), #「C:\work\django\myproject\myvenv\Infraproject\infra\static\」と同じ
+    STATICFILES_DIRS = ( # 同じくinfra/static/
+        os.path.join(BASE_DIR, "/static/"), #「C:\work\django\myproject\myvenv\Infraproject\infra\static\」と同じ
     )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #「C:\work\django\myproject\myvenv\Infraproject\」と同じ
@@ -171,8 +172,10 @@ if not DEBUG: # 27行目のDEBUGがFalseになっていることを確認
         ]
 
     # 静的ファイル(static)の存在場所を指定する。
-    STATIC_ROOT = BASE_DIR / 'static'
-
+    
+    # STATIC_ROOT = BASE_DIR / 'static'
+    STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+    
     # DBの設定(HerokuPostgres は PostgreSQLなので、)
     # Heroku＞Heroku Postgres＞Settings＞View Credentials
     # 参考サイト：https://noauto-nolife.com/post/django-deploy-heroku/

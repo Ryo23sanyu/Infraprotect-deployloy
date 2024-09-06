@@ -2,7 +2,7 @@
 
 {% block content %}
   <h2>ファイルアップロード</h2>
-  <form method="post" enctype="multipart/form-data">
+  <form id="uploadForm" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <div id="dropArea" style="border: 2px dashed gray; padding: 100px;">
       ファイルをドラッグ＆ドロップまたはクリックしてアップロードしてください。
