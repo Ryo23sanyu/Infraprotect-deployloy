@@ -281,6 +281,9 @@ def file_upload(request, article_pk, pk):
     print(f"Infra:{infra}({infra.id})") # 旗揚げチェック(4)
     article = infra.article
     print(f"article:{article}({article.id})") # お試し(2)
+    logger.debug("アップロードID確認")
+    logger.debug(f"橋梁番号:{pk}")
+    logger.debug(f"案件番号:{article_pk}")
     
     try:
         infra = Infra.objects.get(id=pk)
